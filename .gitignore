@@ -24,4 +24,5 @@ hipercow/
 renv/
 outputs/
 outputs_compiled/
+report/
 Rplots.pdf
