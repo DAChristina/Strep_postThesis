@@ -4,7 +4,7 @@ library(tidyverse)
 ## 1. Data Viz and Analysis! ###################################################
 # New updated data with meningitis (25.04.2024)
 # All df are stored in raw_data
-dat <- readxl::read_excel("/home/ron/Strep_postThesis/raw_data/12F_for_NickC_MSc_with_Sample_info_for_DC.xlsx") %>% 
+dat <- readxl::read_excel("raw_data/12F_for_NickC_MSc_with_Sample_info_for_DC.xlsx") %>% 
   dplyr::mutate(collection_date = as.Date(collection_date),
                 year = year(collection_date),
                 month = month(collection_date),
@@ -21,7 +21,16 @@ dat <- readxl::read_excel("/home/ron/Strep_postThesis/raw_data/12F_for_NickC_MSc
                   Age >= 19 & Age < 31 ~ "19-30",
                   Age >= 31 & Age < 65 ~ "31-64",
                   Age >= 65 ~ "65+",
-                  is.na(Age) ~ "Unknown" # 16 IDs have no Age
+                  is.na(Age) ~ "Unknown"
+                ),
+                ageGroup6 = case_when(
+                  Age < 2 ~ "<2",
+                  Age >= 2 & Age < 5 ~ "2-4",
+                  Age >= 5 & Age < 15 ~ "5-14",
+                  Age >= 15 & Age < 45 ~ "15-44",
+                  Age >= 45 & Age < 65 ~ "45-64",
+                  Age >= 65 ~ "65+",
+                  is.na(Age) ~ "Unknown"
                 ),
                 ageGroup7 = case_when(
                   Age < 2 ~ "<2",
@@ -31,17 +40,78 @@ dat <- readxl::read_excel("/home/ron/Strep_postThesis/raw_data/12F_for_NickC_MSc
                   Age >= 31 & Age < 45 ~ "31-44", # Edit the Age-band into 15-30 & 31-44
                   Age >= 45 & Age < 65 ~ "45-64",
                   Age >= 65 ~ "65+",
-                  is.na(Age) ~ "Unknown" # 16 IDs have no Age
+                  is.na(Age) ~ "Unknown"
                 ),
                 ageGroup2 = case_when(
                   Age < 15 ~ "children",
                   Age >= 15 ~ "adults",
-                  is.na(Age) ~ "Unknown" # 16 IDs have no Age
+                  is.na(Age) ~ "Unknown"
                 )
   )
 
 # Save data to inputs
-write.csv(dat, "inputs/data_12F_cleaned.csv", row.names = FALSE)
+write.csv(dat, "raw_data/12F_cleaned.csv", row.names = FALSE)
+
+dat_v2 <- readxl::read_excel("raw_data/12F_v2_DC_edit.xlsx") %>% 
+  dplyr::mutate(year = as.numeric(paste0(substr(epiyear, 1, 4), ".5")),
+                ageGroup6 = gsub("to", "-", NewGraphAgegroup))
+
+write.csv(dat_v2, "raw_data/12F_v2_cleaned.csv", row.names = FALSE)
+
+pop <- readxl::read_excel("raw_data/nomis_2024_10_17_DCedit.xlsx") %>%  # ver.2 2001-2023
+  dplyr::mutate(`2024` = `2023`) # Temporary for 2024 population; ONS hasn't released the data yet!
+
+
+pop_l <- pop %>% 
+  tidyr::pivot_longer(cols = `2001`:`2024`,
+                      names_to = "Year",
+                      values_to = "PopSize") %>% 
+  dplyr::mutate(Age = gsub("Age ", "", Age),
+                Age = ifelse(Age == "Aged 90+", 90, as.numeric(Age)), # For incidence calculation, data grouped for people aged 90+
+                ageGroup = case_when( # edit 5 age bands
+                  Age < 5 ~ "<5",
+                  Age >= 5 & Age < 19 ~ "5-18",
+                  Age >= 19 & Age < 31 ~ "19-30",
+                  Age >= 31 & Age < 65 ~ "31-64",
+                  Age >= 65 ~ "65+",
+                  is.na(Age) ~ "Unknown" # 16 IDs have no Age
+                  # TRUE ~ "Unknown" 
+                ),
+                ageGroup6 = case_when(
+                  Age < 2 ~ "<2",
+                  Age >= 2 & Age < 5 ~ "2-4",
+                  Age >= 5 & Age < 15 ~ "5-14",
+                  Age >= 15 & Age < 45 ~ "15-44",
+                  Age >= 45 & Age < 65 ~ "45-64",
+                  Age >= 65 ~ "65+",
+                  is.na(Age) ~ "Unknown"
+                ),
+                ageGroup7 = case_when(
+                  Age < 2 ~ "<2",
+                  Age >= 2 & Age < 5 ~ "2-4",
+                  Age >= 5 & Age < 15 ~ "5-14",
+                  Age >= 15 & Age < 31 ~ "15-30", # Edit the Age-band into 15-30 & 31-44
+                  Age >= 31 & Age < 45 ~ "31-44", # Edit the Age-band into 15-30 & 31-44
+                  Age >= 45 & Age < 65 ~ "45-64",
+                  Age >= 65 ~ "65+",
+                  is.na(Age) ~ "Unknown" # 16 IDs have no AGEYR
+                ),
+                ageGroup2 = case_when(
+                  Age < 15 ~ "children",
+                  Age >= 15 ~ "adults",
+                  is.na(Age) ~ "Unknown" # 16 IDs have no AGEYR
+                ),
+                Year = as.numeric(Year)) %>% 
+  glimpse()
+
+write.csv(pop_l, "raw_data/nomis_population_long.csv", row.names = FALSE)
+
+# Vaccination programme:
+# SOURCE: https://www.gov.uk/government/publications/pneumococcal-the-green-book-chapter-25
+vaccine_UK <- data.frame(
+  year = c(2006, 2011),
+  vaccine = c("PCV7", "PCV13")
+)
 
 col_map <- c(
   # Vaccination
