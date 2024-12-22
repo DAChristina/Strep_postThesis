@@ -64,11 +64,11 @@ pop <- readxl::read_excel("raw_data/nomis_2024_10_17_DCedit.xlsx") %>%  # ver.2 
 
 pop_l <- pop %>% 
   tidyr::pivot_longer(cols = `2001`:`2024`,
-                      names_to = "Year",
+                      names_to = "year",
                       values_to = "PopSize") %>% 
   dplyr::mutate(Age = gsub("Age ", "", Age),
                 Age = ifelse(Age == "Aged 90+", 90, as.numeric(Age)), # For incidence calculation, data grouped for people aged 90+
-                ageGroup = case_when( # edit 5 age bands
+                ageGroup5 = case_when( # edit 5 age bands
                   Age < 5 ~ "<5",
                   Age >= 5 & Age < 19 ~ "5-18",
                   Age >= 19 & Age < 31 ~ "19-30",
@@ -101,7 +101,7 @@ pop_l <- pop %>%
                   Age >= 15 ~ "adults",
                   is.na(Age) ~ "Unknown" # 16 IDs have no AGEYR
                 ),
-                Year = as.numeric(Year)) %>% 
+                year = as.numeric(year)) %>% 
   glimpse()
 
 write.csv(pop_l, "raw_data/nomis_population_long.csv", row.names = FALSE)
