@@ -15,6 +15,17 @@ dat <- readxl::read_excel("raw_data/12F_for_NickC_MSc_with_Sample_info_for_DC.xl
                   year >= 2011 ~ "PCV13",
                   TRUE ~ NA_character_
                 ),
+                ageGroup2 = case_when(
+                  Age < 15 ~ "children",
+                  Age >= 15 ~ "adults",
+                  is.na(Age) ~ "Unknown"
+                ),
+                ageGroup3 = case_when(
+                  Age < 2 ~ "<2",
+                  Age >= 2 & Age < 65 ~ "2-64",
+                  Age >= 65 ~ "65+",
+                  is.na(Age) ~ "Unknown"
+                ),
                 ageGroup5 = case_when( # edit 5 age bands
                   Age < 5 ~ "<5",
                   Age >= 5 & Age < 19 ~ "5-18",
@@ -23,7 +34,7 @@ dat <- readxl::read_excel("raw_data/12F_for_NickC_MSc_with_Sample_info_for_DC.xl
                   Age >= 65 ~ "65+",
                   is.na(Age) ~ "Unknown"
                 ),
-                ageGroup6 = case_when(
+                ageGroup6 = case_when( # UKHSA
                   Age < 2 ~ "<2",
                   Age >= 2 & Age < 5 ~ "2-4",
                   Age >= 5 & Age < 15 ~ "5-14",
@@ -40,11 +51,6 @@ dat <- readxl::read_excel("raw_data/12F_for_NickC_MSc_with_Sample_info_for_DC.xl
                   Age >= 31 & Age < 45 ~ "31-44", # Edit the Age-band into 15-30 & 31-44
                   Age >= 45 & Age < 65 ~ "45-64",
                   Age >= 65 ~ "65+",
-                  is.na(Age) ~ "Unknown"
-                ),
-                ageGroup2 = case_when(
-                  Age < 15 ~ "children",
-                  Age >= 15 ~ "adults",
                   is.na(Age) ~ "Unknown"
                 )
   )
@@ -67,7 +73,19 @@ pop_l <- pop %>%
                       names_to = "year",
                       values_to = "PopSize") %>% 
   dplyr::mutate(Age = gsub("Age ", "", Age),
-                Age = ifelse(Age == "Aged 90+", 90, as.numeric(Age)), # For incidence calculation, data grouped for people aged 90+
+                Age = ifelse(Age == "Aged 90+", 90, as.numeric(Age) # For incidence calculation, data grouped for people aged 90+
+                             ),
+                ageGroup2 = case_when(
+                  Age < 15 ~ "children",
+                  Age >= 15 ~ "adults",
+                  is.na(Age) ~ "Unknown" # 16 IDs have no AGEYR
+                ),
+                ageGroup3 = case_when(
+                  Age < 2 ~ "<2",
+                  Age >= 2 & Age < 65 ~ "2-64",
+                  Age >= 65 ~ "65+",
+                  is.na(Age) ~ "Unknown"
+                ),
                 ageGroup5 = case_when( # edit 5 age bands
                   Age < 5 ~ "<5",
                   Age >= 5 & Age < 19 ~ "5-18",
@@ -94,11 +112,6 @@ pop_l <- pop %>%
                   Age >= 31 & Age < 45 ~ "31-44", # Edit the Age-band into 15-30 & 31-44
                   Age >= 45 & Age < 65 ~ "45-64",
                   Age >= 65 ~ "65+",
-                  is.na(Age) ~ "Unknown" # 16 IDs have no AGEYR
-                ),
-                ageGroup2 = case_when(
-                  Age < 15 ~ "children",
-                  Age >= 15 ~ "adults",
                   is.na(Age) ~ "Unknown" # 16 IDs have no AGEYR
                 ),
                 year = as.numeric(year)) %>% 
