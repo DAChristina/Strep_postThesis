@@ -64,6 +64,31 @@ dat_v2 <- readxl::read_excel("raw_data/12F_v2_DC_edit.xlsx") %>%
 
 write.csv(dat_v2, "raw_data/12F_v2_cleaned.csv", row.names = FALSE)
 
+dat_serotype1 <- read.csv("raw_data/serotype1_UKHSA_imperial_date_age_region_MOLIS_sequenced_postThesis_cleaned.csv") %>% 
+  dplyr::rename(ageGroup5 = ageGroup,
+                collection_date = Earliest.specimen.date,
+                Age = AGEYR) %>% 
+  dplyr::mutate(collection_date = as.Date(collection_date),
+                yearMonth = as.Date(paste0(format(collection_date, "%Y-%m"), "-01")), # year-month as date
+                ageGroup3 = case_when(
+                  Age < 2 ~ "<2",
+                  Age >= 2 & Age < 65 ~ "2-64",
+                  Age >= 65 ~ "65+",
+                  is.na(Age) ~ "Unknown"
+                ),
+                ageGroup6 = case_when( # UKHSA
+                  Age < 2 ~ "<2",
+                  Age >= 2 & Age < 5 ~ "2-4",
+                  Age >= 5 & Age < 15 ~ "5-14",
+                  Age >= 15 & Age < 45 ~ "15-44",
+                  Age >= 45 & Age < 65 ~ "45-64",
+                  Age >= 65 ~ "65+",
+                  is.na(Age) ~ "Unknown"
+                )
+  )
+
+write.csv(dat_serotype1, "raw_data/serotype1_cleaned.csv")
+
 pop <- readxl::read_excel("raw_data/nomis_2024_10_17_DCedit.xlsx") %>%  # ver.2 2001-2023
   dplyr::mutate(`2024` = `2023`) # Temporary for 2024 population; ONS hasn't released the data yet!
 
