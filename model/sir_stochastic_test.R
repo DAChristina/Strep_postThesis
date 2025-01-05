@@ -4,32 +4,30 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
 library(socialmixr)
 
 # Create contact_matrix 5 demographic groups:
-# > 5
-# 5-18
-# 19-30
-# 31-64
+# > 2
+# 2-64
 # 65+
-age.limits = c(0, 5, 19, 31, 65)
+age.limits = c(0, 2, 65)
 N_age <- length(age.limits)
 
-contact_5_demographic <- socialmixr::contact_matrix(polymod,
+contact_demographic <- socialmixr::contact_matrix(polymod,
                                                     countries = "United Kingdom",
                                                     age.limits = age.limits,
                                                     symmetric = TRUE
 )
 
-transmission <- contact_5_demographic$matrix /
-  rep(contact_5_demographic$demography$population, each = ncol(contact_5_demographic$matrix))
+transmission <- contact_demographic$matrix /
+  rep(contact_demographic$demography$population, each = ncol(contact_demographic$matrix))
 transmission
 
 # init_A_ini <- 0.01479864
 
 # Running the SIR model with dust
 pars <- list(m = transmission,
-             N_ini = contact_5_demographic$demography$population,
-             log_A_ini = c(-4, -4, -4, -4, -4),
-             D_ini = c(0, 0, 0, 0, 0),
-             R_ini = c(0, 0, 0, 0, 0),
+             N_ini = contact_demographic$demography$population,
+             log_A_ini = c(-4, -4, -4),
+             D_ini = c(0, 0, 0),
+             R_ini = c(0, 0, 0),
              time_shift_1 = 0.366346711348848,
              time_shift_2 = 0.366346711348848,
              beta_0 = 0.063134635077278,
@@ -39,7 +37,7 @@ pars <- list(m = transmission,
              log_delta = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
              psi = (0.5),
              sigma_2 = (1)
-) # Serotype 1 is categorised to have the lowest carriage duration
+)
 
 sir_model <- gen_sir$new(pars = pars,
                          time = 1,
@@ -92,7 +90,7 @@ for (i in 1:N_age) {
   par(mar = c(3, 4, 2, 0.5))
   cols <- c(S = "#8c8cd9", A = "darkred", D = "orange", R = "#999966", n_AD_daily = "#cc0099", n_AD_cumul = "green")
   matplot(time, t(x[i + 7 + 5*N_age, , ]), type = "l", # Offset to access numbers in age compartment
-          xlab = "", ylab = "", yaxt="none", main = paste0("Age ", contact_5_demographic$demography$age.group[i]),
+          xlab = "", ylab = "", yaxt="none", main = paste0("Age ", contact_demographic$demography$age.group[i]),
           col = cols[["n_AD_daily"]], lty = 1)#, ylim=range(x[-1:-3,,]))
   matlines(time, )
   legend("right", lwd = 1, col = cols, legend = names(cols), bty = "n")
