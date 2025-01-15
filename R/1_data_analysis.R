@@ -110,6 +110,39 @@ dat_v3 <- read.csv("raw_data/12F_Jan_2025.csv") %>%
 
 write.csv(dat_v3, "raw_data/12F_Jan_2025_cleaned.csv", row.names = FALSE)
 
+# Combine 12F ver1 & 3 (will change it to weekly data & 6 demographic groups instead)
+dat_combined <- dplyr::bind_rows(
+  dat %>% 
+    dplyr::mutate(week_date = paste0(year, "-W", sprintf("%02d", lubridate::week(collection_date)), "-1"),
+                  week_date = ISOweek::ISOweek2date(week_date)) %>% 
+    dplyr::filter(week_date >= max(dat_v3$week_date)) %>% 
+    dplyr::group_by(week_date, ageGroup6) %>% 
+    dplyr::summarise(counts = n()) %>% 
+    dplyr::ungroup()
+  ,
+  dat_v3 %>% 
+    dplyr::select(week_date, ageGroup6, CountOfRevisedOPIEID) %>% 
+    dplyr::mutate(week_date = as.Date(week_date)) %>% 
+    dplyr::rename(counts = CountOfRevisedOPIEID)
+) %>% 
+  dplyr::mutate(
+    year = year(week_date),
+    month = month(week_date),
+    yearMonth = as.Date(paste0(format(week_date, "%Y-%m"), "-01")), # year-month as date
+    vacc = case_when(
+      year < 2006 ~ "Pre-PCV7",
+      year >= 2006 & year < 2011 ~ "PCV7",
+      year >= 2011 ~ "PCV13",
+      TRUE ~ NA_character_
+    ),
+    ageGroup3 = case_when(
+      ageGroup6 == "2-4" | ageGroup6 == "5-14" | ageGroup6 == "15-44" | ageGroup6 == "45-64" ~ "2-64",
+      TRUE ~ ageGroup6
+  ))
+
+write.csv(dat_combined, "raw_data/12F_Jan_2025_combined_cleaned.csv", row.names = FALSE)
+
+
 dat_serotype7F <- read.csv("raw_data/7F_Jan_2025.csv") %>% 
   dplyr::rename(epiyr = epiyear,
                 epiwk = epiweek) %>% 
