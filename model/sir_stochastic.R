@@ -12,8 +12,8 @@ UK_calibration_kids <- user(1.07638532472038) # FIXED (Lochen et al., 2022)
 UK_calibration_adults <- user(0.536936186788821) # FIXED (Lochen et al., 2022)
 
 log_delta <- user(0.1)
-hypo_sigma_day <- user(28)
-hypo_sigma_1 <- 1/hypo_sigma_day # carriage duration (Chaguza et al., 2021)
+hypo_sigma_day <- user(28) # carriage duration (Chaguza et al., 2021)
+hypo_sigma_1 <- 1/hypo_sigma_day
 psi <- user(0, min = 0) # Immunity differences between children & adults
 sigma_2 <- user(1) # Assumed acute phase, 1 day
 mu_0 <- 1/(80.70*365) # background mortality FIXED based on the inverse of life expectancy
@@ -21,7 +21,7 @@ mu_1 <- user(0) # disease-related death, no data available
 pi <- user(3.141593) # FIXED
 
 # Dimensions of arrays
-N_age <- user(3) # number of age group
+N_age <- user(3)
 
 dim(N_ini) <- N_age
 # dim(S_ini) <- N_age

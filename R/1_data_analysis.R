@@ -64,6 +64,77 @@ dat_v2 <- readxl::read_excel("raw_data/12F_v2_DC_edit.xlsx") %>%
 
 write.csv(dat_v2, "raw_data/12F_v2_cleaned.csv", row.names = FALSE)
 
+# Open pass-protected excel file to extract 7F and 12F data
+# Generate a function for week-to-date conversion
+date_conversion <- function(epiyr, epiwk){
+  # split column?
+  yr_split <- strsplit(epiyr, "/")
+  yr_start <- as.numeric(sapply(yr_split, "[", 1))
+  yr_end <- as.numeric(sapply(yr_split, "[", 2))
+  
+  # Extract week, a = previous & b = next year
+  week_numb <- as.numeric(sub("[ab]", "", epiwk))
+  yr_indicator <- substr(epiwk, 1, 1)
+  
+  new_yr <- ifelse(yr_indicator == "a", yr_start, yr_end)
+  
+  date_wk <- paste0(new_yr, "-W", sprintf("%02d", week_numb), "-1")
+  date_dt <- ISOweek::ISOweek2date(date_wk)
+  result_date <- format(date_dt, "%Y-%m-%d")
+  
+  return(result_date)
+}
+
+dat_v3 <- read.csv("raw_data/12F_Jan_2025.csv") %>% 
+  dplyr::rename(epiyr = epiyear,
+                epiwk = epiweek) %>% 
+  dplyr::mutate(week_date = as.Date(date_conversion(epiyr, epiwk)),
+                year = year(week_date),
+                month = month(week_date),
+                yearMonth = as.Date(paste0(format(week_date, "%Y-%m"), "-01")), # year-month as date
+                vacc = case_when(
+                  year < 2006 ~ "Pre-PCV7",
+                  year >= 2006 & year < 2011 ~ "PCV7",
+                  year >= 2011 ~ "PCV13",
+                  TRUE ~ NA_character_
+                ),
+                ageGroup6 = gsub("^.{2}|y", "", NewGraphAgegroup),
+                ageGroup6 = case_when(
+                  ageGroup6 == "NK" ~ "Unknown",
+                  TRUE ~ ageGroup6
+                ),
+                ageGroup3 = case_when(
+                  ageGroup6 == "2-4" | ageGroup6 == "5-14" | ageGroup6 == "15-44" | ageGroup6 == "45-64" ~ "2-64",
+                  TRUE ~ ageGroup6
+                ))
+
+write.csv(dat_v3, "raw_data/12F_Jan_2025_cleaned.csv", row.names = FALSE)
+
+dat_serotype7F <- read.csv("raw_data/7F_Jan_2025.csv") %>% 
+  dplyr::rename(epiyr = epiyear,
+                epiwk = epiweek) %>% 
+  dplyr::mutate(week_date = as.Date(date_conversion(epiyr, epiwk)),
+                year = year(week_date),
+                month = month(week_date),
+                yearMonth = as.Date(paste0(format(week_date, "%Y-%m"), "-01")), # year-month as date
+                vacc = case_when(
+                  year < 2006 ~ "Pre-PCV7",
+                  year >= 2006 & year < 2011 ~ "PCV7",
+                  year >= 2011 ~ "PCV13",
+                  TRUE ~ NA_character_
+                ),
+                ageGroup6 = gsub("^.{2}|y", "", NewGraphAgegroup),
+                ageGroup6 = case_when(
+                  ageGroup6 == "NK" ~ "Unknown",
+                  TRUE ~ ageGroup6
+                ),
+                ageGroup3 = case_when(
+                  ageGroup6 == "2-4" | ageGroup6 == "5-14" | ageGroup6 == "15-44" | ageGroup6 == "45-64" ~ "2-64",
+                  TRUE ~ ageGroup6
+                ))
+
+write.csv(dat_serotype7F, "raw_data/7F_Jan_2025_cleaned.csv", row.names = FALSE)
+
 dat_serotype1 <- read.csv("raw_data/serotype1_UKHSA_imperial_date_age_region_MOLIS_sequenced_postThesis_cleaned.csv") %>% 
   dplyr::rename(ageGroup5 = ageGroup,
                 collection_date = Earliest.specimen.date,
