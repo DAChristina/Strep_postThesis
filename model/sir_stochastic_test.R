@@ -1,39 +1,19 @@
 library(tidyverse)
 library(odin.dust)
-library(monty)
-library(dust2)
-library(odin2)
 
-# load gen_sir in sir_stochastic.R
-source("model/sir_stochastic.R")
+# I update odin.dust by force
+# remotes::install_github("mrc-ide/odin.dust")
 
+gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
 
-# The contact matrix
-library(socialmixr)
-
-
-sys <- dust_system_create(gen_sir, list(), n_particles = 15)
-dust_system_set_state_initial(sys)
-t <- seq(0, 100)
-y <- dust_system_simulate(sys, t)
-y <- dust_unpack_state(sys, y)
-
-
-
-
-
-
-
-
-
-# Create contact_matrix 5 demographic groups:
+# Create contact_matrix 3 demographic groups:
 # > 2
 # 2-64
 # 65+
 age.limits = c(0, 2, 65)
 N_age <- length(age.limits)
 
-contact_demographic <- socialmixr::contact_matrix(polymod,
+contact_demographic <- socialmixr::contact_matrix(survey(polymod$participants, polymod$contacts),# polymod,
                                                     countries = "United Kingdom",
                                                     age.limits = age.limits,
                                                     symmetric = TRUE
@@ -62,7 +42,8 @@ pars <- list(m = transmission,
              sigma_2 = (1)
 )
 
-sir_model <- dust2::dust_system_create(gen_sir, pars)
+
+
 
 # sir_model$state() # test array OR matrix state
 
