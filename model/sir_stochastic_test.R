@@ -5,6 +5,7 @@ library(odin.dust)
 # remotes::install_github("mrc-ide/odin.dust")
 
 gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
+# gen_sir <- odin.dust::odin_dust("model/sir_basic_trial.R")
 
 # Create contact_matrix 3 demographic groups:
 # > 2
@@ -13,10 +14,13 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
 age.limits = c(0, 2, 65)
 N_age <- length(age.limits)
 
-contact_demographic <- socialmixr::contact_matrix(survey(polymod$participants, polymod$contacts),# polymod,
-                                                    countries = "United Kingdom",
-                                                    age.limits = age.limits,
-                                                    symmetric = TRUE
+contact_demographic <- socialmixr::contact_matrix(socialmixr::survey(
+  socialmixr::polymod$participants, 
+  socialmixr::polymod$contacts
+  ),
+  countries = "United Kingdom",
+  age.limits = age.limits,
+  symmetric = TRUE
 )
 
 transmission <- contact_demographic$matrix /
@@ -36,25 +40,22 @@ pars <- list(m = transmission,
              beta_0 = 0.063134635077278,
              beta_1 = 0.161472506104886,
              beta_2 = 0.261472506104886,
+             gamma = 0.1,
              scaled_wane = (0.9),
              log_delta = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
              psi = (0.5),
              sigma_2 = (1)
 )
 
+n_times <- 4745*4 # 4745 or similar to the number of date range (of the provided data), or try 500 for trial
+n_particles <- 15L
 
+sir_model <- gen_sir$new(pars = pars,
+                         time = 1,
+                         n_particles = n_particles,
+                         n_threads = 4L,
+                         seed = 1L)
 
-
-# sir_model$state() # test array OR matrix state
-
-# update_state is required "every single time" to run & produce matrix output (don't know why)
-sir_model$update_state(pars = pars,
-                       time = 0) # make sure time is 0
-
-# all_date <- incidence$day
-# all_date <- data.frame(col = integer(4745))
-n_times <- 4745 # 4745 or similar to the number of date range (of the provided data), or try 500 for trial
-n_particles <- 15
 x <- array(NA, dim = c(sir_model$info()$len, n_particles, n_times))
 
 # Beta check
@@ -85,7 +86,7 @@ glimpse(x)
 # See gen_sir$new(pars = pars, time = 0, n_particles = 1L)$info()
 incidence <- read.csv("inputs/incidence_weekly.csv")
 
-par(mfrow = c(2,3), oma=c(2,3,0,0))
+par(mfrow = c(1,3), oma=c(2,3,0,0))
 for (i in 1:N_age) {
   par(mar = c(3, 4, 2, 0.5))
   cols <- c(S = "#8c8cd9", A = "darkred", D = "orange", R = "#999966", n_AD_daily = "#cc0099", n_AD_cumul = "green")
@@ -98,14 +99,3 @@ for (i in 1:N_age) {
 }
 mtext("Number of individuals", side=2,line=1, outer=T)
 mtext("Time", side = 1, line = 0, outer =T)
-
-# Toy data creation ############################################################
-# glimpse(x)
-new_toyData <- as.data.frame(x[5, 1, 1:4745])
-colnames(new_toyData) <- "cases"
-glimpse(new_toyData)
-
-incidence <- tibble(day = 1:4745) %>% 
-  bind_cols(new_toyData)
-
-# write.csv(incidence, file="inputs/incidence_toyData.csv", row.names =F)

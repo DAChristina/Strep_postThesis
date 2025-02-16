@@ -96,7 +96,7 @@ for (i in 1:6) {
   dat_combined_week_age_[[i]] <- dat_combined_week %>% 
     dplyr::filter(ageGroup6 == ageGroups[i])
   
-  incidence_week_3ageG_[[i]] <- dplyr::left_join(all_date, 
+  incidence_week_6ageG_[[i]] <- dplyr::left_join(all_date, 
                                                  dat_combined_week_age_[[i]], 
                                                  by = "week_date"
   ) %>% 

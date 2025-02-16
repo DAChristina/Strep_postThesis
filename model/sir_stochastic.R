@@ -35,12 +35,14 @@ dim(S) <- N_age
 dim(A) <- N_age
 dim(D) <- N_age
 dim(R) <- N_age
+# dim(n_cases) <- N_age
 dim(n_AD_daily) <- N_age
 dim(n_AD_cumul) <- N_age
 
 dim(m) <- c(N_age, N_age)
 dim(foi_ij) <- c(N_age, N_age)
 dim(lambda) <- N_age
+# dim(gamma) <-N_age
 dim(delta) <- N_age
 dim(sigma_1) <- N_age
 
@@ -78,7 +80,6 @@ A_ini[3] <- 10^(log_A_ini[3])*N_ini[3]
 
 D_ini[] <- user()
 R_ini[] <- user()
-
 
 # Age-structured states:
 initial(S[]) <- N_ini[i] -(A_ini[i]+D_ini[i]+R_ini[i])
@@ -156,6 +157,9 @@ n_D[] <- rbinom(D[i], p_D)
 n_DR[] <- rbinom(n_D[i], p_DR)
 n_Dd[] <- rbinom((n_D[i] - n_DR[i]), p_Dd)
 n_Ddead[] <- n_D[i] - (n_DR[i] + n_Dd[i])
+
+# Extract diseased cases from D compartment
+# n_cases[] <- rbinom(D[i], 1 - exp(-gamma[i] * dt))
 
 # Leaving R
 n_R[] <- rbinom(R[i], p_R)
