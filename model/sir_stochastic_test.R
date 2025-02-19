@@ -4,8 +4,8 @@ library(odin.dust)
 # I update odin.dust by force
 # remotes::install_github("mrc-ide/odin.dust")
 
-gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
-# gen_sir <- odin.dust::odin_dust("model/sir_basic_trial.R")
+# gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
+gen_sir <- odin.dust::odin_dust("model/sir_basic_trial.R")
 
 # Create contact_matrix 3 demographic groups:
 # > 2
