@@ -38,6 +38,11 @@ mu_0 <- 1/(80.70*365) # background mortality FIXED based on the inverse of life 
 mu_1 <- user(0) # disease-related death, no data available
 pi <- user(3.141593) # FIXED
 
+# Vaccination effect
+vacc[1] <- 0.9*0.862 # FIXED PCV13 vaccination coverage * efficacy
+vacc[2] <- 0
+vacc[3] <- 0
+
 # Dimensions of arrays
 N_age <- user(3)
 
@@ -70,9 +75,11 @@ dim(gamma_7F) <-N_age
 dim(gamma_12F) <-N_age
 dim(delta) <- N_age
 dim(sigma_1) <- N_age
+dim(vacc) <- N_age
 
 dim(p_S) <- N_age
 dim(p_SA) <- N_age
+dim(p_SR) <- N_age
 dim(p_A) <- N_age
 dim(p_AD) <- N_age
 dim(p_AR) <- N_age
@@ -80,6 +87,7 @@ dim(p_AR) <- N_age
 dim(n_Sborn) <- N_age
 dim(n_S) <- N_age
 dim(n_SA) <- N_age
+dim(n_SR) <- N_age
 dim(n_Sdead) <- N_age
 dim(n_A) <- N_age
 dim(n_AD) <- N_age
@@ -151,8 +159,9 @@ sigma_1[2] <- psi*hypo_sigma_1
 sigma_1[3] <- psi*hypo_sigma_1
 
 # Individual probabilities of transition
-p_S[] <- 1- exp(-(lambda[i] + mu_0) * dt)
-p_SA[] <- 1- exp(-(lambda[i]/(lambda[i] + mu_0)) * dt)
+p_S[] <- 1- exp(-(lambda[i] + vacc[i] + mu_0) * dt)
+p_SA[] <- 1- exp(-(lambda[i]/(lambda[i] + vacc[i] + mu_0)) * dt)
+p_SR[] <- 1- exp(-(vacc[i]/(lambda[i] + vacc[i] + mu_0)) * dt)
 
 p_A[] <- 1- exp(-(delta[i] + mu_0 + sigma_1[i]) * dt)
 p_AD[] <- 1- exp(-(delta[i]/(delta[i] + mu_0 + sigma_1[i]) * dt))
@@ -169,6 +178,7 @@ p_RS <- 1- exp(-(wane/(wane + mu_0)) * dt)
 # Leaving S
 n_S[] <- rbinom(S[i], p_S[i])
 n_SA[] <- rbinom(n_S[i], p_SA[i])
+n_SR[] <- rbinom(n_S[i], p_SR[i])
 n_Sdead[] <- n_S[i] - n_SA[i]
 
 # Leaving A
@@ -199,7 +209,7 @@ n_Sborn[] <- n_Sdead[i] + n_Adead[i] + n_Dd[i] + n_Ddead[i] + n_Rdead[i]
 update(S[]) <- S[i] + (n_Sborn[i] + n_RS[i]) - (n_SA[i] + n_Sdead[i])
 update(A[]) <- A[i] + n_SA[i] - (n_AD[i] + n_AR[i] + n_Adead[i])
 update(D[]) <- D[i] + n_AD[i] - (n_DR[i] + n_Dd[i] + n_Ddead[i])
-update(R[]) <- R[i] + (n_AR[i] + n_DR[i]) - (n_RS[i] + n_Rdead[i])
+update(R[]) <- R[i] + (n_AR[i] + n_DR[i] + n_SR[i]) - (n_RS[i] + n_Rdead[i])
 
 update(cases_1[]) <- n_AD[i] + n_cases_1[i]
 update(cases_7F[]) <- n_AD[i] + n_cases_7F[i]
