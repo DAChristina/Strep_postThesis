@@ -35,19 +35,17 @@ dim(S) <- N_age
 dim(A) <- N_age
 dim(D) <- N_age
 dim(R) <- N_age
-# dim(n_cases) <- N_age
-dim(n_AD_daily) <- N_age
-dim(n_AD_cumul) <- N_age
 
 dim(m) <- c(N_age, N_age)
 dim(foi_ij) <- c(N_age, N_age)
 dim(lambda) <- N_age
-# dim(gamma) <-N_age
 dim(delta) <- N_age
 dim(sigma_1) <- N_age
+dim(vacc) <- N_age
 
 dim(p_S) <- N_age
 dim(p_SA) <- N_age
+dim(p_SR) <- N_age
 dim(p_A) <- N_age
 dim(p_AD) <- N_age
 dim(p_AR) <- N_age
@@ -55,6 +53,7 @@ dim(p_AR) <- N_age
 dim(n_Sborn) <- N_age
 dim(n_S) <- N_age
 dim(n_SA) <- N_age
+dim(n_SR) <- N_age
 dim(n_Sdead) <- N_age
 dim(n_A) <- N_age
 dim(n_AD) <- N_age
@@ -73,7 +72,7 @@ dim(n_Rdead) <- N_age
 # Initial values (user-defined parameters)
 N_ini[] <- S[i] + A[i] + D[i] + R[i]
 
-log_A_ini[ ] <- user()
+log_A_ini[] <- user()
 A_ini[1] <- 10^(log_A_ini[1])*N_ini[1]
 A_ini[2] <- 10^(log_A_ini[2])*N_ini[2]
 A_ini[3] <- 10^(log_A_ini[3])*N_ini[3]
@@ -86,8 +85,8 @@ initial(S[]) <- N_ini[i] -(A_ini[i]+D_ini[i]+R_ini[i])
 initial(A[]) <- A_ini[i]
 initial(D[]) <- D_ini[i]
 initial(R[]) <- R_ini[i]
-initial(n_AD_daily[]) <- 0
-initial(n_AD_cumul[]) <- 0
+
+# initial(cases[])    <- 0
 
 # Initial states:
 initial(N_tot) <- sum(N_ini)
@@ -95,8 +94,6 @@ initial(S_tot) <- sum(N_ini) -(sum(A_ini)+sum(D_ini)+sum(R_ini))
 initial(A_tot) <- sum(A_ini)
 initial(D_tot) <- sum(D_ini)
 initial(R_tot) <- sum(R_ini)
-initial(n_AD_daily_tot) <- 0
-initial(n_AD_cumul_tot) <- 0
 
 # 3. UPDATES ###################################################################
 
@@ -119,6 +116,9 @@ delta[1] <- (10^(log_delta))*UK_calibration_kids
 delta[2] <- (10^(log_delta))*UK_calibration_adults
 delta[3] <- (10^(log_delta))*UK_calibration_adults
 
+# Vaccination effect
+vacc[] <- user() # (0.9*0.862, 0, 0) # FIXED PCV13 vaccination coverage * efficacy
+
 wane <- user(0, min = 0)
 
 sigma_1[1] <- hypo_sigma_1
@@ -126,8 +126,9 @@ sigma_1[2] <- psi*hypo_sigma_1
 sigma_1[3] <- psi*hypo_sigma_1
 
 # Individual probabilities of transition
-p_S[] <- 1- exp(-(lambda[i] + mu_0) * dt)
-p_SA[] <- 1- exp(-(lambda[i]/(lambda[i] + mu_0)) * dt)
+p_S[] <- 1- exp(-(lambda[i] + vacc[i] + mu_0) * dt)
+p_SA[] <- 1- exp(-(lambda[i]/(lambda[i] + vacc[i] + mu_0)) * dt)
+p_SR[] <- 1- exp(-(vacc[i]/(lambda[i] + vacc[i] + mu_0)) * dt)
 
 p_A[] <- 1- exp(-(delta[i] + mu_0 + sigma_1[i]) * dt)
 p_AD[] <- 1- exp(-(delta[i]/(delta[i] + mu_0 + sigma_1[i]) * dt))
@@ -144,7 +145,8 @@ p_RS <- 1- exp(-(wane/(wane + mu_0)) * dt)
 # Leaving S
 n_S[] <- rbinom(S[i], p_S[i])
 n_SA[] <- rbinom(n_S[i], p_SA[i])
-n_Sdead[] <- n_S[i] - n_SA[i]
+n_SR[] <- rbinom(n_S[i], p_SR[i])
+n_Sdead[] <- n_S[i] - n_SA[i] - n_SR[i]
 
 # Leaving A
 n_A[] <- rbinom(A[i], p_A[i])
@@ -158,7 +160,7 @@ n_DR[] <- rbinom(n_D[i], p_DR)
 n_Dd[] <- rbinom((n_D[i] - n_DR[i]), p_Dd)
 n_Ddead[] <- n_D[i] - (n_DR[i] + n_Dd[i])
 
-# Extract diseased cases from D compartment
+# Extract GPSC-specific diseased cases from D compartment
 # n_cases[] <- rbinom(D[i], 1 - exp(-gamma[i] * dt))
 
 # Leaving R
@@ -168,22 +170,20 @@ n_Rdead[] <- n_R[i] - n_RS[i]
 
 # Equations for transitions between compartments by age group
 n_Sborn[] <- n_Sdead[i] + n_Adead[i] + n_Dd[i] + n_Ddead[i] + n_Rdead[i]
+born <- sum(n_Sborn)
 
-update(S[]) <- S[i] + (n_Sborn[i] + n_RS[i]) - (n_SA[i] + n_Sdead[i])
+update(S[]) <- S[i] + (born*(i==1) + n_RS[i]) - (n_SA[i] + n_SR[i] + n_Sdead[i])
 update(A[]) <- A[i] + n_SA[i] - (n_AD[i] + n_AR[i] + n_Adead[i])
 update(D[]) <- D[i] + n_AD[i] - (n_DR[i] + n_Dd[i] + n_Ddead[i])
-update(R[]) <- R[i] + (n_AR[i] + n_DR[i]) - (n_RS[i] + n_Rdead[i])
-update(n_AD_daily[]) <- if (step %% freq == 0) n_AD[i] else n_AD_daily[i] + n_AD[i]
-update(n_AD_cumul[]) <- n_AD_cumul[i] + n_AD[i] # no interest in asymptomatic cases that've recovered
+update(R[]) <- R[i] + (n_AR[i] + n_DR[i] + n_SR[i]) - (n_RS[i] + n_Rdead[i])
+
+# update(cases[]) <- n_AD[i] + n_cases[i]
 
 # Core equations of the transitions
 update(time) <- (step + 1) * dt
 update(N_tot) <- sum(N)
-update(S_tot) <- S_tot - sum(n_SA) + sum(n_RS)
+update(S_tot) <- S_tot - (sum(n_SA) + sum(n_SR)) + sum(n_RS)
 update(A_tot) <- A_tot + sum(n_SA) - (sum(n_AD) + sum(n_AR))
 update(D_tot) <- D_tot + sum(n_AD) - (sum(n_DR) + sum(n_Dd))
 update(R_tot) <- R_tot + sum(n_AR) + sum(n_DR) - sum(n_RS)
-update(n_AD_daily_tot) <- if (step %% freq == 0) sum(n_AD) else n_AD_daily_tot + sum(n_AD)
-update(n_AD_cumul_tot) <- n_AD_cumul_tot + sum(n_AD) # no interest in asymptomatic cases that've recovered
-# that "little trick" previously explained in https://github.com/mrc-ide/dust/blob/master/src/sir.cpp for cumulative incidence:
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model

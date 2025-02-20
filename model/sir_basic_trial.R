@@ -8,7 +8,7 @@ beta_0 <- user(0, min = 0, max = 1)
 beta_1 <- user(0, min = 0, max = 1)
 beta_2 <- user(0, min = 0, max = 1)
 
-# gamma is daily invasiveness specific to serotypes from diseased compartment
+# gamma is daily invasiveness specific to GPSC from diseased compartment
 gamma_1_kids <- user(0, min = 0, max = 1)
 gamma_1_adults <- user(0, min = 0, max = 1)
 gamma_7F_kids <- user(0, min = 0, max = 1)
@@ -37,11 +37,6 @@ sigma_2 <- user(1) # Assumed acute phase, 1 day
 mu_0 <- 1/(80.70*365) # background mortality FIXED based on the inverse of life expectancy
 mu_1 <- user(0) # disease-related death, no data available
 pi <- user(3.141593) # FIXED
-
-# Vaccination effect
-vacc[1] <- 0.9*0.862 # FIXED PCV13 vaccination coverage * efficacy
-vacc[2] <- 0
-vacc[3] <- 0
 
 # Dimensions of arrays
 N_age <- user(3)
@@ -151,6 +146,11 @@ lambda[3] <- sum(foi_ij[3, ])
 delta[1] <- (10^(log_delta))*UK_calibration_kids
 delta[2] <- (10^(log_delta))*UK_calibration_adults
 delta[3] <- (10^(log_delta))*UK_calibration_adults
+
+# Vaccination effect
+vacc[1] <- 0.9*0.862 # FIXED PCV13 vaccination coverage * efficacy
+vacc[2] <- 0
+vacc[3] <- 0
 
 wane <- user(0, min = 0)
 

@@ -18,11 +18,11 @@ source("global/all_function.R") # Collected functions stored here!
 
 # To make my life easier I compile the Serotype 1 cases into a new object called sir_data
 # data is fed as an input to mcstate::particle_filter_data
-incidence <- read.csv("inputs/incidence_week_12F_allAge.csv")
+incidence <- read.csv("inputs/incidence_week_12F_3ageG_all.csv")
 
-dt <- 1 # rate must be an integer; 0.25 to make it 4 days, I make it 1
+dt <- (1/7) # rate must be an integer; 0.25 to make it 4 days, I make it 1/7
 sir_data <- mcstate::particle_filter_data(data = incidence,
-                                          time = "day",
+                                          time = "week",
                                           rate = 1 / dt,
                                           initial_time = 0) # Initial time makes t0 start from 0 (not 1)
 
@@ -31,22 +31,20 @@ rmarkdown::paged_table(sir_data)
 
 # Contact matrix:
 # Create contact_matrix 5 demographic groups:
-# > 5
-# 5-18
-# 19-30
-# 31-64
+# > 2
+# 2-64
 # 65+
-age.limits = c(0, 5, 19, 31, 65)
+age.limits = c(0, 2, 65)
 N_age <- length(age.limits)
 
-contact_5_demographic <- socialmixr::contact_matrix(polymod,
-                                                    countries = "United Kingdom",
-                                                    age.limits = age.limits,
-                                                    symmetric = TRUE
+contact_demographic <- socialmixr::contact_matrix(polymod,
+                                                  countries = "United Kingdom",
+                                                  age.limits = age.limits,
+                                                  symmetric = TRUE
 )
 
-transmission <- contact_5_demographic$matrix /
-  rep(contact_5_demographic$demography$population, each = ncol(contact_5_demographic$matrix))
+transmission <- contact_demographic$matrix /
+  rep(contact_demographic$demography$population, each = ncol(contact_demographic$matrix))
 transmission
 
 
@@ -54,15 +52,18 @@ transmission
 # The model below is stochastic, closed system SADR model that I have created before
 # I updated the code, filled the parameters with numbers;
 # e.g.dt <- user(0) because if dt <- user() generates error during MCMC run
-gen_sir <- odin.dust::odin_dust("inputs/sir_stochastic.R")
+gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
 
 # This is part of sir odin model:
 pars <- list(m = transmission,
-             N_ini = contact_5_demographic$demography$population,
-             D_ini = c(0,0,0,0,0),
-             R_ini = c(0,0,0,0,0),
+             N_ini = contact_demographic$demography$population,
+             D_ini = c(0,0,0),
+             R_ini = c(0,0,0),
+             vacc = c(0,0,0), # no vaccination coverage for 12F
              # we will parameterise pars below:
-             log_A_ini = (-4), # S_ini*10^(-5.69897) = 120 people; change A_ini into log10(A_ini)
+             log_A_ini_1 = -4, # S_ini*10^(-5.69897) = 120 people; change A_ini into log10(A_ini)
+             log_A_ini_1 = -4, # S_ini*10^(-5.69897) = 120 people; change A_ini into log10(A_ini)
+             log_A_ini_1 = -4, # S_ini*10^(-5.69897) = 120 people; change A_ini into log10(A_ini)
              time_shift = 0.366346711348848,
              beta_0 = 0.063134635077278,
              beta_1 = 0.161472506104886,
@@ -104,12 +105,15 @@ pars <- list(m = transmission,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 267: 32000
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(200, 7)
+proposal_matrix <- diag(200, 9)
 proposal_matrix <- (proposal_matrix + t(proposal_matrix)) / 2
-rownames(proposal_matrix) <- c("log_A_ini", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
-colnames(proposal_matrix) <- c("log_A_ini", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
+rownames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
+colnames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
 
-mcmc_pars <- prepare_parameters(initial_pars = pars, priors = priors, proposal = proposal_matrix, transform = transform)
+mcmc_pars <- prepare_parameters(initial_pars = pars,
+                                priors = priors,
+                                proposal = proposal_matrix,
+                                transform = transform)
 
 # Check the transform function:
 # transform(mcmc_pars$initial())

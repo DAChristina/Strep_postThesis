@@ -5,32 +5,24 @@ case_compare <- function(state, observed, pars = NULL) {
   n <- ncol(state)
   
   # incidence based on model's "n_AD_daily" from gen_sir$new(pars = list(), time = 0, n_particles = 1L)$info()
-  incidence_modelled_1_toddler <- state[29, , drop = TRUE] # n_AD_daily is extracted for each demographic group
-  incidence_modelled_2_518 <- state[30, , drop = TRUE]
-  incidence_modelled_3_1930 <- state[31, , drop = TRUE]
-  incidence_modelled_4_3164 <- state[32, , drop = TRUE]
-  incidence_modelled_5_65plus <- state[33, , drop = TRUE]
+  incidence_modelled_1 <- state[29, , drop = TRUE] # n_AD_weekly is extracted for each demographic group
+  incidence_modelled_2 <- state[30, , drop = TRUE]
+  incidence_modelled_3 <- state[31, , drop = TRUE]
   
   # incidence based on data already in x = observed$cases
   # lamb <- incidence_modelled + rexp(n, exp_noise)
   
-  loglik_1_toddler <- dpois(x = observed$cases_1_toddler,
+  loglik_1 <- dpois(x = observed$cases_1_toddler,
                             lambda = incidence_modelled_1_toddler + rexp(n, exp_noise),
                             log = T)
-  loglik_2_518 <- dpois(x = observed$cases_2_518,
+  loglik_2 <- dpois(x = observed$cases_2_518,
                         lambda = incidence_modelled_2_518 + rexp(n, exp_noise),
                         log = T)
-  loglik_3_1930 <- dpois(x = observed$cases_3_1930,
+  loglik_3 <- dpois(x = observed$cases_3_1930,
                          lambda = incidence_modelled_3_1930 + rexp(n, exp_noise),
                          log = T)
-  loglik_4_3164 <- dpois(x = observed$cases_4_3164,
-                         lambda = incidence_modelled_4_3164 + rexp(n, exp_noise),
-                         log = T)
-  loglik_5_65plus <- dpois(x = observed$cases_5_65plus,
-                           lambda = incidence_modelled_5_65plus + rexp(n, exp_noise),
-                           log = T)
   
-  loglik_cases <- loglik_1_toddler+loglik_2_518+loglik_3_1930+loglik_4_3164+loglik_5_65plus
+  loglik_cases <- loglik_1+loglik_2+loglik_3
   return(loglik_cases)
 }
 
@@ -38,26 +30,27 @@ case_compare <- function(state, observed, pars = NULL) {
 # https://github.com/mrc-ide/mcstate/blob/da9f79e4b5dd421fd2e26b8b3d55c78735a29c27/tests/testthat/test-if2.R#L40
 # https://github.com/mrc-ide/mcstate/issues/184
 parameter_transform <- function(transmission) {
-  age.limits = c(0, 5, 19, 31, 65)
+  age.limits = c(0, 2, 65)
   N_age <- length(age.limits)
-  contact_5_demographic <- socialmixr::contact_matrix(polymod,
-                                                      countries = "United Kingdom",
-                                                      age.limits = age.limits,
-                                                      symmetric = TRUE
+  contact_demographic <- socialmixr::contact_matrix(polymod,
+                                                    countries = "United Kingdom",
+                                                    age.limits = age.limits,
+                                                    symmetric = TRUE
   )
   
-  transmission <- contact_5_demographic$matrix /
-    rep(contact_5_demographic$demography$population, each = ncol(contact_5_demographic$matrix))
+  transmission <- contact_demographic$matrix /
+    rep(contact_demographic$demography$population, each = ncol(contact_demographic$matrix))
   transmission
   
   transform <- function(pars){
-    # re-define pars with pars that I really wanna fit only
-    log_A_ini <- pars[["log_A_ini"]]
-    # A_ini_1 <- pars[["A_ini"]][1]
-    # A_ini_2 <- pars[["A_ini"]][2]
-    # A_ini_3 <- pars[["A_ini"]][3]
-    # A_ini_4 <- pars[["A_ini"]][4]
-    # A_ini_5 <- pars[["A_ini"]][5]
+    pars <- as.list(pars)
+    
+    pars$N_ini <-  contact_5_demographic$demography$population
+    pars$D_ini <-  c(0,0,0,0,0)
+    pars$R_ini <-  c(0,0,0,0,0)
+    pars$log_A_ini <- c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3)
+    pars$m <- transmission
+    
     time_shift <- pars[["time_shift"]]
     beta_0 <- pars[["beta_0"]]
     beta_1 <- pars[["beta_1"]]
@@ -65,28 +58,6 @@ parameter_transform <- function(transmission) {
     log_delta <- pars[["log_delta"]]
     psi <- pars[["psi"]]
     # sigma_2 <- pars[["sigma_2"]]
-    
-    pars <- list(log_A_ini = log_A_ini,
-                 # A_ini_1 = A_ini_1,
-                 # A_ini_2 = A_ini_2,
-                 # A_ini_3 = A_ini_3,
-                 # A_ini_4 = A_ini_4,
-                 # A_ini_5 = A_ini_5,
-                 time_shift = time_shift,
-                 beta_0 = beta_0,
-                 beta_1 = beta_1,
-                 scaled_wane = scaled_wane,
-                 log_delta = log_delta,
-                 psi = psi
-                 # sigma_2 = sigma_2
-    )
-    # But I wanna define A_ini based on 5 different pars:
-    # pars$A_ini <- c(pars$A_ini_1, pars$A_ini_2, pars$A_ini_3, pars$A_ini_4, pars$A_ini_5)
-    # pars$A_ini <-  round(0.16479864*contact_5_demographic$demography$population)
-    pars$N_ini <-  contact_5_demographic$demography$population
-    pars$D_ini <-  c(0,0,0,0,0)
-    pars$R_ini <-  c(0,0,0,0,0)
-    pars$m <- transmission
     
     pars
   }
@@ -99,18 +70,14 @@ transform <- parameter_transform(transmission)
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (-5.69897), min = (-10), max = 0,
-                                  prior = priors$log_A_ini),
-         # mcstate::pmcmc_parameter("A_ini_1", 100, min = 10, max = 10000,
-         #                          prior = priors$A_ini),
-         # mcstate::pmcmc_parameter("A_ini_2", 100, min = 10, max = 10000,
-         #                          prior = priors$A_ini),
-         # mcstate::pmcmc_parameter("A_ini_3", 100, min = 10, max = 10000,
-         #                          prior = priors$A_ini),
-         # mcstate::pmcmc_parameter("A_ini_4", 100, min = 10, max = 10000,
-         #                          prior = priors$A_ini),
-         # mcstate::pmcmc_parameter("A_ini_5", 100, min = 10, max = 10000,
-         #                          prior = priors$A_ini),
+    list(# mcstate::pmcmc_parameter("log_A_ini", (-5.69897), min = (-10), max = 0,
+                                  # prior = priors$log_A_ini),
+         mcstate::pmcmc_parameter("log_A_ini_1", 100, min = -10, max = 0,
+                                  prior = priors$log_A_ini_1),
+         mcstate::pmcmc_parameter("log_A_ini_2", 100, min = -10, max = 0,
+                                  prior = priors$log_A_ini_2),
+         mcstate::pmcmc_parameter("log_A_ini_3", 100, min = -10, max = 0,
+                                  prior = priors$log_A_ini_3),
          mcstate::pmcmc_parameter("time_shift", 0.2, min = 0, max = 1,
                                   prior = priors$time_shift),
          mcstate::pmcmc_parameter("beta_0", 0.06565, min = 0, max = 0.8,
@@ -134,7 +101,13 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
 prepare_priors <- function(pars) {
   priors <- list()
   
-  priors$log_A_ini <- function(s) {
+  priors$log_A_ini_1 <- function(s) {
+    dunif(s, min = (-10), max = 0, log = TRUE)
+  }
+  priors$log_A_ini_2 <- function(s) {
+    dunif(s, min = (-10), max = 0, log = TRUE)
+  }
+  priors$log_A_ini_3 <- function(s) {
     dunif(s, min = (-10), max = 0, log = TRUE)
   }
   priors$time_shift <- function(s) {

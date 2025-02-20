@@ -69,6 +69,21 @@ below_2 <- read.csv("inputs/incidence_week_12F_3ageG_1.csv")
 adults <- read.csv("inputs/incidence_week_12F_3ageG_2.csv")
 elderly <- read.csv("inputs/incidence_week_12F_3ageG_3.csv")
 
+# combine data into 1 csv
+dat_week_12F_3ageG <- below_2 %>% 
+  dplyr::rename(cases_1 = cases) %>% 
+  dplyr::left_join(adults %>% 
+                     dplyr::rename(cases_2 = cases)
+                   , by = "time"
+                   ) %>% 
+  dplyr::left_join(elderly %>% 
+                     dplyr::rename(cases_3 = cases)
+                   , by = "time"
+  ) %>% 
+  dplyr::rename(week = time) # naming error in mcState -_-)
+
+write.csv(dat_week_12F_3ageG, "inputs/incidence_week_12F_3ageG_all.csv", row.names = FALSE)
+
 plot(below_2$time, below_2$cases, type = "p", col = "red", ylim = c(0,30))
 points(adults$time, adults$cases, col = "green")
 points(elderly$time, elderly$cases, col = "blue")
@@ -110,7 +125,37 @@ for (i in 1:6) {
 }
 
 # Test load agegroups
+# combine data into 1 csv
+dat_week_12F_6ageG <- read.csv("inputs/incidence_week_12F_6ageG_1.csv") %>% 
+  dplyr::rename(cases_1 = cases) %>% 
+  dplyr::left_join(
+    read.csv("inputs/incidence_week_12F_6ageG_2.csv") %>% 
+      dplyr::rename(cases_2 = cases)
+    , by = "time"
+    ) %>% 
+  dplyr::left_join(
+    read.csv("inputs/incidence_week_12F_6ageG_3.csv") %>% 
+      dplyr::rename(cases_3 = cases)
+    , by = "time"
+  ) %>% 
+  dplyr::left_join(
+    read.csv("inputs/incidence_week_12F_6ageG_4.csv") %>% 
+      dplyr::rename(cases_4 = cases)
+    , by = "time"
+  ) %>% 
+  dplyr::left_join(
+    read.csv("inputs/incidence_week_12F_6ageG_5.csv") %>% 
+      dplyr::rename(cases_5 = cases)
+    , by = "time"
+  ) %>% 
+  dplyr::left_join(
+    read.csv("inputs/incidence_week_12F_6ageG_6.csv") %>% 
+      dplyr::rename(cases_6 = cases)
+    , by = "time"
+  ) %>% 
+  dplyr::rename(week = time) # naming error in mcState -_-)
 
+write.csv(dat_week_12F_6ageG, "inputs/incidence_week_12F_6ageG_all.csv", row.names = FALSE)
 
 
 
