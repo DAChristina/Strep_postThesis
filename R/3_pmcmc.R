@@ -61,9 +61,10 @@ pars <- list(m = transmission,
              R_ini = c(0,0,0),
              vacc = c(0,0,0), # no vaccination coverage for 12F
              # we will parameterise pars below:
-             log_A_ini_1 = -4, # S_ini*10^(-5.69897) = 120 people; change A_ini into log10(A_ini)
-             log_A_ini_1 = -4, # S_ini*10^(-5.69897) = 120 people; change A_ini into log10(A_ini)
-             log_A_ini_1 = -4, # S_ini*10^(-5.69897) = 120 people; change A_ini into log10(A_ini)
+             log_A_ini_1 = -4,
+             log_A_ini_2 = -4,
+             log_A_ini_3 = -4,
+             log_A_ini = c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3),
              time_shift = 0.366346711348848,
              beta_0 = 0.063134635077278,
              beta_1 = 0.161472506104886,

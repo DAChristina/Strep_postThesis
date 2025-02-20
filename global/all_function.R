@@ -45,9 +45,9 @@ parameter_transform <- function(transmission) {
   transform <- function(pars){
     pars <- as.list(pars)
     
-    pars$N_ini <-  contact_5_demographic$demography$population
-    pars$D_ini <-  c(0,0,0,0,0)
-    pars$R_ini <-  c(0,0,0,0,0)
+    pars$N_ini <-  contact_demographic$demography$population
+    pars$D_ini <-  c(0,0,0)
+    pars$R_ini <-  c(0,0,0)
     pars$log_A_ini <- c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3)
     pars$m <- transmission
     
@@ -72,11 +72,11 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   mcmc_pars <- mcstate::pmcmc_parameters$new(
     list(# mcstate::pmcmc_parameter("log_A_ini", (-5.69897), min = (-10), max = 0,
                                   # prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("log_A_ini_1", 100, min = -10, max = 0,
+         mcstate::pmcmc_parameter("log_A_ini_1", -4, min = -10, max = 0,
                                   prior = priors$log_A_ini_1),
-         mcstate::pmcmc_parameter("log_A_ini_2", 100, min = -10, max = 0,
+         mcstate::pmcmc_parameter("log_A_ini_2", -4, min = -10, max = 0,
                                   prior = priors$log_A_ini_2),
-         mcstate::pmcmc_parameter("log_A_ini_3", 100, min = -10, max = 0,
+         mcstate::pmcmc_parameter("log_A_ini_3", -4, min = -10, max = 0,
                                   prior = priors$log_A_ini_3),
          mcstate::pmcmc_parameter("time_shift", 0.2, min = 0, max = 1,
                                   prior = priors$time_shift),

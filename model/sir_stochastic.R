@@ -117,7 +117,10 @@ delta[2] <- (10^(log_delta))*UK_calibration_adults
 delta[3] <- (10^(log_delta))*UK_calibration_adults
 
 # Vaccination effect
-vacc[] <- user() # (0.9*0.862, 0, 0) # FIXED PCV13 vaccination coverage * efficacy
+# vacc[] <- user() # (0.9*0.862, 0, 0) # FIXED PCV13 vaccination coverage * efficacy
+vacc[1] <- 0
+vacc[2] <- 0
+vacc[3] <- 0
 
 wane <- user(0, min = 0)
 
