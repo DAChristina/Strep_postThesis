@@ -18,7 +18,8 @@ source("global/all_function.R") # Collected functions stored here!
 
 # To make my life easier I compile the Serotype 1 cases into a new object called sir_data
 # data is fed as an input to mcstate::particle_filter_data
-incidence <- read.csv("inputs/incidence_week_12F_3ageG_all.csv")
+incidence <- read.csv("inputs/incidence_week_12F_3ageG_all.csv") %>% 
+  dplyr::mutate(across(everything(), ~ replace_na(.x, 0)))
 
 dt <- (1/7) # rate must be an integer; 0.25 to make it 4 days, I make it 1/7
 sir_data <- mcstate::particle_filter_data(data = incidence,
@@ -151,7 +152,7 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
                                     progress = TRUE)
   
   # The pmcmc
-  pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
+  pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter, control = control)
   pmcmc_result
   saveRDS(pmcmc_result, "outputs/heterogeneity/pmcmc_result.rds")
   
@@ -181,8 +182,8 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   new_proposal_matrix <- new_proposal_matrix/10 # Lilith's suggestion
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix)) / 2
-  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
+  rownames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
+  colnames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars, priors = priors, proposal = new_proposal_matrix, transform = transform)
@@ -194,15 +195,15 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
                                          rerun_every = 50,
                                          rerun_random = TRUE,
                                          progress = TRUE,
-                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
-                                                                                       # initial_scaling = 1,
-                                                                                       scaling_increment = NULL,
-                                                                                       # log_scaling_update = T,
-                                                                                       acceptance_target = 0.234,
-                                                                                       forget_rate = 0.2,
-                                                                                       forget_end = Inf,
-                                                                                       adapt_end = Inf
-                                         ))
+                                         # adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
+                                         #                                               # initial_scaling = 1,
+                                         #                                               scaling_increment = NULL,
+                                         #                                               # log_scaling_update = T,
+                                         #                                               acceptance_target = 0.234,
+                                         #                                               forget_rate = 0.2,
+                                         #                                               forget_end = Inf,
+                                         #                                               adapt_end = Inf)
+                                         )
   
   filter <- mcstate::particle_filter$new(data = sir_data,
                                          model = gen_sir, # Use odin.dust input
@@ -212,7 +213,7 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   )
   
   # The pmcmc
-  tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter_deterministic, control = tune_control)
+  tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter, control = tune_control)
   tune_pmcmc_result
   saveRDS(tune_pmcmc_result, "outputs/heterogeneity/tune_pmcmc_result.rds")
   
@@ -258,4 +259,4 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   
 }
 
-# pmcmc_run_plus_tuning(40000, 1e3)
+pmcmc_run_plus_tuning(100, 100)

@@ -56,7 +56,11 @@ sir_model <- gen_sir$new(pars = pars,
                          n_threads = 4L,
                          seed = 1L)
 
-x <- array(NA, dim = c(sir_model$info()$len, n_particles, n_times))
+model <- array(NA, dim = c(sir_model$info()$len, n_particles, n_times))
+
+# compartment position check
+sir_model$info()
+sir_model$info()$index$D
 
 # Beta check
 time <- seq(1, n_times, 1)
@@ -74,12 +78,12 @@ min(R0)
 
 
 for (t in seq_len(n_times)) {
-  x[ , , t] <- sir_model$run(t)
+  model[ , , t] <- sir_model$run(t)
 }
-time <- x[1, 1, ] # because in the position of [1, 1, ] is time
-x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
+time <- model[1, 1, ] # because in the position of [1, 1, ] is time
+# model <- model[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
 library(tidyverse)
-glimpse(x)
+glimpse(model)
 
 ## 1. Data Load ################################################################
 # Plotting the trajectories
@@ -90,9 +94,9 @@ par(mfrow = c(1,3), oma=c(2,3,0,0))
 for (i in 1:N_age) {
   par(mar = c(3, 4, 2, 0.5))
   cols <- c(S = "#8c8cd9", A = "darkred", D = "orange", R = "#999966", n_AD_daily = "#cc0099", n_AD_cumul = "green")
-  matplot(time, t(x[i + 7 + 5*N_age, , ]), type = "l", # Offset to access numbers in age compartment
+  matplot(time, t(model[i + 7 + 5*N_age, , ]), type = "l", # Offset to access numbers in age compartment
           xlab = "", ylab = "", yaxt="none", main = paste0("Age ", contact_demographic$demography$age.group[i]),
-          col = cols[["n_AD_daily"]], lty = 1)#, ylim=range(x[-1:-3,,]))
+          col = cols[["n_AD_daily"]], lty = 1)#, ylim=range(model[-1:-3,,]))
   matlines(time, )
   legend("right", lwd = 1, col = cols, legend = names(cols), bty = "n")
   axis(2, las =2)

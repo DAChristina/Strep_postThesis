@@ -1,25 +1,26 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
 
 case_compare <- function(state, observed, pars = NULL) {
-  exp_noise <- 1e4
+  exp_noise <- 1e6
   n <- ncol(state)
   
   # incidence based on model's "n_AD_daily" from gen_sir$new(pars = list(), time = 0, n_particles = 1L)$info()
-  incidence_modelled_1 <- state[29, , drop = TRUE] # n_AD_weekly is extracted for each demographic group
-  incidence_modelled_2 <- state[30, , drop = TRUE]
-  incidence_modelled_3 <- state[31, , drop = TRUE]
+  # sir_model$info()$index$D
+  incidence_modelled_1 <- state[13, , drop = TRUE] # D is extracted for each demographic group
+  incidence_modelled_2 <- state[14, , drop = TRUE]
+  incidence_modelled_3 <- state[15, , drop = TRUE]
   
   # incidence based on data already in x = observed$cases
   # lamb <- incidence_modelled + rexp(n, exp_noise)
   
-  loglik_1 <- dpois(x = observed$cases_1_toddler,
-                            lambda = incidence_modelled_1_toddler + rexp(n, exp_noise),
+  loglik_1 <- dpois(x = observed$cases_1,
+                            lambda = incidence_modelled_1 + rexp(n, exp_noise),
                             log = T)
-  loglik_2 <- dpois(x = observed$cases_2_518,
-                        lambda = incidence_modelled_2_518 + rexp(n, exp_noise),
+  loglik_2 <- dpois(x = observed$cases_2,
+                        lambda = incidence_modelled_2 + rexp(n, exp_noise),
                         log = T)
-  loglik_3 <- dpois(x = observed$cases_3_1930,
-                         lambda = incidence_modelled_3_1930 + rexp(n, exp_noise),
+  loglik_3 <- dpois(x = observed$cases_3,
+                         lambda = incidence_modelled_3 + rexp(n, exp_noise),
                          log = T)
   
   loglik_cases <- loglik_1+loglik_2+loglik_3
