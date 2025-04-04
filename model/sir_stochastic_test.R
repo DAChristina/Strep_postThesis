@@ -88,7 +88,8 @@ glimpse(model)
 ## 1. Data Load ################################################################
 # Plotting the trajectories
 # See gen_sir$new(pars = pars, time = 0, n_particles = 1L)$info()
-incidence <- read.csv("inputs/incidence_weekly.csv")
+incidence <- read.csv("inputs/incidence_week_12F_3ageG_all.csv") %>% 
+  dplyr::mutate(across(everything(), ~ replace_na(.x, 0)))
 
 par(mfrow = c(1,3), oma=c(2,3,0,0))
 for (i in 1:N_age) {
