@@ -62,10 +62,11 @@ pars <- list(m = transmission,
              R_ini = c(0,0,0),
              vacc = c(0,0,0), # no vaccination coverage for 12F
              # we will parameterise pars below:
-             log_A_ini_1 = -4,
-             log_A_ini_2 = -4,
-             log_A_ini_3 = -4,
-             log_A_ini = c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3),
+             # log_A_ini_1 = -4,
+             # log_A_ini_2 = -4,
+             # log_A_ini_3 = -4,
+             # log_A_ini = c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3),
+             log_A_ini = c(-4, -4, -4),
              time_shift = 0.366346711348848,
              beta_0 = 0.063134635077278,
              beta_1 = 0.161472506104886,
@@ -75,36 +76,24 @@ pars <- list(m = transmission,
 )
 
 # https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model-over-time
-# n_particles <- 50 # Trial n_particles = 50
-# filter <- mcstate::particle_filter$new(data = sir_data,
-#                                        model = gen_sir, # Use odin.dust input
-#                                        n_particles = n_particles,
-#                                        compare = case_compare,
-#                                        seed = 1L)
-# 
-# filter$run(pars)
+n_particles <- 50 # Trial n_particles = 50
+filter <- mcstate::particle_filter$new(data = sir_data,
+                                       model = gen_sir, # Use odin.dust input
+                                       n_particles = n_particles,
+                                       compare = case_compare,
+                                       seed = 1L)
+
+filter$run(pars)
 
 # Variance and particles estimation (as suggested by Rich)
-# parallel::detectCores() # I have 4 cores
+# parallel::detectCores() # 4 cores
 # x <- replicate(30, filter$run(pars))
-# x
-# 
 # var(x)
-# # [1] 266.5598
-# 69 / 267 # Trial 69 particles for 267 var; how many particles are needed?
-# # [1] 0.258427
-# 69  / 4 # change by the factor of 4
-# # [1] 17.25
-# 69  / 4  /4
-# # [1] 4.3125
-# 69  / 4  /4 /4
-# # [1] 1.078125 # so the factor is 4*4*4 to finally get roughly 1 particle
-# 4 * 4 * 4
-# # [1] 64
-# 4 * 4 * 4 * 500
-# # [1] 32000 --> particles needed for var(x) = 1
+# [1] 3520.937
+# Trial 320000 particles to get var(x) = 1 on 4 cores
+# (320000/4/4/4)/3520.937
 
-# Update n_particles based on calculation in 4 cores with var(x) ~ 267: 32000
+# Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 320000
 
 priors <- prepare_priors(pars)
 proposal_matrix <- diag(200, 9)
@@ -259,4 +248,4 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   
 }
 
-pmcmc_run_plus_tuning(100, 100)
+# pmcmc_run_plus_tuning(320000, 1000)
