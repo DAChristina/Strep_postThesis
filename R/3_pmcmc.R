@@ -6,7 +6,8 @@ library(dust)
 library(GGally)
 library(socialmixr)
 
-source("global/all_function.R") # Collected functions stored here!
+setwd("/home/ron/net/home/Strep_postThesis")
+source("global/all_function.R")
 
 # The anatomy of an mcstate particle filter, as noted above, consists of three main components: \n 
 # 1. A set of observations to fit the model to, generated using mcstate::particle_filter_data(). \n 
@@ -19,7 +20,7 @@ source("global/all_function.R") # Collected functions stored here!
 # To make my life easier I compile the Serotype 1 cases into a new object called sir_data
 # data is fed as an input to mcstate::particle_filter_data
 incidence <- read.csv("inputs/incidence_week_12F_3ageG_all.csv") %>% 
-  dplyr::mutate(across(everything(), ~ replace_na(.x, 0)))
+  dplyr::mutate(across(everything(), ~ tidyr::replace_na(.x, 0)))
 
 dt <- (1/7) # rate must be an integer; 0.25 to make it 4 days, I make it 1/7
 sir_data <- mcstate::particle_filter_data(data = incidence,
@@ -76,24 +77,27 @@ pars <- list(m = transmission,
 )
 
 # https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model-over-time
-n_particles <- 50 # Trial n_particles = 50
-filter <- mcstate::particle_filter$new(data = sir_data,
-                                       model = gen_sir, # Use odin.dust input
-                                       n_particles = n_particles,
-                                       compare = case_compare,
-                                       seed = 1L)
-
-filter$run(pars)
+# n_particles <- 50 # Trial n_particles = 50
+# filter <- mcstate::particle_filter$new(data = sir_data,
+#                                        model = gen_sir, # Use odin.dust input
+#                                        n_particles = n_particles,
+#                                        compare = case_compare,
+#                                        seed = 1L)
+# 
+# filter$run(pars)
 
 # Variance and particles estimation (as suggested by Rich)
 # parallel::detectCores() # 4 cores
 # x <- replicate(30, filter$run(pars))
 # var(x)
 # [1] 3520.937
-# Trial 320000 particles to get var(x) = 1 on 4 cores
+# Trial 320000 particles to get var(x) = 1 on 4 chains/4 nodes/4 cores per-node
 # (320000/4/4/4)/3520.937
+# Trial 320000 particles to get var(x) = 1 on 4 chains/1 nodes/20 cores per-node
+# 3520.937*(4*1*20) # ~ 281675
+# (281675/4/1/20)/3520.937
 
-# Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 320000
+# Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
 proposal_matrix <- diag(200, 9)
@@ -130,8 +134,8 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   # Index function is optional when only a small number of states are used in comparison function.
   filter_deterministic <- mcstate::particle_deterministic$new(data = sir_data,
                                                               model = gen_sir,
-                                                              compare = case_compare
-                                                              # index = index
+                                                              compare = case_compare,
+                                                              index = index_fun
   )
   
   
@@ -141,7 +145,7 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
                                     progress = TRUE)
   
   # The pmcmc
-  pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter, control = control)
+  pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
   pmcmc_result
   saveRDS(pmcmc_result, "outputs/heterogeneity/pmcmc_result.rds")
   
@@ -162,6 +166,10 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc1)
+  # trial recursively save figs
+  # png("outputs/heterogeneity/temporary_deterministic_1e3/figs/mcmc1_%03d.png", width = 17, height = 12, unit = "cm", res = 600)
+  # pmcmc_trace(mcmc1)
+  # dev.off()
   
   Sys.sleep(10) # wait 10 secs before conducting tuning
   
@@ -184,14 +192,14 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
                                          rerun_every = 50,
                                          rerun_random = TRUE,
                                          progress = TRUE,
-                                         # adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
-                                         #                                               # initial_scaling = 1,
-                                         #                                               scaling_increment = NULL,
-                                         #                                               # log_scaling_update = T,
-                                         #                                               acceptance_target = 0.234,
-                                         #                                               forget_rate = 0.2,
-                                         #                                               forget_end = Inf,
-                                         #                                               adapt_end = Inf)
+                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
+                                                                                       initial_scaling = 1,
+                                                                                       scaling_increment = NULL,
+                                                                                       log_scaling_update = T,
+                                                                                       acceptance_target = 0.234,
+                                                                                       forget_rate = 0.2,
+                                                                                       forget_end = Inf,
+                                                                                       adapt_end = Inf)
                                          )
   
   filter <- mcstate::particle_filter$new(data = sir_data,
@@ -202,12 +210,12 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   )
   
   # The pmcmc
-  tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter, control = tune_control)
+  tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter_deterministic, control = tune_control)
   tune_pmcmc_result
   saveRDS(tune_pmcmc_result, "outputs/heterogeneity/tune_pmcmc_result.rds")
   
-  # new_proposal_mtx <- cov(pmcmc_result$pars)
-  # write.csv(new_proposal_mtx, "outputs/heterogeneity/new_proposal_mtx.csv", row.names = TRUE)
+  new_proposal_mtx <- cov(pmcmc_result$pars)
+  write.csv(new_proposal_mtx, "outputs/heterogeneity/new_proposal_mtx.csv", row.names = TRUE)
   
   tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
   write.csv(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]),
@@ -215,8 +223,8 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   
   # Further processing for thinning chains
   mcmc2 <- tuning_pmcmc_further_process(n_steps, tune_pmcmc_result)
-  # mcmc2 <- coda::as.mcmc(cbind(
-  #   tune_pmcmc_result$probabilities, tune_pmcmc_result$pars))
+  mcmc2 <- coda::as.mcmc(cbind(
+    tune_pmcmc_result$probabilities, tune_pmcmc_result$pars))
   write.csv(mcmc2, "outputs/heterogeneity/mcmc2.csv", row.names = TRUE)
   
   # Calculating ESS & Acceptance Rate
@@ -242,7 +250,7 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   fig <- diag_aucorr(mcmc2)
   # dev.off()
   
-  # png("pictures/diag_ggpairs.png", width = 17, height = 12, unit = "cm", res = 1200)
+  # png("outputs/heterogeneity/temporary_deterministic_1e3/figs/mcmc2_ggpairs_%03d.png", width = 20, height = 20, unit = "cm", res = 600)
   fig <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
   # dev.off()
   

@@ -95,7 +95,7 @@ par(mfrow = c(1,3), oma=c(2,3,0,0))
 for (i in 1:N_age) {
   par(mar = c(3, 4, 2, 0.5))
   cols <- c(S = "#8c8cd9", A = "darkred", D = "orange", R = "#999966", n_AD_daily = "#cc0099", n_AD_cumul = "green")
-  matplot(time, t(model[i + 7 + 5*N_age, , ]), type = "l", # Offset to access numbers in age compartment
+  matplot(time, t(model[i + 5 + 3*N_age, , ]), type = "l", # Offset to access numbers in age compartment
           xlab = "", ylab = "", yaxt="none", main = paste0("Age ", contact_demographic$demography$age.group[i]),
           col = cols[["n_AD_daily"]], lty = 1)#, ylim=range(model[-1:-3,,]))
   matlines(time, )

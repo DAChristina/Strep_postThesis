@@ -16,7 +16,7 @@ windows_check()
 hipercow_configuration() # for troubleshooting
 # hipercow_hello() # test job
 
-hipercow_environment_create(sources = "2_pmcmc.R")
+hipercow_environment_create(sources = "/home/ron/net/home/Strep_postThesis/R/3_pmcmc.R")
 hipercow_provision()
 
 # Check the installed packages again by using hipercow_configuration()
@@ -27,7 +27,7 @@ hipercow_provision()
 # hipercow_provision()
 
 # https://mrc-ide.github.io/hipercow/reference/hipercow_resources.html
-resources <- hipercow::hipercow_resources(cores = 20,
+resources <- hipercow::hipercow_resources(cores = 32,
                                           max_runtime = "3d",
                                           memory_per_node = "64G",
 )
@@ -35,7 +35,7 @@ resources <- hipercow::hipercow_resources(cores = 20,
 
 # Now pmcmc_run is a function:
 # pmcmc_run <- function(n_particles, n_steps)
-id_single_plus_tuning <- task_create_expr(pmcmc_run_plus_tuning(40000, 5e5), # Update n_particles = 32000, n_steps = 1e6?
+id_single_plus_tuning <- task_create_expr(pmcmc_run_plus_tuning(40000, 1e4),
                                           resources = resources
 )
 

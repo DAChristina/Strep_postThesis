@@ -13,18 +13,34 @@ case_compare <- function(state, observed, pars = NULL) {
   # incidence based on data already in x = observed$cases
   # lamb <- incidence_modelled + rexp(n, exp_noise)
   
+  lambda_2 <- rexp(n, exp_noise)
+  
   loglik_1 <- dpois(x = observed$cases_1,
-                            lambda = incidence_modelled_1 + rexp(n, exp_noise),
+                            lambda = incidence_modelled_1 + lambda_2,
                             log = T)
   loglik_2 <- dpois(x = observed$cases_2,
-                        lambda = incidence_modelled_2 + rexp(n, exp_noise),
+                        lambda = incidence_modelled_2 + lambda_2,
                         log = T)
   loglik_3 <- dpois(x = observed$cases_3,
-                         lambda = incidence_modelled_3 + rexp(n, exp_noise),
+                         lambda = incidence_modelled_3 + lambda_2,
                          log = T)
   
   loglik_cases <- loglik_1+loglik_2+loglik_3
+  if (any(!is.finite(loglik_cases))) {
+    # return -Inf to force rejection
+    loglik_cases[!is.finite(loglik_cases)] <- -1e10
+  }
+  
   return(loglik_cases)
+}
+
+# generate index function
+index_fun <- function(info){
+  if (is.null(info$index)){
+    info <- info[[1]]
+  }
+  list(run = unlist(info$index),
+       state = unlist(info$index))
 }
 
 # That transform function
@@ -145,9 +161,24 @@ pmcmc_further_process <- function(n_steps, pmcmc_result) {
 }
 
 ess_calculation <- function(mcmc1){
-  calc <- list(ess = coda::effectiveSize(mcmc1),
-               acceptance_rate = 1 - coda::rejectionRate(mcmc1))
-  calc
+  # compile par names & generate switch
+  par_names <- colnames(mcmc1)
+  
+  ess_values <- sapply(par_names, function(p){
+    trace <- mcmc1[, p]
+    if (var(trace) == 0) {
+      warning(sprintf("Parameter '%s' has zero variance. ESS set to NA.", p))
+      return(NA)
+    } else {
+      return(coda::effectiveSize(trace))
+    }
+  })
+  acceptance_rate = 1 - coda::rejectionRate(mcmc1)
+  
+  list(
+    ess = ess_values,
+    acceptance_rate = acceptance_rate
+  )
 }
 
 pmcmc_trace <- function(mcmc1) {
