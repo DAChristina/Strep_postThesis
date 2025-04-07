@@ -92,15 +92,28 @@ incidence <- read.csv("inputs/incidence_week_12F_3ageG_all.csv") %>%
   dplyr::mutate(across(everything(), ~ replace_na(.x, 0)))
 
 par(mfrow = c(1,3), oma=c(2,3,0,0))
-for (i in 1:N_age) {
+# for (i in 1:N_age) {
+#   par(mar = c(3, 4, 2, 0.5))
+#   cols <- c(S = "#8c8cd9", A = "darkred", D = "orange", R = "#999966", n_AD_daily = "#cc0099", n_AD_cumul = "green")
+#   matplot(time, t(model[i + 5 + 3*N_age, , ]), type = "l", # Offset to access numbers in age compartment
+#           xlab = "", ylab = "", yaxt="none", main = paste0("Age ", contact_demographic$demography$age.group[i]),
+#           col = cols[["n_AD_daily"]], lty = 1)#, ylim=range(model[-1:-3,,]))
+#   matlines(time, )
+#   legend("right", lwd = 1, col = cols, legend = names(cols), bty = "n")
+#   axis(2, las =2)
+# }
+
+
+for (i in 13:15) {
   par(mar = c(3, 4, 2, 0.5))
   cols <- c(S = "#8c8cd9", A = "darkred", D = "orange", R = "#999966", n_AD_daily = "#cc0099", n_AD_cumul = "green")
-  matplot(time, t(model[i + 5 + 3*N_age, , ]), type = "l", # Offset to access numbers in age compartment
+  matplot(time, t(model[i, , ]), type = "l", # Offset to access numbers in age compartment
           xlab = "", ylab = "", yaxt="none", main = paste0("Age ", contact_demographic$demography$age.group[i]),
           col = cols[["n_AD_daily"]], lty = 1)#, ylim=range(model[-1:-3,,]))
   matlines(time, )
   legend("right", lwd = 1, col = cols, legend = names(cols), bty = "n")
   axis(2, las =2)
 }
+
 mtext("Number of individuals", side=2,line=1, outer=T)
 mtext("Time", side = 1, line = 0, outer =T)
