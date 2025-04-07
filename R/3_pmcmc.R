@@ -67,9 +67,11 @@ pars <- list(m = transmission,
              # log_A_ini_3 = -4,
              # log_A_ini = c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3),
              log_A_ini = c(-4, -4, -4),
-             time_shift = 0.366346711348848,
+             time_shift_1 = 0.366346711348848,
+             time_shift_2 = 0.366346711348848,
              beta_0 = 0.063134635077278,
              beta_1 = 0.161472506104886,
+             beta_2 = 0.161472506104886,
              scaled_wane = (0.9),
              log_delta = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
              psi = (0.5)
@@ -99,10 +101,10 @@ pars <- list(m = transmission,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(200, 9)
+proposal_matrix <- diag(200, 11)
 proposal_matrix <- (proposal_matrix + t(proposal_matrix)) / 2
-rownames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
-colnames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
+rownames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
+colnames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -178,8 +180,8 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   new_proposal_matrix <- new_proposal_matrix/10 # Lilith's suggestion
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix)) / 2
-  rownames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
-  colnames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift", "beta_0", "beta_1", "scaled_wane", "log_delta", "psi")
+  rownames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
+  colnames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars, priors = priors, proposal = new_proposal_matrix, transform = transform)

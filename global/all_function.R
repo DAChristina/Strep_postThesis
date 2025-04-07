@@ -60,29 +60,44 @@ parameter_transform <- function(transmission) {
   transmission
   
   transform <- function(pars){
-    pars <- as.list(pars)
-    
-    pars$N_ini <-  contact_demographic$demography$population
-    pars$D_ini <-  c(0,0,0)
-    pars$R_ini <-  c(0,0,0)
-    pars$log_A_ini <- c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3)
-    pars$m <- transmission
-    
-    time_shift <- pars[["time_shift"]]
+    # re-define pars with pars that I really wanna fit only
+    log_A_ini <- pars[paste0("log_A_ini_", 1:3)]
+    time_shift_1 <- pars[["time_shift_1"]]
+    time_shift_2 <- pars[["time_shift_2"]]
     beta_0 <- pars[["beta_0"]]
     beta_1 <- pars[["beta_1"]]
+    beta_2 <- pars[["beta_2"]]
     scaled_wane <- pars[["scaled_wane"]]
     log_delta <- pars[["log_delta"]]
     psi <- pars[["psi"]]
     # sigma_2 <- pars[["sigma_2"]]
     
+    pars <- list(log_A_ini = log_A_ini,
+                 time_shift_1 = time_shift_1,
+                 time_shift_2 = time_shift_2,
+                 beta_0 = beta_0,
+                 beta_1 = beta_1,
+                 beta_2 = beta_2,
+                 scaled_wane = scaled_wane,
+                 log_delta = log_delta,
+                 psi = psi
+                 # sigma_2 = sigma_2
+    )
+    
+    pars$N_ini <-  contact_demographic$demography$population
+    pars$D_ini <-  c(0,0,0)
+    pars$R_ini <-  c(0,0,0)
+    pars$m <- transmission
+    
     pars
   }
-  
-  transform
 }
 
-transform <- parameter_transform(transmission)
+transform <- function(pars) {
+  parameter_transform(pars)
+}
+
+# transform <- parameter_transform(transmission)
 
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
@@ -95,12 +110,16 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini_2),
          mcstate::pmcmc_parameter("log_A_ini_3", -4, min = -10, max = 0,
                                   prior = priors$log_A_ini_3),
-         mcstate::pmcmc_parameter("time_shift", 0.2, min = 0, max = 1,
-                                  prior = priors$time_shift),
+         mcstate::pmcmc_parameter("time_shift_1", 0.2, min = 0, max = 1,
+                                  prior = priors$time_shift_1),
+         mcstate::pmcmc_parameter("time_shift_2", 0.2, min = 0, max = 1,
+                                  prior = priors$time_shift_2),
          mcstate::pmcmc_parameter("beta_0", 0.06565, min = 0, max = 0.8,
                                   prior = priors$beta_0),
          mcstate::pmcmc_parameter("beta_1", 0.07, min = 0, max = 0.8,
                                   prior = priors$beta_1),
+         mcstate::pmcmc_parameter("beta_2", 0.07, min = 0, max = 0.8,
+                                  prior = priors$beta_2),
          mcstate::pmcmc_parameter("scaled_wane", (0.5), min = (0), max = 1,
                                   prior = priors$scaled_wane),
          mcstate::pmcmc_parameter("log_delta", (-4.98), min = (-10), max = 0.7,
@@ -127,13 +146,19 @@ prepare_priors <- function(pars) {
   priors$log_A_ini_3 <- function(s) {
     dunif(s, min = (-10), max = 0, log = TRUE)
   }
-  priors$time_shift <- function(s) {
+  priors$time_shift_1 <- function(s) {
+    dunif(s, min = 0, max = 1, log = TRUE)
+  }
+  priors$time_shift_2 <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$beta_0 <- function(s) {
     dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
   priors$beta_1 <- function(s) {
+    dgamma(s, shape = 1, scale = 0.1, log = TRUE)
+  }
+  priors$beta_2 <- function(s) {
     dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
   priors$scaled_wane <- function(s) {
