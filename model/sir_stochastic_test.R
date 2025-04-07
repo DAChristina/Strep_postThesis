@@ -37,7 +37,7 @@ pars <- list(m = transmission,
              R_ini = c(0, 0, 0),
              time_shift_1 = 0.366346711348848,
              time_shift_2 = 0.366346711348848,
-             beta_0 = 0.063134635077278,
+             beta_0 = 0.083134635077278,
              beta_1 = 0.161472506104886,
              beta_2 = 0.261472506104886,
              gamma = 0.1,
@@ -47,34 +47,72 @@ pars <- list(m = transmission,
              sigma_2 = (1)
 )
 
-n_times <- 4745*4 # 4745 or similar to the number of date range (of the provided data), or try 500 for trial
-n_particles <- 15L
+n_times <- round(seq(1, by = 365/52, length.out = 52*22)) # per-week, 22 years
 
 sir_model <- gen_sir$new(pars = pars,
                          time = 1,
-                         n_particles = n_particles,
+                         n_particles = 15L,
                          n_threads = 4L,
                          seed = 1L)
-
-model <- array(NA, dim = c(sir_model$info()$len, n_particles, n_times))
 
 # compartment position check
 sir_model$info()
 sir_model$info()$index$D
 
 # Beta check
-time <- seq(1, n_times, 1)
-time_shift <- 70
-beta <- pars$beta_0*(1+pars$beta_1*sin(2*pi*(time_shift+time)/365))
-max(beta)
-min(beta)
+# time <- seq(1, n_times, 1)
+# time_shift <- 70
+# beta <- pars$beta_0*(1+pars$beta_1*sin(2*pi*(time_shift+time)/365))
+# max(beta)
+# min(beta)
 
 # R0 estimation (R0 changes due to seasonality)
-R0 <- (beta/(pars$log_delta+pars$sigma_1)) +  ((pars$log_delta)*(beta)) / ((pars$log_delta + 192/(4064*4745))*(pars$sigma_2 + 192/(4064*4745))) # print R0
-max(R0)
-min(R0)
+# R0 <- (beta/(pars$log_delta+pars$sigma_1)) +  ((pars$log_delta)*(beta)) / ((pars$log_delta + 192/(4064*4745))*(pars$sigma_2 + 192/(4064*4745))) # print R0
+# max(R0)
+# min(R0)
 # plot(time, R0)
 # pars$beta_1/(pars$delta) + (pars$qu*pars$delta)/(pars$delta*pars$sigma) # print R0
+
+
+simulate <- function(pars, n_times) {
+  sir_model <- gen_sir$new(pars = pars,
+                           time = 1,
+                           n_particles = 1,
+                           n_threads = 4L,
+                           seed = 1,
+                           deterministic = T)
+  y <- lapply(n_times, sir_model$simulate)
+  y <- mcstate::array_bind(arrays = y)
+  rownames(y) <-  names(unlist(sir_model$info()$index))
+  y
+}
+
+y <- simulate(pars, n_times)
+# check y
+y[1:18, 1, 1:10] # 18 variables, 1 particle, 10x period
+
+par(bty = "n", mar = c(3, 3, 1, 1), mgp = c(1.5, 0.5, 0), par(mfrow = c(1, 2)))
+plot(y["time", , ], y["D_tot", , ], type = "l")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 for (t in seq_len(n_times)) {

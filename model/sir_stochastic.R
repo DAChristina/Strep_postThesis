@@ -1,6 +1,7 @@
 freq <- user(1)
 dt <- 1/freq
 initial(time) <- 0
+update(time) <- (step + 1) * dt
 
 time_shift_1 <- user(0, min = 0, max = 1)
 time_shift_2 <- user(0, min = 0, max = 1)
@@ -70,7 +71,7 @@ dim(n_Rdead) <- N_age
 
 # 2. INITIAL VALUES ############################################################
 # Initial values (user-defined parameters)
-N_ini[] <- S[i] + A[i] + D[i] + R[i]
+N_ini[] <- user()
 
 log_A_ini[] <- user()
 A_ini[1] <- 10^(log_A_ini[1])*N_ini[1]
@@ -183,7 +184,6 @@ update(R[]) <- R[i] + (n_AR[i] + n_DR[i] + n_SR[i]) - (n_RS[i] + n_Rdead[i])
 # update(cases[]) <- n_AD[i] + n_cases[i]
 
 # Core equations of the transitions
-update(time) <- (step + 1) * dt
 update(N_tot) <- sum(N)
 update(S_tot) <- S_tot - (sum(n_SA) + sum(n_SR)) + sum(n_RS)
 update(A_tot) <- A_tot + sum(n_SA) - (sum(n_AD) + sum(n_AR))

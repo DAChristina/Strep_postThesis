@@ -87,17 +87,18 @@ parameter_transform <- function(transmission) {
     pars$N_ini <-  contact_demographic$demography$population
     pars$D_ini <-  c(0,0,0)
     pars$R_ini <-  c(0,0,0)
-    pars$m <- transmission
+    pars$m <- contact_demographic$matrix
+    # pars$m <- array(contact_demographic$matrix,
+    #                 c(3, 3, 52*22)) # per-week, 22 years; why did Lilith use this??
     
     pars
   }
+  transform
 }
 
-transform <- function(pars) {
-  parameter_transform(pars)
-}
-
-# transform <- parameter_transform(transmission)
+# transform <- function(pars) {
+#   parameter_transform(pars)
+# }
 
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   

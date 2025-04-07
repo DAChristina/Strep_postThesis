@@ -106,6 +106,7 @@ proposal_matrix <- (proposal_matrix + t(proposal_matrix)) / 2
 rownames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
 colnames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
 
+transform <- parameter_transform(transmission)
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
                                 proposal = proposal_matrix,
