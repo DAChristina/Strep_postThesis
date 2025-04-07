@@ -16,7 +16,7 @@ windows_check()
 hipercow_configuration() # for troubleshooting
 # hipercow_hello() # test job
 
-hipercow_environment_create(sources = "/home/ron/net/home/Strep_postThesis/R/3_pmcmc.R")
+hipercow_environment_create(sources = "R/3_pmcmc.R")
 hipercow_provision()
 
 # Check the installed packages again by using hipercow_configuration()

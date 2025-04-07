@@ -6,7 +6,6 @@ library(dust)
 library(GGally)
 library(socialmixr)
 
-setwd("/home/ron/net/home/Strep_postThesis")
 source("global/all_function.R")
 
 # The anatomy of an mcstate particle filter, as noted above, consists of three main components: \n 
