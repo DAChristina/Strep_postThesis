@@ -32,19 +32,18 @@ transmission
 # Running the SIR model with dust
 pars <- list(m = transmission,
              N_ini = contact_demographic$demography$population,
-             log_A_ini = c(-4, -4, -4),
+             log_A_ini = c(-3, -5, -3),
              D_ini = c(0, 0, 0),
              R_ini = c(0, 0, 0),
-             time_shift_1 = 0.366346711348848,
-             time_shift_2 = 0.366346711348848,
-             beta_0 = 0.083134635077278,
-             beta_1 = 0.161472506104886,
-             beta_2 = 0.261472506104886,
-             gamma = 0.1,
-             scaled_wane = (0.9),
-             log_delta = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
+             time_shift_1 = 0.265185074455071,
+             time_shift_2 = 0.2688027206357,
+             beta_0 = 0.10904100678898,
+             beta_1 = 0.193999573638097,
+             beta_2 = 0.184928540835887,
+             scaled_wane = (0.486156008428636),
+             log_delta = (-5.79347000840983), # will be fitted to logN(-10, 0.7)
              psi = (0.5),
-             sigma_2 = (1)
+             sigma_2 = (0.90738841030217)
 )
 
 n_times <- round(seq(1, by = 365/52, length.out = 52*22)) # per-week, 22 years
