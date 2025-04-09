@@ -73,7 +73,8 @@ pars <- list(m = transmission,
              beta_1 = 0.161472506104886,
              beta_2 = 0.161472506104886,
              scaled_wane = (0.9),
-             log_delta = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
+             log_delta_kids = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
+             log_delta_adults = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
              psi = (0.5)
 )
 
@@ -101,10 +102,10 @@ pars <- list(m = transmission,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(200, 11)
+proposal_matrix <- diag(200, 12)
 proposal_matrix <- (proposal_matrix + t(proposal_matrix)) / 2
-rownames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
-colnames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
+rownames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
+colnames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
 
 transform <- parameter_transform(transmission)
 mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -121,13 +122,13 @@ mcmc_pars <- prepare_parameters(initial_pars = pars,
 # pmcmc_run <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
 
 # Directory for saving the outputs
-dir.create("outputs/heterogeneity/trial_deterministic_testLowerVcvWeight_1e3/figs", FALSE, TRUE)
+dir.create("outputs/heterogeneity/trial_deterministic_stratify_log_delta_5e3/figs", FALSE, TRUE)
 
 # Trial combine pMCMC + tuning #################################################
-pmcmc_run_plus_tuning <- function(n_particles, n_steps){
+pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   filter <- mcstate::particle_filter$new(data = sir_data,
                                          model = gen_sir, # Use odin.dust input
-                                         n_particles = n_particles,
+                                         n_particles = n_pars,
                                          compare = case_compare,
                                          seed = 1L)
   
@@ -141,7 +142,7 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   )
   
   
-  control <- mcstate::pmcmc_control(n_steps = n_steps,
+  control <- mcstate::pmcmc_control(n_steps = n_sts,
                                     rerun_every = 50,
                                     rerun_random = TRUE,
                                     progress = TRUE)
@@ -159,7 +160,7 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
             "outputs/heterogeneity/initial.csv", row.names = FALSE)
   
   # Further processing for thinning chains
-  mcmc1 <- pmcmc_further_process(n_steps, pmcmc_result)
+  mcmc1 <- pmcmc_further_process(n_sts, pmcmc_result)
   write.csv(mcmc1, "outputs/heterogeneity/mcmc1.csv", row.names = TRUE)
   
   # Calculating ESS & Acceptance Rate
@@ -181,15 +182,15 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   new_proposal_matrix <- new_proposal_matrix/1e3 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix)) / 2
-  rownames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
-  colnames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "psi")
+  rownames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
+  colnames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars, priors = priors, proposal = new_proposal_matrix, transform = transform)
   
   # Including adaptive proposal control
   # https://mrc-ide.github.io/mcstate/reference/adaptive_proposal_control.html
-  tune_control <- mcstate::pmcmc_control(n_steps = n_steps,
+  tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
                                          n_chains = 4,
                                          rerun_every = 50,
                                          rerun_random = TRUE,
@@ -200,14 +201,14 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
                                                                                        log_scaling_update = T,
                                                                                        acceptance_target = 0.234,
                                                                                        forget_rate = 0.5,
-                                                                                       forget_end = n_steps/2,
-                                                                                       adapt_end = n_steps,
+                                                                                       forget_end = n_sts/2,
+                                                                                       adapt_end = n_sts,
                                                                                        pre_diminish = 0)
                                          )
   
   filter <- mcstate::particle_filter$new(data = sir_data,
                                          model = gen_sir, # Use odin.dust input
-                                         n_particles = n_particles,
+                                         n_particles = n_pars,
                                          compare = case_compare,
                                          seed = 1L
   )
@@ -225,7 +226,7 @@ pmcmc_run_plus_tuning <- function(n_particles, n_steps){
             "outputs/heterogeneity/tune_initial.csv", row.names = FALSE)
   
   # Further processing for thinning chains
-  mcmc2 <- tuning_pmcmc_further_process(n_steps, tune_pmcmc_result)
+  mcmc2 <- tuning_pmcmc_further_process(n_sts, tune_pmcmc_result)
   mcmc2 <- coda::as.mcmc(cbind(
     tune_pmcmc_result$probabilities, tune_pmcmc_result$pars))
   write.csv(mcmc2, "outputs/heterogeneity/mcmc2.csv", row.names = TRUE)

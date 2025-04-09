@@ -41,7 +41,8 @@ pars <- list(m = transmission,
              beta_1 = 0.193999573638097,
              beta_2 = 0.184928540835887,
              scaled_wane = (0.486156008428636),
-             log_delta = (-5.79347000840983), # will be fitted to logN(-10, 0.7)
+             log_delta_kids = (-5.79347000840983), # will be fitted to logN(-10, 0.7)
+             log_delta_adults = (-5.79347000840983), # will be fitted to logN(-10, 0.7)
              psi = (0.5),
              sigma_2 = (0.90738841030217)
 )

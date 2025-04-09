@@ -12,7 +12,10 @@ beta_2 <- user(0, min = 0, max = 1)
 UK_calibration_kids <- user(1.07638532472038) # FIXED (Lochen et al., 2022)
 UK_calibration_adults <- user(0.536936186788821) # FIXED (Lochen et al., 2022)
 
-log_delta <- user(0.1)
+# stratify log_delta
+log_delta_kids <- user(0.1)
+log_delta_adults <- user(0.1)
+
 hypo_sigma_day <- user(28) # carriage duration (Chaguza et al., 2021)
 hypo_sigma_1 <- 1/hypo_sigma_day
 psi <- user(0, min = 0) # Immunity differences between children & adults
@@ -113,9 +116,9 @@ lambda[1] <- sum(foi_ij[1, ])
 lambda[2] <- sum(foi_ij[2, ])
 lambda[3] <- sum(foi_ij[3, ])
 
-delta[1] <- (10^(log_delta))*UK_calibration_kids
-delta[2] <- (10^(log_delta))*UK_calibration_adults
-delta[3] <- (10^(log_delta))*UK_calibration_adults
+delta[1] <- (10^(log_delta_kids))*UK_calibration_kids
+delta[2] <- (10^(log_delta_adults))*UK_calibration_adults
+delta[3] <- (10^(log_delta_adults))*UK_calibration_adults
 
 # Vaccination effect
 # vacc[] <- user() # (0.9*0.862, 0, 0) # FIXED PCV13 vaccination coverage * efficacy
