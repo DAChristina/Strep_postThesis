@@ -122,7 +122,7 @@ mcmc_pars <- prepare_parameters(initial_pars = pars,
 # pmcmc_run <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
 
 # Directory for saving the outputs
-dir.create("outputs/heterogeneity/trial_deterministic_stratify_log_delta_5e3/figs", FALSE, TRUE)
+dir.create("outputs/heterogeneity/trial_stochastic_500p_1e3/figs", FALSE, TRUE)
 
 # Trial combine pMCMC + tuning #################################################
 pmcmc_run_plus_tuning <- function(n_pars, n_sts){
