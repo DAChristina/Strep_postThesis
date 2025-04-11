@@ -188,15 +188,14 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
                                          rerun_every = 50,
                                          rerun_random = TRUE,
                                          progress = TRUE,
-                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 20,
-                                                                                       initial_scaling = 0.2,
-                                                                                       scaling_increment = 0.02,
-                                                                                       log_scaling_update = T,
+                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
+                                                                                       # initial_scaling = 1,
+                                                                                       scaling_increment = NULL,
+                                                                                       # log_scaling_update = T,
                                                                                        acceptance_target = 0.234,
-                                                                                       forget_rate = 0.5,
-                                                                                       forget_end = n_sts/2,
-                                                                                       adapt_end = n_sts,
-                                                                                       pre_diminish = 0)
+                                                                                       forget_rate = 0.2,
+                                                                                       forget_end = Inf,
+                                                                                       adapt_end = Inf)
                                          )
   
   filter <- mcstate::particle_filter$new(data = sir_data,
