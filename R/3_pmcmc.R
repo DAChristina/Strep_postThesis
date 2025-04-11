@@ -146,7 +146,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   saveRDS(pmcmc_result, "outputs/heterogeneity/pmcmc_result.rds")
   
   new_proposal_mtx <- cov(pmcmc_result$pars)
-  write.csv(new_proposal_mtx, "outputs/heterogeneity/new_proposal_mtx.csv", row.names = TRUE)
+  write.csv(new_proposal_mtx, "outputs/heterogeneity/new_proposal_mtx.csv", row.names = FALSE)
   
   lpost_max <- which.max(pmcmc_result$probabilities[, "log_posterior"])
   write.csv(as.list(pmcmc_result$pars[lpost_max, ]),
@@ -154,11 +154,11 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   
   # Further processing for thinning chains
   mcmc1 <- pmcmc_further_process(n_sts, pmcmc_result)
-  write.csv(mcmc1, "outputs/heterogeneity/mcmc1.csv", row.names = TRUE)
+  write.csv(mcmc1, "outputs/heterogeneity/mcmc1.csv", row.names = FALSE)
   
   # Calculating ESS & Acceptance Rate
   calc_ess <- ess_calculation(mcmc1)
-  write.csv(calc_ess, "outputs/heterogeneity/calc_ess.csv", row.names = TRUE)
+  write.csv(calc_ess, "outputs/heterogeneity/calc_ess.csv", row.names = FALSE)
   
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc1)
@@ -212,7 +212,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   saveRDS(tune_pmcmc_result, "outputs/heterogeneity/tune_pmcmc_result.rds")
   
   new_proposal_mtx <- cov(pmcmc_result$pars)
-  write.csv(new_proposal_mtx, "outputs/heterogeneity/new_proposal_mtx.csv", row.names = TRUE)
+  write.csv(new_proposal_mtx, "outputs/heterogeneity/new_proposal_mtx.csv", row.names = FALSE)
   
   tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
   write.csv(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]),
@@ -222,11 +222,11 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   mcmc2 <- tuning_pmcmc_further_process(n_sts, tune_pmcmc_result)
   mcmc2 <- coda::as.mcmc(cbind(
     tune_pmcmc_result$probabilities, tune_pmcmc_result$pars))
-  write.csv(mcmc2, "outputs/heterogeneity/mcmc2.csv", row.names = TRUE)
+  write.csv(mcmc2, "outputs/heterogeneity/mcmc2.csv", row.names = FALSE)
   
   # Calculating ESS & Acceptance Rate
   tune_calc_ess <- ess_calculation(mcmc2)
-  write.csv(tune_calc_ess, "outputs/heterogeneity/tune_calc_ess.csv", row.names = TRUE)
+  write.csv(tune_calc_ess, "outputs/heterogeneity/tune_calc_ess.csv", row.names = FALSE)
   
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc2)
