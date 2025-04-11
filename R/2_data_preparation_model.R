@@ -23,7 +23,7 @@ incidence_week_allAge <- dplyr::left_join(all_date,
                                           by = "week_date"
                                           ) %>% 
   dplyr::select(week_step, counts) %>% 
-  dplyr::rename(time = week_step,
+  dplyr::rename(week = week_step,
                 cases = counts) # Annoying name requirement inputs to monty
 
 write.csv(incidence_week_allAge, "inputs/incidence_week_12F_allAge.csv", row.names = FALSE)

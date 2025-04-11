@@ -1,31 +1,18 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
 
 case_compare <- function(state, observed, pars = NULL) {
-  exp_noise <- 1e6
-  n <- ncol(state)
+  exp_noise <- 1e4
   
   # incidence based on model's "n_AD_daily" from gen_sir$new(pars = list(), time = 0, n_particles = 1L)$info()
-  # sir_model$info()$index$D
-  incidence_modelled_1 <- state[13, , drop = TRUE] # D is extracted for each demographic group
-  incidence_modelled_2 <- state[14, , drop = TRUE]
-  incidence_modelled_3 <- state[15, , drop = TRUE]
+  incidence_modelled <- state[6, , drop = TRUE] # n_AD_daily is located at state[6, , ]
   
-  # incidence based on data already in x = observed$cases
-  # lamb <- incidence_modelled + rexp(n, exp_noise)
+  # incidence based on data
+  incidence_observed <- observed$cases # daily new cases
   
-  lambda_2 <- rexp(n, exp_noise)
+  n <- ncol(state)
+  lamb <- incidence_modelled + rexp(n, exp_noise)
+  loglik_cases <- dpois(x = incidence_observed, lambda = lamb, log = T)
   
-  loglik_1 <- dpois(x = observed$cases_1,
-                            lambda = incidence_modelled_1 + lambda_2,
-                            log = T)
-  loglik_2 <- dpois(x = observed$cases_2,
-                        lambda = incidence_modelled_2 + lambda_2,
-                        log = T)
-  loglik_3 <- dpois(x = observed$cases_3,
-                         lambda = incidence_modelled_3 + lambda_2,
-                         log = T)
-  
-  loglik_cases <- loglik_1+loglik_2+loglik_3
   if (any(!is.finite(loglik_cases))) {
     # return -Inf to force rejection
     loglik_cases[!is.finite(loglik_cases)] <- -1e10
@@ -46,56 +33,27 @@ index_fun <- function(info){
 # That transform function
 # https://github.com/mrc-ide/mcstate/blob/da9f79e4b5dd421fd2e26b8b3d55c78735a29c27/tests/testthat/test-if2.R#L40
 # https://github.com/mrc-ide/mcstate/issues/184
-parameter_transform <- function(transmission) {
-  age.limits = c(0, 2, 65)
-  N_age <- length(age.limits)
-  contact_demographic <- socialmixr::contact_matrix(polymod,
-                                                    countries = "United Kingdom",
-                                                    age.limits = age.limits,
-                                                    symmetric = TRUE
+parameter_transform <- function(pars) {
+  log_A_ini <- pars[["log_A_ini"]]
+  time_shift_1 <- pars[["time_shift_1"]]
+  time_shift_2 <- pars[["time_shift_2"]]
+  beta_0 <- pars[["beta_0"]]
+  beta_1 <- pars[["beta_1"]]
+  beta_2 <- pars[["beta_2"]]
+  scaled_wane <- pars[["scaled_wane"]]
+  log_delta <- pars[["log_delta"]]
+  # sigma_2 <- pars[["sigma_2"]]
+  
+  list(log_A_ini = log_A_ini,
+       time_shift_1 = time_shift_1,
+       time_shift_2 = time_shift_2,
+       beta_0 = beta_0,
+       beta_1 = beta_1,
+       beta_2 = beta_2,
+       scaled_wane = scaled_wane,
+       log_delta = log_delta#,
+       # sigma_2 = sigma_2
   )
-  
-  transmission <- contact_demographic$matrix /
-    rep(contact_demographic$demography$population, each = ncol(contact_demographic$matrix))
-  transmission
-  
-  transform <- function(pars){
-    # re-define pars with pars that I really wanna fit only
-    log_A_ini <- pars[paste0("log_A_ini_", 1:3)]
-    time_shift_1 <- pars[["time_shift_1"]]
-    time_shift_2 <- pars[["time_shift_2"]]
-    beta_0 <- pars[["beta_0"]]
-    beta_1 <- pars[["beta_1"]]
-    beta_2 <- pars[["beta_2"]]
-    scaled_wane <- pars[["scaled_wane"]]
-    log_delta_kids <- pars[["log_delta_kids"]]
-    log_delta_adults <- pars[["log_delta_adults"]]
-    psi <- pars[["psi"]]
-    # sigma_2 <- pars[["sigma_2"]]
-    
-    pars <- list(log_A_ini = log_A_ini,
-                 time_shift_1 = time_shift_1,
-                 time_shift_2 = time_shift_2,
-                 beta_0 = beta_0,
-                 beta_1 = beta_1,
-                 beta_2 = beta_2,
-                 scaled_wane = scaled_wane,
-                 log_delta_kids = log_delta_kids,
-                 log_delta_adults = log_delta_adults,
-                 psi = psi
-                 # sigma_2 = sigma_2
-    )
-    
-    pars$N_ini <-  contact_demographic$demography$population
-    pars$D_ini <-  c(0,0,0)
-    pars$R_ini <-  c(0,0,0)
-    pars$m <- contact_demographic$matrix
-    # pars$m <- array(contact_demographic$matrix,
-    #                 c(3, 3, 52*22)) # per-week, 22 years; why did Lilith use this??
-    
-    pars
-  }
-  transform
 }
 
 # transform <- function(pars) {
@@ -105,32 +63,22 @@ parameter_transform <- function(transmission) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(# mcstate::pmcmc_parameter("log_A_ini", (-5.69897), min = (-10), max = 0,
-                                  # prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("log_A_ini_1", -4, min = -10, max = 0,
-                                  prior = priors$log_A_ini_1),
-         mcstate::pmcmc_parameter("log_A_ini_2", -4, min = -10, max = 0,
-                                  prior = priors$log_A_ini_2),
-         mcstate::pmcmc_parameter("log_A_ini_3", -4, min = -10, max = 0,
-                                  prior = priors$log_A_ini_3),
+    list(mcstate::pmcmc_parameter("log_A_ini", (-4.69897), min = (-10), max = 0,
+                                  prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.2, min = 0, max = 1,
-                                  prior = priors$time_shift_1),
+                                  prior = priors$time_shifts),
          mcstate::pmcmc_parameter("time_shift_2", 0.2, min = 0, max = 1,
-                                  prior = priors$time_shift_2),
+                                  prior = priors$time_shifts),
          mcstate::pmcmc_parameter("beta_0", 0.06565, min = 0, max = 0.8,
-                                  prior = priors$beta_0),
-         mcstate::pmcmc_parameter("beta_1", 0.07, min = 0, max = 0.8,
-                                  prior = priors$beta_1),
-         mcstate::pmcmc_parameter("beta_2", 0.07, min = 0, max = 0.8,
-                                  prior = priors$beta_2),
+                                  prior = priors$betas),
+         mcstate::pmcmc_parameter("beta_1", 0.07, min = 0, max = 0.7,
+                                  prior = priors$betas),
+         mcstate::pmcmc_parameter("beta_2", 0.07, min = 0, max = 0.7,
+                                  prior = priors$betas),
          mcstate::pmcmc_parameter("scaled_wane", (0.5), min = (0), max = 1,
                                   prior = priors$scaled_wane),
-         mcstate::pmcmc_parameter("log_delta_kids", (-4.98), min = (-10), max = 0.7,
-                                  prior = priors$log_delta_kids),
-         mcstate::pmcmc_parameter("log_delta_adults", (-4.98), min = (-10), max = 0.7,
-                                  prior = priors$log_delta_adults),
-         mcstate::pmcmc_parameter("psi", (1), min = (0), max = 1,
-                                  prior = priors$psi)
+         mcstate::pmcmc_parameter("log_delta", (-4.98), min = (-10), max = 0.7,
+                                  prior = priors$log_delta)#,
          # mcstate::pmcmc_parameter("sigma_2", 1, min = 0, max = 10,
          #                          prior = priors$sigma_2)
     ),
@@ -139,44 +87,24 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
 }
 
+
 prepare_priors <- function(pars) {
   priors <- list()
   
-  priors$log_A_ini_1 <- function(s) {
+  priors$log_A_ini <- function(s) {
     dunif(s, min = (-10), max = 0, log = TRUE)
   }
-  priors$log_A_ini_2 <- function(s) {
-    dunif(s, min = (-10), max = 0, log = TRUE)
-  }
-  priors$log_A_ini_3 <- function(s) {
-    dunif(s, min = (-10), max = 0, log = TRUE)
-  }
-  priors$time_shift_1 <- function(s) {
+  priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
   }
-  priors$time_shift_2 <- function(s) {
-    dunif(s, min = 0, max = 1, log = TRUE)
-  }
-  priors$beta_0 <- function(s) {
-    dgamma(s, shape = 1, scale = 0.1, log = TRUE)
-  }
-  priors$beta_1 <- function(s) {
-    dgamma(s, shape = 1, scale = 0.1, log = TRUE)
-  }
-  priors$beta_2 <- function(s) {
+  priors$betas <- function(s) {
     dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
   priors$scaled_wane <- function(s) {
-    dbeta(s, shape1 = 1.25, shape2 = 1.25, log = TRUE)
+    dbeta(s, shape1 = 2.5, shape2 = 2.5, log = TRUE)
   }
-  priors$log_delta_kids <- function(s) {
+  priors$log_delta <- function(s) {
     dunif(s, min = (-10), max = 0.7, log = TRUE)
-  }
-  priors$log_delta_adults <- function(s) {
-    dunif(s, min = (-10), max = 0.7, log = TRUE)
-  }
-  priors$psi <- function(s) {
-    dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
   # priors$sigma_2 <- function(s) {
   #   dgamma(s, shape = 1, scale = 1, log = TRUE)

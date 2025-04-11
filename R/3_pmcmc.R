@@ -18,8 +18,8 @@ source("global/all_function.R")
 
 # To make my life easier I compile the Serotype 1 cases into a new object called sir_data
 # data is fed as an input to mcstate::particle_filter_data
-incidence <- read.csv("inputs/incidence_week_12F_3ageG_all.csv") %>% 
-  dplyr::mutate(across(everything(), ~ tidyr::replace_na(.x, 0)))
+incidence <- read.csv("inputs/incidence_week_12F_allAge.csv") # %>% 
+  # dplyr::mutate(across(everything(), ~ tidyr::replace_na(.x, 0)))
 
 dt <- (1/7) # rate must be an integer; 0.25 to make it 4 days, I make it 1/7
 sir_data <- mcstate::particle_filter_data(data = incidence,
@@ -35,18 +35,18 @@ rmarkdown::paged_table(sir_data)
 # > 2
 # 2-64
 # 65+
-age.limits = c(0, 2, 65)
-N_age <- length(age.limits)
-
-contact_demographic <- socialmixr::contact_matrix(polymod,
-                                                  countries = "United Kingdom",
-                                                  age.limits = age.limits,
-                                                  symmetric = TRUE
-)
-
-transmission <- contact_demographic$matrix /
-  rep(contact_demographic$demography$population, each = ncol(contact_demographic$matrix))
-transmission
+# age.limits = c(0, 2, 65)
+# N_age <- length(age.limits)
+# 
+# contact_demographic <- socialmixr::contact_matrix(polymod,
+#                                                   countries = "United Kingdom",
+#                                                   age.limits = age.limits,
+#                                                   symmetric = TRUE
+# )
+# 
+# transmission <- contact_demographic$matrix /
+#   rep(contact_demographic$demography$population, each = ncol(contact_demographic$matrix))
+# transmission
 
 
 ## 2a. Model Load ##############################################################
@@ -56,26 +56,17 @@ transmission
 gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
 
 # This is part of sir odin model:
-pars <- list(m = transmission,
-             N_ini = contact_demographic$demography$population,
-             D_ini = c(0,0,0),
-             R_ini = c(0,0,0),
-             vacc = c(0,0,0), # no vaccination coverage for 12F
-             # we will parameterise pars below:
-             # log_A_ini_1 = -4,
-             # log_A_ini_2 = -4,
-             # log_A_ini_3 = -4,
-             # log_A_ini = c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3),
-             log_A_ini = c(-4, -4, -4),
-             time_shift_1 = 0.366346711348848,
-             time_shift_2 = 0.366346711348848,
-             beta_0 = 0.063134635077278,
-             beta_1 = 0.161472506104886,
-             beta_2 = 0.161472506104886,
-             scaled_wane = (0.9),
-             log_delta_kids = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
-             log_delta_adults = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
-             psi = (0.5)
+pars <- list(log_A_ini = (-5.69897), # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
+             time_shift_1 = 0.2,
+             time_shift_2 = 0.2,
+             beta_0 = 0.06565,
+             beta_1 = 0.07, # in toy data the real value of beta_1 = 0.07
+             beta_2 = 0.2,
+             max_wane = (-0.5),
+             min_wane = (-4),
+             scaled_wane = (0.5),
+             log_delta = (-4.98),
+             sigma_2 = 1
 )
 
 # https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model-over-time
@@ -100,14 +91,16 @@ pars <- list(m = transmission,
 # (281675/4/1/20)/3520.937
 
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
-
+# 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(200, 12)
+proposal_matrix <- diag(300, 8)
 proposal_matrix <- (proposal_matrix + t(proposal_matrix)) / 2
-rownames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
-colnames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
+rownames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
+colnames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
 
-transform <- parameter_transform(transmission)
+transform <- function(pars) {
+  parameter_transform(pars)
+}
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
                                 proposal = proposal_matrix,
@@ -122,7 +115,7 @@ mcmc_pars <- prepare_parameters(initial_pars = pars,
 # pmcmc_run <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
 
 # Directory for saving the outputs
-dir.create("outputs/heterogeneity/trial_stochastic_500p_1e3/figs", FALSE, TRUE)
+dir.create("outputs/non_heterogeneity/trial_deterministic_1e3/figs", FALSE, TRUE)
 
 # Trial combine pMCMC + tuning #################################################
 pmcmc_run_plus_tuning <- function(n_pars, n_sts){
@@ -182,8 +175,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   new_proposal_matrix <- new_proposal_matrix/1e3 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix)) / 2
-  rownames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
-  colnames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars, priors = priors, proposal = new_proposal_matrix, transform = transform)
