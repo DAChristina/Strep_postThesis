@@ -188,14 +188,15 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
                                          rerun_every = 50,
                                          rerun_random = TRUE,
                                          progress = TRUE,
-                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
-                                                                                       # initial_scaling = 1,
+                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 10,
+                                                                                       initial_scaling = 0.7,
                                                                                        scaling_increment = NULL,
-                                                                                       # log_scaling_update = T,
+                                                                                       log_scaling_update = T,
                                                                                        acceptance_target = 0.234,
-                                                                                       forget_rate = 0.2,
-                                                                                       forget_end = Inf,
-                                                                                       adapt_end = Inf)
+                                                                                       forget_rate = 0.1,
+                                                                                       forget_end = n_sts*0.75,
+                                                                                       adapt_end = n_sts*0.95,
+                                                                                       pre_diminish = n_sts*0.1)
                                          )
   
   filter <- mcstate::particle_filter$new(data = sir_data,
