@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#PBS -l walltime=70:00:00
+#PBS -l select=1:ncpus=16:mem=120gb
+# job sizing
+# https://icl-rcs-user-guide.readthedocs.io/en/latest/hpc/pilot/cx3-phase2/
+
+source ~/anaconda3/etc/profile.d/conda.sh
+
+cd $PBS_O_WORKDIR
+#mkdir /trialFolder # Failed
+conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" --n_particles 10 --n_steps 100000 > "$HOME/Strep_postThesis/myresult.txt"
+#mv *.pdf myresult.txt $PBS_O_WORKDIR
+
+printenv > "$HOME/Strep_postThesis/myenv.txt"
+#mv myenv.txt $PBS_O_WORKDIR
