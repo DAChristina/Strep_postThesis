@@ -119,7 +119,7 @@ mcmc_pars <- prepare_parameters(initial_pars = pars,
 
 # Trial combine pMCMC + tuning #################################################
 pmcmc_run_plus_tuning <- function(n_pars, n_sts){
-  dir_name <- paste0("outputs/non_heterogeneity/trial_deterministic_", n_sts, "/figs")
+  dir_name <- paste0("outputs/non_heterogeneity/trial_deterministic_", n_sts, "/")
   dir.create(dir_name, FALSE, TRUE)
   filter <- mcstate::particle_filter$new(data = sir_data,
                                          model = gen_sir, # Use odin.dust input
@@ -145,35 +145,30 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   # The pmcmc
   pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
   pmcmc_result
-  saveRDS(pmcmc_result, "outputs/non_heterogeneity/pmcmc_result.rds")
+  saveRDS(pmcmc_result, paste0(dir_name, "pmcmc_result.rds"))
   
   new_proposal_mtx <- cov(pmcmc_result$pars)
-  write.csv(new_proposal_mtx, "outputs/non_heterogeneity/new_proposal_mtx.csv", row.names = FALSE)
+  write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx.csv"), row.names = FALSE)
   
   lpost_max <- which.max(pmcmc_result$probabilities[, "log_posterior"])
   write.csv(as.list(pmcmc_result$pars[lpost_max, ]),
-            "outputs/non_heterogeneity/initial.csv", row.names = FALSE)
+            paste0(dir_name, "initial.csv"), row.names = FALSE)
   
   # Further processing for thinning chains
   mcmc1 <- pmcmc_further_process(n_sts, pmcmc_result)
-  write.csv(mcmc1, "outputs/non_heterogeneity/mcmc1.csv", row.names = FALSE)
+  write.csv(mcmc1, paste0(dir_name, "mcmc1.csv"), row.names = FALSE)
   
   # Calculating ESS & Acceptance Rate
   calc_ess <- ess_calculation(mcmc1)
-  write.csv(calc_ess, "outputs/non_heterogeneity/calc_ess.csv", row.names = FALSE)
+  write.csv(calc_ess, paste0(dir_name, "calc_ess.csv"), row.names = FALSE)
   
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc1)
-  # trial recursively save figs
-  # png("outputs/non_heterogeneity/trial_deterministic_1e3/figs/mcmc1_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  # pmcmc_trace(mcmc1)
-  # dev.off()
   
   Sys.sleep(10) # wait 10 secs before conducting tuning
   
   # New proposal matrix
-  new_proposal_matrix <- as.matrix(read.csv("outputs/non_heterogeneity/new_proposal_mtx.csv"))
-  # new_proposal_matrix <- new_proposal_matrix[, -1] # previously row.names = TRUE
+  new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   new_proposal_matrix <- new_proposal_matrix/1e3 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix)) / 2
@@ -211,63 +206,42 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   # The pmcmc
   tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter_deterministic, control = tune_control)
   tune_pmcmc_result
-  saveRDS(tune_pmcmc_result, "outputs/non_heterogeneity/tune_pmcmc_result.rds")
+  saveRDS(tune_pmcmc_result, paste0(dir_name, "tune_pmcmc_result.rds"))
   
   new_proposal_mtx <- cov(pmcmc_result$pars)
-  write.csv(new_proposal_mtx, "outputs/non_heterogeneity/new_proposal_mtx.csv", row.names = FALSE)
+  write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx.csv"), row.names = FALSE)
   
   tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
   write.csv(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]),
-            "outputs/non_heterogeneity/tune_initial.csv", row.names = FALSE)
+            paste0(dir_name, "tune_initial.csv"), row.names = FALSE)
   
   # Further processing for thinning chains
   mcmc2 <- tuning_pmcmc_further_process(n_sts, tune_pmcmc_result)
   mcmc2 <- coda::as.mcmc(cbind(
     tune_pmcmc_result$probabilities, tune_pmcmc_result$pars))
-  write.csv(mcmc2, "outputs/non_heterogeneity/mcmc2.csv", row.names = FALSE)
+  write.csv(mcmc2, paste0(dir_name, "mcmc2.csv"), row.names = FALSE)
   
   # Calculating ESS & Acceptance Rate
   tune_calc_ess <- ess_calculation(mcmc2)
-  write.csv(tune_calc_ess, "outputs/non_heterogeneity/tune_calc_ess.csv", row.names = FALSE)
+  write.csv(tune_calc_ess, paste0(dir_name, "tune_calc_ess.csv"), row.names = FALSE)
   
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc2)
-  
-  # png("outputs/non_heterogeneity/trial_deterministic_1e3/figs/mcmc2_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  # pmcmc_trace(mcmc2)
-  # dev.off()
   
   ##############################################################################
   # MCMC Diagnostics
   
   # 1. Gelman-Rubin Diagnostic
   # https://cran.r-project.org/web/packages/coda/coda.pdf
-  # png("pictures/diag_gelman_rubin.png", width = 17, height = 12, unit = "cm", res = 1200)
   figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
   fig <- diag_cov_mtx(figs_gelman_init)
   fig <- diag_gelman_rubin(figs_gelman_init)
-  # dev.off()
-  
-  # png("outputs/non_heterogeneity/trial_deterministic_1e3/figs/mcmc2_diag_gelmanRubin_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  # diag_gelman_rubin(figs_gelman_init)
-  # dev.off()
   
   # 2. Autocorrelation
-  # png("pictures/diag_aucorr.png", width = 17, height = 12, unit = "cm", res = 1200)
   fig <- diag_aucorr(mcmc2)
-  # dev.off()
   
-  # png("outputs/non_heterogeneity/trial_deterministic_1e3/figs/mcmc2_diag_auCorr_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  # diag_aucorr(mcmc2)
-  # dev.off()
-  
-  # png("outputs/non_heterogeneity/temporary_deterministic_1e3/figs/mcmc2_ggpairs_%03d.png", width = 20, height = 20, unit = "cm", res = 600)
+  # 3. ggpairs
   fig <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
-  # dev.off()
-  
-  # png("outputs/non_heterogeneity/trial_deterministic_1e3/figs/mcmc2_diag_ggPairs_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  # GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
-  # dev.off()
   
 }
 

@@ -9,7 +9,7 @@ source ~/anaconda3/etc/profile.d/conda.sh
 
 cd $PBS_O_WORKDIR
 #mkdir /trialFolder # Failed
-conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" --n_particles 10 --n_steps 100000 > "$HOME/Strep_postThesis/myresult.txt"
+conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" --n_particles 10 --n_steps 1e+05 > "$HOME/Strep_postThesis/myresult.txt"
 #mv *.pdf myresult.txt $PBS_O_WORKDIR
 
 printenv > "$HOME/Strep_postThesis/myenv.txt"
