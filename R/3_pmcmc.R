@@ -18,14 +18,16 @@ source("global/all_function.R")
 
 # To make my life easier I compile the Serotype 1 cases into a new object called sir_data
 # data is fed as an input to mcstate::particle_filter_data
-incidence <- read.csv("inputs/incidence_week_12F_allAge.csv") # %>% 
+incidence <- read.csv("inputs/incidence_week_12F_allAge.csv") %>% 
+  dplyr::mutate(day = week*7) #%>% 
   # dplyr::mutate(across(everything(), ~ tidyr::replace_na(.x, 0)))
 
-dt <- (1/7) # rate must be an integer; 0.25 to make it 4 days, I make it 1/7
+dt <- (1) # 0.25 to make it 4 days, I make it 1/7, but I convert week to day in incidence
 sir_data <- mcstate::particle_filter_data(data = incidence,
-                                          time = "week",
+                                          time = "day",
                                           rate = 1 / dt,
-                                          initial_time = 0) # Initial time makes t0 start from 0 (not 1)
+                                          initial_time = 0) %>% # Initial time makes t0 start from 0 (not 1)
+  glimpse()
 
 # Annotate the data so that it is suitable for the particle filter to use
 rmarkdown::paged_table(sir_data)
