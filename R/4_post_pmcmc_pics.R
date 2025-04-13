@@ -1,12 +1,13 @@
 source("global/all_function.R")
 
 # load chains
-n_sts <- 10000
-dir_name <- paste0("outputs/non_heterogeneity/trial_deterministic_", n_sts, "/")
+n_sts <- 500
+dir_name <- paste0("outputs/test_simpler_model/trial_deterministic_", n_sts, "/")
 dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
 mcmc1 <- read.csv(paste0(dir_name, "mcmc1.csv"))
 mcmc2 <- read.csv(paste0(dir_name, "mcmc2.csv"))
-tune_pmcmc_result <- readRDS(paste0(dir_name, "tune_pmcmc_result.rds"))
+mcmc2_burnedin <- read.csv(paste0(dir_name, "mcmc2_burnedin.csv"))
+# tune_pmcmc_result <- readRDS(paste0(dir_name, "tune_pmcmc_result.rds"))
 
 # mcmc1
 # fig <- pmcmc_trace(coda::as.mcmc(mcmc1))
@@ -20,6 +21,13 @@ dev.off()
 png(paste0(dir_name, "figs/mcmc2_%02d.png"),
     width = 17, height = 17, unit = "cm", res = 600)
 pmcmc_trace(coda::as.mcmc(mcmc2))
+dev.off()
+
+# mcmc2 burned in
+# fig <- pmcmc_trace(coda::as.mcmc(mcmc2))
+png(paste0(dir_name, "figs/mcmc2_burnedin_%02d.png"),
+    width = 17, height = 17, unit = "cm", res = 600)
+pmcmc_trace(coda::as.mcmc(mcmc2_burnedin))
 dev.off()
 
 

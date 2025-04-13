@@ -59,13 +59,13 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
 
 # This is part of sir odin model:
 pars <- list(log_A_ini = (-5.69897), # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
-             time_shift_1 = 0.2,
-             time_shift_2 = 0.2,
+             # time_shift_1 = 0.2,
+             # time_shift_2 = 0.2,
              beta_0 = 0.06565,
-             beta_1 = 0.07, # in toy data the real value of beta_1 = 0.07
-             beta_2 = 0.2,
-             max_wane = (-0.5),
-             min_wane = (-4),
+             # beta_1 = 0.07, # in toy data the real value of beta_1 = 0.07
+             # beta_2 = 0.2,
+             # max_wane = (-0.5),
+             # min_wane = (-4),
              scaled_wane = (0.5),
              log_delta = (-4.98),
              sigma_2 = 1
@@ -95,10 +95,10 @@ pars <- list(log_A_ini = (-5.69897), # S_ini*10^(log10(-5.69897)) = 120 people; 
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 # 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(300, 8)
+proposal_matrix <- diag(300, 4)
 proposal_matrix <- (proposal_matrix + t(proposal_matrix)) / 2
-rownames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
-colnames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
+rownames(proposal_matrix) <- c("log_A_ini", "beta_0", "scaled_wane", "log_delta")
+colnames(proposal_matrix) <- c("log_A_ini", "beta_0", "scaled_wane", "log_delta")
 
 transform <- function(pars) {
   parameter_transform(pars)
@@ -117,11 +117,11 @@ mcmc_pars <- prepare_parameters(initial_pars = pars,
 # pmcmc_run <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
 
 # Directory for saving the outputs
-# dir.create("outputs/non_heterogeneity/trial_deterministic_1e3/figs", FALSE, TRUE)
+# dir.create("outputs/test_simpler_model/trial_deterministic_1e3/figs", FALSE, TRUE)
 
 # Trial combine pMCMC + tuning #################################################
 pmcmc_run_plus_tuning <- function(n_pars, n_sts){
-  dir_name <- paste0("outputs/non_heterogeneity/trial_deterministic_", n_sts, "/")
+  dir_name <- paste0("outputs/test_simpler_model/trial_deterministic_", n_sts, "/")
   dir.create(dir_name, FALSE, TRUE)
   filter <- mcstate::particle_filter$new(data = sir_data,
                                          model = gen_sir, # Use odin.dust input
@@ -172,10 +172,10 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix/1e3 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
+  new_proposal_matrix <- new_proposal_matrix #*10 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix)) / 2
-  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "beta_0", "scaled_wane", "log_delta")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "beta_0", "scaled_wane", "log_delta")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars, priors = priors, proposal = new_proposal_matrix, transform = transform)
@@ -187,16 +187,16 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
                                          rerun_every = 50,
                                          rerun_random = TRUE,
                                          progress = TRUE,
-                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 10,
-                                                                                       initial_scaling = 0.7,
-                                                                                       scaling_increment = NULL,
+                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
+                                                                                       initial_scaling = 1,
+                                                                                       # scaling_increment = NULL,
                                                                                        log_scaling_update = T,
                                                                                        acceptance_target = 0.234,
-                                                                                       forget_rate = 0.1,
-                                                                                       forget_end = n_sts*0.75,
-                                                                                       adapt_end = n_sts*0.95,
+                                                                                       # forget_rate = 0.1,
+                                                                                       # forget_end = n_sts*0.75,
+                                                                                       # adapt_end = n_sts*0.95,
                                                                                        pre_diminish = n_sts*0.1)
-                                         )
+  )
   
   filter <- mcstate::particle_filter$new(data = sir_data,
                                          model = gen_sir, # Use odin.dust input
@@ -218,17 +218,23 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
             paste0(dir_name, "tune_initial.csv"), row.names = FALSE)
   
   # Further processing for thinning chains
-  mcmc2 <- tuning_pmcmc_further_process(n_sts, tune_pmcmc_result)
   mcmc2 <- coda::as.mcmc(cbind(
     tune_pmcmc_result$probabilities, tune_pmcmc_result$pars))
   write.csv(mcmc2, paste0(dir_name, "mcmc2.csv"), row.names = FALSE)
+  
+  mcmc2_burnedin <- tuning_pmcmc_further_process(n_sts, tune_pmcmc_result)
+  write.csv(mcmc2_burnedin, paste0(dir_name, "mcmc2_burnedin.csv"), row.names = FALSE)
   
   # Calculating ESS & Acceptance Rate
   tune_calc_ess <- ess_calculation(mcmc2)
   write.csv(tune_calc_ess, paste0(dir_name, "tune_calc_ess.csv"), row.names = FALSE)
   
+  tune_calc_ess_burnedin <- ess_calculation(mcmc2_burnedin)
+  write.csv(tune_calc_ess_burnedin, paste0(dir_name, "tune_calc_ess_burnedin.csv"), row.names = FALSE)
+  
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc2)
+  fig <- pmcmc_tracee(mcmc2_burnedin)
   
   ##############################################################################
   # MCMC Diagnostics
