@@ -32,9 +32,9 @@ transmission
 # Running the SIR model with dust
 pars <- list(m = transmission,
              N_ini = contact_demographic$demography$population,
-             log_A_ini = c(-3, -5, -3),
-             D_ini = c(0, 0, 0),
-             R_ini = c(0, 0, 0),
+             log_A_ini = -3,
+             D_ini = 0,
+             R_ini = 0,
              time_shift_1 = 0.265185074455071,
              time_shift_2 = 0.2688027206357,
              beta_0 = 0.10904100678898,
@@ -57,7 +57,7 @@ sir_model <- gen_sir$new(pars = pars,
 
 # compartment position check
 sir_model$info()
-sir_model$info()$index$D
+sir_model$info()$index$n_AD_weekly
 
 # Beta check
 # time <- seq(1, n_times, 1)

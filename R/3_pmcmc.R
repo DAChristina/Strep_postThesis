@@ -26,8 +26,8 @@ dt <- (1) # 0.25 to make it 4 days, I make it 1/7, but I convert week to day in 
 sir_data <- mcstate::particle_filter_data(data = incidence,
                                           time = "day",
                                           rate = 1 / dt,
-                                          initial_time = 0) %>% # Initial time makes t0 start from 0 (not 1)
-  glimpse()
+                                          initial_time = 0) # %>% # Initial time makes t0 start from 0 (not 1)
+  # glimpse()
 
 # Annotate the data so that it is suitable for the particle filter to use
 rmarkdown::paged_table(sir_data)
@@ -172,7 +172,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix/1e3 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
+  new_proposal_matrix <- new_proposal_matrix # trust adaptive proposal instead
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix)) / 2
   rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
   colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta")
@@ -187,14 +187,14 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
                                          rerun_every = 50,
                                          rerun_random = TRUE,
                                          progress = TRUE,
-                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 10,
-                                                                                       initial_scaling = 0.7,
-                                                                                       scaling_increment = NULL,
+                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
+                                                                                       initial_scaling = 1,
+                                                                                       # scaling_increment = NULL,
                                                                                        log_scaling_update = T,
                                                                                        acceptance_target = 0.234,
-                                                                                       forget_rate = 0.1,
-                                                                                       forget_end = n_sts*0.75,
-                                                                                       adapt_end = n_sts*0.95,
+                                                                                       # forget_rate = 0.1,
+                                                                                       # forget_end = n_sts*0.75,
+                                                                                       # adapt_end = n_sts*0.95,
                                                                                        pre_diminish = n_sts*0.1)
                                          )
   
@@ -218,17 +218,23 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
             paste0(dir_name, "tune_initial.csv"), row.names = FALSE)
   
   # Further processing for thinning chains
-  mcmc2 <- tuning_pmcmc_further_process(n_sts, tune_pmcmc_result)
   mcmc2 <- coda::as.mcmc(cbind(
     tune_pmcmc_result$probabilities, tune_pmcmc_result$pars))
   write.csv(mcmc2, paste0(dir_name, "mcmc2.csv"), row.names = FALSE)
+  
+  mcmc2_burnedin <- tuning_pmcmc_further_process(n_sts, tune_pmcmc_result)
+  write.csv(mcmc2_burnedin, paste0(dir_name, "mcmc2_burnedin.csv"), row.names = FALSE)
   
   # Calculating ESS & Acceptance Rate
   tune_calc_ess <- ess_calculation(mcmc2)
   write.csv(tune_calc_ess, paste0(dir_name, "tune_calc_ess.csv"), row.names = FALSE)
   
+  tune_calc_ess_burnedin <- ess_calculation(mcmc2_burnedin)
+  write.csv(tune_calc_ess_burnedin, paste0(dir_name, "tune_calc_ess_burnedin.csv"), row.names = FALSE)
+  
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc2)
+  fig <- pmcmc_tracee(mcmc2_burnedin)
   
   ##############################################################################
   # MCMC Diagnostics

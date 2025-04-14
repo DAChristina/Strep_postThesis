@@ -1,10 +1,10 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
 
 case_compare <- function(state, observed, pars = NULL) {
-  exp_noise <- 1e4
+  exp_noise <- 10
   
-  # incidence based on model's "n_AD_daily" from gen_sir$new(pars = list(), time = 0, n_particles = 1L)$info()
-  incidence_modelled <- state[6, , drop = TRUE] # n_AD_daily is located at state[6, , ]
+  # incidence based on model's "n_AD_weekly" from gen_sir$new(pars = list(), time = 0, n_particles = 1L)$info()
+  incidence_modelled <- state[6, , drop = TRUE] # n_AD_weekly is located at state[6, , ]
   
   # incidence based on data
   incidence_observed <- observed$cases # daily new cases
