@@ -26,8 +26,8 @@ dt <- (1) # 0.25 to make it 4 days, I make it 1/7, but I convert week to day in 
 sir_data <- mcstate::particle_filter_data(data = incidence,
                                           time = "day",
                                           rate = 1 / dt,
-                                          initial_time = 0) %>% # Initial time makes t0 start from 0 (not 1)
-  glimpse()
+                                          initial_time = 0) #%>% # Initial time makes t0 start from 0 (not 1)
+  #glimpse()
 
 # Annotate the data so that it is suitable for the particle filter to use
 rmarkdown::paged_table(sir_data)
@@ -234,7 +234,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc2)
-  fig <- pmcmc_tracee(mcmc2_burnedin)
+  fig <- pmcmc_trace(mcmc2_burnedin)
   
   ##############################################################################
   # MCMC Diagnostics
