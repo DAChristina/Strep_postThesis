@@ -4,7 +4,7 @@ library(tidyverse)
 # either non-heterogeneity, 3 or 6 ageG
 
 # for gendata I wanna see what was analysed previously.
-
+# I use floor_date instead of ceiling_date
 Ne <- read.csv("raw_data/gen_lw/Ne_over_time.csv") %>% 
   dplyr::mutate(year = round(Time)) %>%
   # dplyr::filter(between(year, 2011, 2022)) %>% 
@@ -71,7 +71,7 @@ gen <-  read.csv("raw_data/gen_lw/genomic_epi_12F.csv") %>%
                 year = lubridate::year(collection_date),
                 month = month(collection_date),
                 yearMonth = as.Date(paste0(format(collection_date, "%Y-%m"), "-01")), # year-month as date
-                week_date = lubridate::ceiling_date(collection_date, "week")
+                week_date = lubridate::floor_date(collection_date, "week")
                 ) %>% 
   dplyr::select(-ngsid, -Age, -YEAR) %>% 
   # dplyr::filter(!is.na(strain), year > 2018) %>% 

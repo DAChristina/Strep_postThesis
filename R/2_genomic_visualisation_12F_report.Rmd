@@ -28,8 +28,10 @@ Previously, Lilith use epidemiological annual data of invasive 12F cases separat
 
 ```{r}
 # load data
-dat_c <- read.csv("../raw_data/12F_Jan_2025_combined_cleaned.csv")
-gen <- read.csv("../raw_data/genomic_data_cleaned.csv")
+dat_c <- read.csv("../raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+  dplyr::filter(ageGroup3 != "Unknown")
+gen <- read.csv("../raw_data/genomic_data_cleaned.csv") %>% 
+  dplyr::filter(!is.na(strain))
 
 col_map <- c(
   # Data version
@@ -102,6 +104,10 @@ vaccine_UK <- data.frame(
 )
 ```
 
+## 2. Visualisations
+
+### 2.1. Non-heterogeneity: annually, monthly and weekly
+
 ```{r}
 # data preparation
 # non-heterogeneity
@@ -123,8 +129,7 @@ allAges_annually <- dplyr::full_join(
     names_to = "type",
     values_to = "count"
   ) %>% 
-  dplyr::mutate(across(everything(), ~replace_na(.x, 0))) %>% 
-  glimpse()
+  dplyr::mutate(across(everything(), ~replace_na(.x, 0)))
 
 allAges_monthly <- dplyr::full_join(
   dat_c %>% 
@@ -145,167 +150,429 @@ allAges_monthly <- dplyr::full_join(
     values_to = "count"
   ) %>% 
   dplyr::mutate(yearMonth = as.Date(yearMonth),
-                across(everything(), ~replace_na(.x, 0))) %>%
-  glimpse()
+                across(everything(), ~replace_na(.x, 0)))
 
 allAges_weekly <- dplyr::full_join(
   dat_c %>% 
-    dplyr::group_by(week_date) %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+                  ) %>% 
+    dplyr::group_by(yearWeek) %>% 
     dplyr::summarise(count_serotype = sum(counts)) %>% 
     dplyr::ungroup()
   ,
   gen %>% 
-    dplyr::group_by(week_date) %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+                  ) %>% 
+    dplyr::group_by(yearWeek) %>% 
     dplyr::summarise(count_WGS = n()) %>% 
     dplyr::ungroup()
   ,
-  by = "week_date"
+  by = "yearWeek"
 ) %>% 
   tidyr::pivot_longer(
     cols = starts_with("count_"),
     names_to = "type",
     values_to = "count"
   ) %>% 
-  dplyr::mutate(week_date = as.Date(week_date),
-                across(everything(), ~replace_na(.x, 0))) %>% 
-  glimpse()
+  dplyr::mutate(# yearWeek = as.Date(yearWeek),
+                across(everything(), ~replace_na(.x, 0)))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-ggplot(allAges_annually, aes(x = year, y = count, color = type)) +
+# plot preparation
+p_allAges_year <- ggplot(allAges_annually, aes(x = year, y = count, color = type)) +
   geom_line() +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = c(0.1, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
 
-ggplot(allAges_monthly, aes(x = yearMonth, y = count, color = type)) +
+p_allAges_month <- ggplot(allAges_monthly, aes(x = yearMonth, y = count, color = type)) +
   geom_line() +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = c(0.1, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
 
-ggplot(allAges_weekly, aes(x = week_date, y = count, color = type)) +
+p_allAges_week <- ggplot(allAges_weekly, aes(x = yearWeek, y = count, color = type)) +
   geom_line() +
   scale_x_date(limits = c(min(as.Date(gen$collection_date)), max(as.Date(dat_c$week_date))),
                date_breaks = "1 year",
                date_labels = "%Y") +
-  theme_bw()
-
-
-# 3 age groups
-
-
-
-# 6 age groups
-
+  theme_bw() +
+  theme(legend.position = c(0.1, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
 
 
 ```
 
-## 2. Visualisations
-
-### 2.1. Weekly
+I think we can test weekly data for non-heterogeneity model, but we have to omit the data before min(as.Date(gen\$collection_date))+541
 
 ```{r}
-# non-heterogeneity
-# all WGS
+# load picts
+
+p_allAges <- cowplot::plot_grid(p_allAges_year, p_allAges_month, p_allAges_week,
+                                ncol = 1,
+                                labels = c("A", "B", "C"))
 
 
-# GPSC55 only
+p_allAges
 ```
+
+### 2.1. 3 demographic groups: annually, monthly and weekly
 
 ```{r}
-# 3 age groups
-# all WGS
+# data preparation
+# ageGroup3
+ageGroup3_annually <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::group_by(year, ageGroup3) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::group_by(year, ageGroup3) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = c("year", "ageGroup3")
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(across(everything(), ~replace_na(.x, 0)))
+
+ageGroup3_monthly <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::group_by(yearMonth, ageGroup3) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::group_by(yearMonth, ageGroup3) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = c("yearMonth", "ageGroup3")
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(yearMonth = as.Date(yearMonth),
+                across(everything(), ~replace_na(.x, 0)))
+
+ageGroup3_weekly <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+                  ) %>% 
+    dplyr::group_by(yearWeek, ageGroup3) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+                  ) %>% 
+    dplyr::group_by(yearWeek, ageGroup3) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = c("yearWeek", "ageGroup3")
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(# yearWeek = as.Date(yearWeek),
+                across(everything(), ~replace_na(.x, 0)))
 
 
-# GPSC55 only
+# plot preparation
+p_ageGroup3_year <- ggplot(ageGroup3_annually, aes(x = year, y = count, color = type)) +
+  geom_line() +
+  scale_x_continuous(limits = c(min(lubridate::year(as.Date(gen$collection_date)))+1.5, max(lubridate::year(as.Date(dat_c$week_date)))),
+                     breaks = ~ axisTicks(., log = FALSE)) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  # theme(legend.position = c(0.1, 0.85),
+  #       legend.title = element_blank(),
+  #       legend.key.size = unit(0.8, "lines"),
+  #       legend.text = element_text(size = 10),
+  #       legend.background = element_rect(fill = "transparent", color = "transparent")) +
+  facet_wrap(~ ageGroup3,
+             nrow =1,
+             scales = "free_y")
+
+p_ageGroup3_month <- ggplot(ageGroup3_monthly, aes(x = yearMonth, y = count, color = type)) +
+  geom_line() +
+  scale_x_date(limits = c(min(as.Date(gen$collection_date))+541, max(as.Date(dat_c$week_date))),
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  # theme(legend.position = c(0.1, 0.85),
+  #       legend.title = element_blank(),
+  #       legend.key.size = unit(0.8, "lines"),
+  #       legend.text = element_text(size = 10),
+  #       legend.background = element_rect(fill = "transparent", color = "transparent")) +
+  facet_wrap(~ ageGroup3,
+             nrow =1,
+             scales = "free_y")
+
+p_ageGroup3_week <- ggplot(ageGroup3_weekly, aes(x = yearWeek, y = count, color = type)) +
+  geom_line() +
+  scale_x_date(limits = c(min(as.Date(gen$collection_date))+541, max(as.Date(dat_c$week_date))),
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  # theme(legend.position = c(0.1, 0.85),
+  #       legend.title = element_blank(),
+  #       legend.key.size = unit(0.8, "lines"),
+  #       legend.text = element_text(size = 10),
+  #       legend.background = element_rect(fill = "transparent", color = "transparent")) +
+  facet_wrap(~ ageGroup3,
+             nrow =1,
+             scales = "free_y")
+
+
 ```
+
+I think we can test weekly data for 3 age groups, but we have to omit the data before min(as.Date(gen\$collection_date))+541
 
 ```{r}
-# 6 age groups
-# all WGS
+# load picts
+
+p_ageGroup3 <- cowplot::plot_grid(p_ageGroup3_year, p_ageGroup3_month, p_ageGroup3_week,
+                                ncol = 1,
+                                labels = c("A", "B", "C"))
 
 
-# GPSC55 only
+p_ageGroup3
 ```
 
-x
 
-### 2.1. Monthly
+### 2.1. 6 demographic groups: annually, monthly and weekly
+```{r}
+# data preparation
+# ageGroup6
+ageGroup6_annually <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::group_by(year, ageGroup6) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::group_by(year, ageGroup6) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = c("year", "ageGroup6")
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(across(everything(), ~replace_na(.x, 0)),
+                ageGroup6 = factor(ageGroup6,
+                                   levels = c("<2", "2-4", "5-14",
+                                              "15-44", "45-64", "65+")))
+
+ageGroup6_monthly <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::group_by(yearMonth, ageGroup6) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::group_by(yearMonth, ageGroup6) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = c("yearMonth", "ageGroup6")
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(yearMonth = as.Date(yearMonth),
+                across(everything(), ~replace_na(.x, 0)),
+                ageGroup6 = factor(ageGroup6,
+                                   levels = c("<2", "2-4", "5-14",
+                                              "15-44", "45-64", "65+")))
+
+ageGroup6_weekly <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+                  ) %>% 
+    dplyr::group_by(yearWeek, ageGroup6) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+                  ) %>% 
+    dplyr::group_by(yearWeek, ageGroup6) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = c("yearWeek", "ageGroup6")
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(# yearWeek = as.Date(yearWeek),
+                across(everything(), ~replace_na(.x, 0)),
+                ageGroup6 = factor(ageGroup6,
+                                   levels = c("<2", "2-4", "5-14",
+                                              "15-44", "45-64", "65+")))
+
+
+# plot preparation
+p_ageGroup6_year <- ggplot(ageGroup6_annually, aes(x = year, y = count, color = type)) +
+  geom_line() +
+  scale_x_continuous(limits = c(min(lubridate::year(as.Date(gen$collection_date)))+1.5, max(lubridate::year(as.Date(dat_c$week_date)))),
+                     breaks = ~ axisTicks(., log = FALSE)) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  # theme(legend.position = c(0.1, 0.85),
+  #       legend.title = element_blank(),
+  #       legend.key.size = unit(0.8, "lines"),
+  #       legend.text = element_text(size = 10),
+  #       legend.background = element_rect(fill = "transparent", color = "transparent")) +
+  facet_wrap(~ ageGroup6,
+             nrow =1,
+             scales = "free_y")
+
+p_ageGroup6_month <- ggplot(ageGroup6_monthly, aes(x = yearMonth, y = count, color = type)) +
+  geom_line() +
+  scale_x_date(limits = c(min(as.Date(gen$collection_date))+541, max(as.Date(dat_c$week_date))),
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  # theme(legend.position = c(0.1, 0.85),
+  #       legend.title = element_blank(),
+  #       legend.key.size = unit(0.8, "lines"),
+  #       legend.text = element_text(size = 10),
+  #       legend.background = element_rect(fill = "transparent", color = "transparent")) +
+  facet_wrap(~ ageGroup6,
+             nrow =1,
+             scales = "free_y")
+
+p_ageGroup6_week <- ggplot(ageGroup6_weekly, aes(x = yearWeek, y = count, color = type)) +
+  geom_line() +
+  scale_x_date(limits = c(min(as.Date(gen$collection_date))+541, max(as.Date(dat_c$week_date))),
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  # theme(legend.position = c(0.1, 0.85),
+  #       legend.title = element_blank(),
+  #       legend.key.size = unit(0.8, "lines"),
+  #       legend.text = element_text(size = 10),
+  #       legend.background = element_rect(fill = "transparent", color = "transparent")) +
+  facet_wrap(~ ageGroup6,
+             nrow =1,
+             scales = "free_y")
+
+
+```
+
+I think we can test weekly data for 3 age groups, but we have to omit the data before min(as.Date(gen\$collection_date))+541
 
 ```{r}
-# non-heterogeneity
-# all WGS
+# load picts
+
+p_ageGroup6 <- cowplot::plot_grid(p_ageGroup6_year, p_ageGroup6_month, p_ageGroup6_week,
+                                ncol = 1,
+                                labels = c("A", "B", "C"))
 
 
-# GPSC55 only
+p_ageGroup6
 ```
+
+
+Test yearMonth and yearWeek
+
 
 ```{r}
-# 3 age groups
-# all WGS
+p_ageGroup6_month_2 <- ggplot(ageGroup6_monthly, aes(x = yearMonth, y = count, color = type)) +
+  geom_line() +
+  scale_x_date(limits = c(min(as.Date(gen$collection_date))+541, max(as.Date(dat_c$week_date))),
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  # theme(legend.position = c(0.1, 0.85),
+  #       legend.title = element_blank(),
+  #       legend.key.size = unit(0.8, "lines"),
+  #       legend.text = element_text(size = 10),
+  #       legend.background = element_rect(fill = "transparent", color = "transparent")) +
+  facet_wrap(~ ageGroup6,
+             nrow =6,
+             scales = "free_y")
+
+p_ageGroup6_week_2 <- ggplot(ageGroup6_weekly, aes(x = yearWeek, y = count, color = type)) +
+  geom_line() +
+  scale_x_date(limits = c(min(as.Date(gen$collection_date))+541, max(as.Date(dat_c$week_date))),
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  # theme(legend.position = c(0.1, 0.85),
+  #       legend.title = element_blank(),
+  #       legend.key.size = unit(0.8, "lines"),
+  #       legend.text = element_text(size = 10),
+  #       legend.background = element_rect(fill = "transparent", color = "transparent")) +
+  facet_wrap(~ ageGroup6,
+             nrow =6,
+             scales = "free_y")
 
 
-# GPSC55 only
 ```
+
+
 
 ```{r}
-# 6 age groups
-# all WGS
+p_ageGroup6_month_2
 
-
-# GPSC55 only
 ```
 
-x
+hmm, weird...
 
-x
-
-### 2.1. Annually
-
+week is too chaotic in some age groups.
 ```{r}
-# non-heterogeneity
-# all WGS
+p_ageGroup6_week_2
 
-
-# GPSC55 only
 ```
 
-```{r}
-# 3 age groups
-# all WGS
 
 
-# GPSC55 only
-```
-
-```{r}
-# 6 age groups
-# all WGS
-
-
-# GPSC55 only
-```
-
-x
-
-x
+fin.
