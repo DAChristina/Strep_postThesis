@@ -1,0 +1,311 @@
+---
+title: "The Visualisation of 12F Serotype"
+author: "Dewi Anastasia Christina"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+date: "`r format(Sys.time(), '%d %B %Y')`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, echo = FALSE)
+
+if(!require(pacman)) install.packages("pacman")
+pacman::p_load(reactable, tidyverse, plotly)
+```
+
+## 1. Introduction
+
+### 1.1. Data
+
+1.  Epidata (2001-2022): Serotype-level data Version 1 (daily data 2017-2022) combined with Version 3 (epidemiological year separated into six age bands, grouped per week 2001-2017) supplied by UKHSA.
+2.  Weekly invasive GPSC55 cases from WGS line-list
+
+### 1.2. Some context
+
+Previously, Lilith use epidemiological annual data of invasive 12F cases separated into two age bands (2010/11-2016/17). We got new serotype-level epidemiological data on January 2025.
+
+```{r}
+# load data
+dat_c <- read.csv("../raw_data/12F_Jan_2025_combined_cleaned.csv")
+gen <- read.csv("../raw_data/genomic_data_cleaned.csv")
+
+col_map <- c(
+  # Data version
+  "12F ver1 (2016-2022)" = "indianred4",
+  "12F ver2 (2009.5-2022.5)" = "seagreen4",
+  "12F ver3 weekly (2001-2017)" = "orange2",
+  "serotype 1" = "steelblue",
+  "7F" = "purple3",
+  "12F ver1 & 3 (2001-2022)" = "indianred4",
+  
+  # Vaccination
+  "Pre-PCV7" = "lightblue",
+  "PCV7" = "gray70",
+  "PCV13" = "gray20",
+  
+  # 2 age bands
+  "children" = "darkred",
+  "adults" = "darkblue",
+  
+  # 3 age bands
+  "<2" = "indianred4",
+  "2-64" = "seagreen4",
+  "65+" = "purple3",
+  
+  # 5 age bands 
+  "<5" = "indianred4",
+  "5-18" = "orange",
+  "19-30" = "seagreen4",
+  "31-64" = "steelblue",
+  #"65+" = "purple3",
+  
+  # 6 age bands 
+  #"<2" = "indianred4", 
+  "2-4" = "indianred2", 
+  "5-14" = "orange",
+  "15-44" = "seagreen4",
+  "45-64" = "steelblue",
+  #"65+" = "purple3",
+  
+  # 7 age bands
+  #"<2" = "indianred4", 
+  #"2-4" = "indianred2", 
+  #"5-14" = "orange",
+  "15-30" = "seagreen1", # Edit the Age-band into 15-30 & 31-44
+  "31-44" = "seagreen4", # Edit the Age-band into 15-30 & 31-44
+  #"45-64" = "steelblue",
+  #"65+" = "purple3",
+  "Unknown" = "black",
+  
+  # Regions (From north to south)
+  "North West" = "indianred4",
+  "North East" = "steelblue",
+  "Yorkshire and The Humber" = "seagreen4",
+  "East Midlands" = "purple3",
+  "West Midlands" = "orange",
+  "East of England" = "indianred2",
+  "London" = "seagreen1",
+  "South East" = "deepskyblue",
+  "South West" = "gold1",
+  # Cases vs sequenced
+  "Serotype 1 Case" = "gray75",
+  "Sequenced" = "deepskyblue3",
+  "Meningitis" = "green",
+  "30 Day Death" = "maroon"
+)
+
+vaccine_UK <- data.frame(
+  year = c(2011),
+  vaccine = c("PCV13")
+)
+```
+
+```{r}
+# data preparation
+# non-heterogeneity
+allAges_annually <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::group_by(year) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::group_by(year) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = "year"
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(across(everything(), ~replace_na(.x, 0))) %>% 
+  glimpse()
+
+allAges_monthly <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::group_by(yearMonth) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::group_by(yearMonth) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = "yearMonth"
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(yearMonth = as.Date(yearMonth),
+                across(everything(), ~replace_na(.x, 0))) %>%
+  glimpse()
+
+allAges_weekly <- dplyr::full_join(
+  dat_c %>% 
+    dplyr::group_by(week_date) %>% 
+    dplyr::summarise(count_serotype = sum(counts)) %>% 
+    dplyr::ungroup()
+  ,
+  gen %>% 
+    dplyr::group_by(week_date) %>% 
+    dplyr::summarise(count_WGS = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = "week_date"
+) %>% 
+  tidyr::pivot_longer(
+    cols = starts_with("count_"),
+    names_to = "type",
+    values_to = "count"
+  ) %>% 
+  dplyr::mutate(week_date = as.Date(week_date),
+                across(everything(), ~replace_na(.x, 0))) %>% 
+  glimpse()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ggplot(allAges_annually, aes(x = year, y = count, color = type)) +
+  geom_line() +
+  theme_bw()
+
+ggplot(allAges_monthly, aes(x = yearMonth, y = count, color = type)) +
+  geom_line() +
+  theme_bw()
+
+ggplot(allAges_weekly, aes(x = week_date, y = count, color = type)) +
+  geom_line() +
+  scale_x_date(limits = c(min(as.Date(gen$collection_date)), max(as.Date(dat_c$week_date))),
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw()
+
+
+# 3 age groups
+
+
+
+# 6 age groups
+
+
+
+```
+
+## 2. Visualisations
+
+### 2.1. Weekly
+
+```{r}
+# non-heterogeneity
+# all WGS
+
+
+# GPSC55 only
+```
+
+```{r}
+# 3 age groups
+# all WGS
+
+
+# GPSC55 only
+```
+
+```{r}
+# 6 age groups
+# all WGS
+
+
+# GPSC55 only
+```
+
+x
+
+### 2.1. Monthly
+
+```{r}
+# non-heterogeneity
+# all WGS
+
+
+# GPSC55 only
+```
+
+```{r}
+# 3 age groups
+# all WGS
+
+
+# GPSC55 only
+```
+
+```{r}
+# 6 age groups
+# all WGS
+
+
+# GPSC55 only
+```
+
+x
+
+x
+
+### 2.1. Annually
+
+```{r}
+# non-heterogeneity
+# all WGS
+
+
+# GPSC55 only
+```
+
+```{r}
+# 3 age groups
+# all WGS
+
+
+# GPSC55 only
+```
+
+```{r}
+# 6 age groups
+# all WGS
+
+
+# GPSC55 only
+```
+
+x
+
+x
