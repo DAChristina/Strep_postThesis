@@ -6,14 +6,21 @@ library(tidyverse)
 # for gendata I wanna see what was analysed previously.
 # I use floor_date instead of ceiling_date
 Ne <- read.csv("raw_data/gen_lw/Ne_over_time.csv") %>% 
-  dplyr::mutate(year = round(Time)) %>%
+  dplyr::mutate(date = as.Date((Time - 1970) * 365.25, origin = "1970-01-01"),
+                year = lubridate::year(date),
+                month = lubridate::month(date),
+                yearMonth = as.Date(paste0(format(date, "%Y-%m"), "-01")) # year-month as date
+  ) %>% 
   # dplyr::filter(between(year, 2011, 2022)) %>% 
   # dplyr::mutate(step = round((year - 2010.5) * 365)) %>%
   # dplyr::select(year, step, Ne, Ne_lb, Ne_ub) %>%
   glimpse()
 
 Ne_skygrid_adaptive <- read.csv("raw_data/gen_lw/GPSC55_mlesky.csv") %>% 
-  dplyr::mutate(year = floor(Year),
+  dplyr::mutate(date = as.Date((Year - 1970) * 365.25, origin = "1970-01-01"),
+                year = lubridate::year(date),
+                month = lubridate::month(date),
+                yearMonth = as.Date(paste0(format(date, "%Y-%m"), "-01")),
                 Model = cumsum(c(0, diff(year) < 0)) + 1) %>% 
   glimpse()
 
@@ -39,6 +46,22 @@ Ne <- Ne_skygrid_adaptive %>%
                    Ne_ub = Upper_range) %>% 
   glimpse()
 ## Model 3 looks like skygrowth
+# Lilith use the Ne_skygrid_adaptive (GPSC55_mlesky.csv), model 3
+
+# I re-open and prepare Ne data per-year, month and week
+ne_55 <- read.csv("raw_data/gen_lw/GPSC55_mlesky.csv") %>% 
+  dplyr::mutate(date = as.Date((Year - 1970) * 365.25, origin = "1970-01-01"),
+                year = lubridate::year(date),
+                month = lubridate::month(date),
+                yearMonth = as.Date(paste0(format(date, "%Y-%m"), "-01")),
+                Model = cumsum(c(0, diff(year) < 0)) + 1) %>% 
+  dplyr::filter(Model == 3) %>%
+  dplyr::rename(Ne_lb = Lower_range,
+                Ne_ub = Upper_range) %>%
+  dplyr::select(-c("Strain", "Model")) %>% 
+  glimpse()
+
+write.csv(ne_55, "raw_data/GPSC55_mlesky_cleaned.csv", row.names = FALSE)
 
 # tbh I have no idea what is this "invasiveness" file is about.
 invasiveness <- read.csv("raw_data/gen_lw/invasiveness_12F.csv") %>%
@@ -69,7 +92,7 @@ gen <-  read.csv("raw_data/gen_lw/genomic_epi_12F.csv") %>%
                 month = lubridate::month(collection_date),
                 # year = if_else(month < 7, YEAR + 0.5, YEAR + 1.5), # this is epi year
                 year = lubridate::year(collection_date),
-                month = month(collection_date),
+                month = lubridate::month(collection_date),
                 yearMonth = as.Date(paste0(format(collection_date, "%Y-%m"), "-01")), # year-month as date
                 week_date = lubridate::floor_date(collection_date, "week")
                 ) %>% 
