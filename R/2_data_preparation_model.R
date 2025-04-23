@@ -1,5 +1,4 @@
 rm(list = ls())
-
 library(tidyverse)
 
 if (!dir.exists("inputs")) {
@@ -156,6 +155,159 @@ dat_week_12F_6ageG <- read.csv("inputs/incidence_week_12F_6ageG_1.csv") %>%
   dplyr::rename(week = time) # naming error in mcState -_-)
 
 write.csv(dat_week_12F_6ageG, "inputs/incidence_week_12F_6ageG_all.csv", row.names = FALSE)
+
+
+# mcstate data preparation #####################################################
+# load epidata
+dat_c <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+  dplyr::filter(ageGroup3 != "Unknown")
+
+# load genomic data
+gen <- read.csv("raw_data/genomic_data_cleaned.csv") %>% 
+  dplyr::filter(!is.na(strain))
+
+# load ne
+ne_55 <- read.csv("raw_data/GPSC55_mlesky_cleaned.csv") %>% 
+  dplyr::filter(date >= min(dat_c$week_date))
+
+# non-heterogeneity (allAges), weekly
+allAges_weekly <- dat_c %>% 
+  dplyr::mutate(week_date = as.Date(week_date),
+                iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                yearWeek =ISOweek::ISOweek2date(iso_week)
+  ) %>% 
+  dplyr::group_by(yearWeek) %>% 
+  dplyr::summarise(count_serotype = sum(counts)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::full_join(
+  gen %>% 
+    dplyr::filter(strain == "GPSC55") %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+    ) %>% 
+    dplyr::group_by(yearWeek) %>% 
+    dplyr::summarise(count_WGS_GPSC55 = n()) %>% 
+    dplyr::ungroup()
+  ,
+  by = "yearWeek"
+) %>% 
+  dplyr::full_join(
+    gen %>% 
+      dplyr::filter(strain == "non55") %>% 
+      dplyr::mutate(week_date = as.Date(week_date),
+                    iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                    yearWeek =ISOweek::ISOweek2date(iso_week)
+      ) %>% 
+      dplyr::group_by(yearWeek) %>% 
+      dplyr::summarise(count_WGS_non55 = n()) %>% 
+      dplyr::ungroup()
+    ,
+    by = "yearWeek"
+  ) %>% 
+  # ignore Ne at the moment
+  # dplyr::full_join(
+  #   ne_55 %>% 
+  #     dplyr::mutate(week_date = as.Date(date),
+  #                   iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
+  #                   yearWeek =ISOweek::ISOweek2date(iso_week)
+  #     )
+  #   ,
+  #   by = "yearWeek"
+  # ) %>% 
+  # tidyr::pivot_longer(
+  #   cols = starts_with(c("count_")), # ignore Ne at the moment
+  #   names_to = "type",
+  #   values_to = "count"
+  # ) %>% 
+  dplyr::mutate(yearWeek = as.Date(yearWeek),
+                day = lubridate::day(yearWeek)) %>%
+  mcstate::particle_filter_data(., time = "day", rate = 1, initial_time = 0) %>% 
+  glimpse()
+
+saveRDS(allAges_weekly, "inputs/pmcmc_data_week_allAge.rds")
+
+
+# ageGroup3, weekly
+ageGroup3_weekly <- dat_c %>% 
+  dplyr::mutate(week_date = as.Date(week_date),
+                iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                yearWeek =ISOweek::ISOweek2date(iso_week)
+  ) %>% 
+  dplyr::group_by(yearWeek, ageGroup3) %>% 
+  dplyr::summarise(count_serotype = sum(counts), .groups = "drop") %>% 
+  dplyr::ungroup() %>% 
+  tidyr::pivot_wider(
+    names_from = ageGroup3,
+    values_from = count_serotype
+  ) %>% 
+  dplyr::rename(
+    count_serotype_1 = `<2`,
+    count_serotype_2 = `2-64`,
+    count_serotype_3 = `65+`
+  ) %>% 
+  dplyr::full_join(
+    gen %>% 
+      dplyr::filter(strain == "GPSC55") %>% 
+      dplyr::mutate(week_date = as.Date(week_date),
+                    iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                    yearWeek =ISOweek::ISOweek2date(iso_week)
+      ) %>% 
+      dplyr::group_by(yearWeek, ageGroup3) %>% 
+      dplyr::summarise(count_WGS_GPSC55 = n(), .groups = "drop") %>% 
+      dplyr::ungroup() %>% 
+      tidyr::pivot_wider(
+        names_from = ageGroup3,
+        values_from = count_WGS_GPSC55
+      ) %>% 
+      dplyr::rename(
+        count_WGS_GPSC55_1 = `<2`,
+        count_WGS_GPSC55_2 = `2-64`,
+        count_WGS_GPSC55_3 = `65+`
+      )
+    ,
+    by = c("yearWeek")
+    ) %>% 
+  dplyr::full_join(
+    gen %>% 
+      dplyr::filter(strain == "non55") %>% 
+      dplyr::mutate(week_date = as.Date(week_date),
+                    iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                    yearWeek =ISOweek::ISOweek2date(iso_week)
+      ) %>% 
+      dplyr::group_by(yearWeek, ageGroup3) %>% 
+      dplyr::summarise(count_WGS_non55 = n(), .groups = "drop") %>% 
+      dplyr::ungroup() %>% 
+      tidyr::pivot_wider(
+        names_from = ageGroup3,
+        values_from = count_WGS_non55
+      ) %>% 
+      dplyr::rename(
+        count_WGS_non55_1 = `<2`,
+        count_WGS_non55_2 = `2-64`,
+        count_WGS_non55_3 = `65+`
+      )
+    ,
+    by = c("yearWeek")
+  ) %>% 
+  # tidyr::pivot_longer(
+  #   cols = starts_with("count_"),
+  #   names_to = "type",
+  #   values_to = "count"
+  # ) %>% 
+  dplyr::mutate(yearWeek = as.Date(yearWeek),
+                day = lubridate::day(yearWeek)) %>%
+  mcstate::particle_filter_data(., time = "day", rate = 1, initial_time = 0) %>% 
+  glimpse()
+
+saveRDS(ageGroup3_weekly, "inputs/pmcmc_data_week_ageGroup3.rds")
+
+
+
+
+
+
+
 
 
 
