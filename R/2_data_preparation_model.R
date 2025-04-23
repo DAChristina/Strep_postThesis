@@ -164,7 +164,8 @@ dat_c <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>%
 
 # load genomic data
 gen <- read.csv("raw_data/genomic_data_cleaned.csv") %>% 
-  dplyr::filter(!is.na(strain))
+  dplyr::filter(!is.na(strain),
+                collection_date >= as.Date("2017-07-01")) # after 2017-07-01
 
 # load ne
 ne_55 <- read.csv("raw_data/GPSC55_mlesky_cleaned.csv") %>% 
