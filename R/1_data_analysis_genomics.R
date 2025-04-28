@@ -165,8 +165,8 @@ selected_GPSC55 <- test %>%
   glimpse()
 
 # test other models
-model_gam <- mgcv::gam(count ~ s(change_Ne), data = selected_GPSC55)
-model_gam_bayesian <- brms::brm(count ~ s(change_Ne), data = selected_GPSC55,
+model_gam <- mgcv::gam(count ~ sin_week + cos_week + s(change_Ne), data = selected_GPSC55)
+model_gam_bayesian <- brms::brm(count ~ sin_week + cos_week + s(change_Ne), data = selected_GPSC55,
                                 family = poisson(), chains = 4, cores = 2,
                                 iter = 1000)
 model_glm <- stats::glm(count ~ sin_week + cos_week + change_Ne, data = selected_GPSC55,
@@ -242,9 +242,9 @@ ggplot(combined, aes(x = yearWeek, y = count, color = source)) +
   labs(
     color = "source"
   ) +
-  scale_x_date(limits = c(min(as.Date(dat_c$week_date)), max(as.Date(dat_c$week_date))), # 2009 instead of min(as.Date(dat_c$week_date))
-               date_breaks = "1 year",
-               date_labels = "%Y") +
+  # scale_x_date(limits = c(min(as.Date(dat_c$week_date)), max(as.Date(dat_c$week_date))), # 2009 instead of min(as.Date(dat_c$week_date))
+  #              date_breaks = "1 year",
+  #              date_labels = "%Y") +
   theme_bw() +
   theme(legend.position = c(0.15, 0.85),
         legend.title = element_blank(),

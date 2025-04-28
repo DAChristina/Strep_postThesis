@@ -165,11 +165,15 @@ dat_c <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>%
 # load genomic data
 gen <- read.csv("raw_data/genomic_data_cleaned.csv") %>% 
   dplyr::filter(!is.na(strain),
-                collection_date >= as.Date("2017-07-01")) # after 2017-07-01
+                collection_date >= as.Date("2017-08-01")) # after 2017-08-01
 
 # load ne
-ne_55 <- read.csv("raw_data/GPSC55_mlesky_cleaned.csv") %>% 
-  dplyr::filter(date >= min(dat_c$week_date))
+# ne_55 <- read.csv("raw_data/GPSC55_mlesky_cleaned.csv") %>% 
+#   dplyr::filter(date >= min(dat_c$week_date))
+interpolated_ne <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated.csv") %>% 
+  dplyr::select(change_Ne, yearWeek) %>% 
+  dplyr::rename(Ne = change_Ne) %>% 
+  dplyr::mutate(yearWeek = as.Date(yearWeek))
 
 # non-heterogeneity (allAges), weekly
 allAges_weekly <- dat_c %>% 
@@ -206,16 +210,11 @@ allAges_weekly <- dat_c %>%
     ,
     by = "yearWeek"
   ) %>% 
-  # ignore Ne at the moment
-  # dplyr::full_join(
-  #   ne_55 %>% 
-  #     dplyr::mutate(week_date = as.Date(date),
-  #                   iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
-  #                   yearWeek =ISOweek::ISOweek2date(iso_week)
-  #     )
-  #   ,
-  #   by = "yearWeek"
-  # ) %>% 
+  dplyr::full_join(
+    interpolated_ne
+    ,
+    by = "yearWeek"
+  ) %>%
   # tidyr::pivot_longer(
   #   cols = starts_with(c("count_")), # ignore Ne at the moment
   #   names_to = "type",
@@ -291,6 +290,11 @@ ageGroup3_weekly <- dat_c %>%
     ,
     by = c("yearWeek")
   ) %>% 
+  dplyr::full_join(
+    interpolated_ne
+    ,
+    by = "yearWeek"
+  ) %>%
   # tidyr::pivot_longer(
   #   cols = starts_with("count_"),
   #   names_to = "type",
