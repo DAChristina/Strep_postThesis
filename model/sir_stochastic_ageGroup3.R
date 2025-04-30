@@ -1,4 +1,4 @@
-freq <- user(1)
+freq <- user(1) # model is daily but aggregated to weekly
 dt <- 1/freq
 initial(time) <- 0
 update(time) <- (step + 1) * dt
@@ -106,7 +106,9 @@ initial(R_tot) <- sum(R_ini)
 N[] <- S[i] + A[i] + D[i] + R[i]
 m[, ] <- user() # age-structured contact matrix
 
-betas <- beta_0*((1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) + (1+beta_2*sin(2*pi*((time_shift_2*365)+time)/365)))
+betas <- beta_0*(
+  (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) + 
+    (1+beta_2*sin(2*pi*((time_shift_2*365)+time)/365)))
 
 foi_ij[1, ] <- betas * m[1, j] * (A[j] + D[j])/N[j]
 foi_ij[2, ] <- betas * m[2, j] * (A[j] + D[j])/N[j]

@@ -1,7 +1,4 @@
-# To change the model into stochastic fuction, use the probabilistic function:
-## Individual probabilities of transition:
-## Definition of the time-step and output as "time"
-freq <- user(1)
+freq <- user(1) # model is daily but aggregated to weekly
 dt <- 1/freq
 initial(time) <- 0
 
@@ -53,8 +50,8 @@ initial(n_AD_cumul) <- 0
 
 # 3. UPDATES ###################################################################
 beta <- beta_0*(
-  (1+beta_1*cos(2*pi*((time_shift_1*365)+time*7)/365)) + 
-    (1+beta_2*sin(2*pi*((time_shift_2*365)+time*7)/365)))
+  (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) + 
+    (1+beta_2*sin(2*pi*((time_shift_2*365)+time)/365)))
 # Infant vaccination coverage occurs when PCV13 introduced in April 2010 (day 2648 from 01.01.2003)
 # https://fingertips.phe.org.uk/search/vaccination#page/4/gid/1/pat/159/par/K02000001/ati/15/are/E92000001/iid/30306/age/30/sex/4/cat/-1/ctp/-1/yrr/1/cid/4/tbm/1/page-options/tre-do-0
 # https://cran.r-project.org/web/packages/finalsize/vignettes/varying_contacts.html

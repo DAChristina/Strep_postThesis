@@ -139,7 +139,7 @@ gen <-  read.csv("raw_data/gen_lw/genomic_epi_12F.csv") %>%
 write.csv(gen, "raw_data/genomic_data_cleaned.csv", row.names = FALSE)
 
 
-# load gen & interpolated_df first
+# load gen & interpolated_df first, combine with dat_c to calculate GPSC55/12F proportion
 test <- gen %>% 
   dplyr::filter(strain == "GPSC55") %>% 
   dplyr::mutate(week_date = as.Date(week_date),
@@ -147,80 +147,132 @@ test <- gen %>%
                 yearWeek =ISOweek::ISOweek2date(iso_week)
   ) %>% 
   dplyr::group_by(yearWeek) %>% 
-  dplyr::summarise(count = n()) %>% 
+  dplyr::summarise(count_GPSC55 = n()) %>% 
   dplyr::ungroup() %>% 
+  dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
   dplyr::left_join(
     interpolated_df %>%
-      dplyr::select(yearWeek, contains("Ne"))
+      dplyr::select(yearWeek, contains("Ne")) %>% 
+      dplyr::mutate(yearWeek = as.Date(yearWeek))
     ,
     by = c("yearWeek")
+  ) %>% 
+  dplyr::full_join(
+    read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+      dplyr::mutate(week_date = as.Date(week_date),
+                    iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                    yearWeek =ISOweek::ISOweek2date(iso_week)
+      ) %>% 
+      dplyr::group_by(yearWeek) %>% 
+      dplyr::summarise(count_12F = sum(counts)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::mutate(yearWeek = as.Date(yearWeek))
+    ,
+    by = c("yearWeek")
+  ) %>% 
+  dplyr::mutate(prop_GPSC55 = count_GPSC55/count_12F,
+                # prop_GPSC55 = case_when( # test giving prop = 0 for 2001-2010 to catch a grip for the model
+                  # yearWeek >= "2001-01-01" & yearWeek <= "2010-01-01" ~ 0,
+                  # is.na(prop_GPSC55) ~ 0,
+                  # TRUE ~ prop_GPSC55
+                # )
   ) %>% 
   glimpse()
 
 ################################################################################
 selected_GPSC55 <- test %>% 
-  dplyr::filter(yearWeek >= as.Date("2017-08-01")) %>% 
+  dplyr::filter(yearWeek >= as.Date("2001-01-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
+                !is.na(prop_GPSC55), # no 12F data available after 2020-05-11
+                prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
+                ) %>% 
   dplyr::mutate(sin_week = sin(2*pi*lubridate::isoweek(yearWeek)/52),
                 cos_week = cos(2*pi*lubridate::isoweek(yearWeek)/52)) %>% 
   glimpse()
 
-# test other models
-model_gam <- mgcv::gam(count ~ sin_week + cos_week + s(change_Ne), data = selected_GPSC55)
-model_gam_bayesian <- brms::brm(count ~ sin_week + cos_week + s(change_Ne), data = selected_GPSC55,
-                                family = poisson(), chains = 4, cores = 2,
-                                iter = 1000)
-model_glm <- stats::glm(count ~ sin_week + cos_week + change_Ne, data = selected_GPSC55,
-                        family = poisson)
+ggplot(selected_GPSC55, aes(x = yearWeek)) +
+  geom_line(aes(y = count_12F, colour = "12F")) +
+  geom_line(aes(y = count_GPSC55, colour = "GPSC55")) +
+  scale_colour_manual(values = c("12F" = "steelblue", "GPSC55" = "maroon")) +
+  theme_bw() +
+  theme(legend.position = c(0.9, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
 
-AIC(model_gam, model_glm) # only works for frequentist models
+# test new model based on GPSC55/12F proportion
+model_gam_binom <- mgcv::gam(prop_GPSC55 ~ sin_week + cos_week + yearWeek + s(change_Ne),
+                       data = selected_GPSC55,
+                       family = binomial("logit"),
+                       weights = count_12F)
+model_glm_binom <- stats::glm(prop_GPSC55 ~ sin_week + cos_week + yearWeek + change_Ne,
+                              data = selected_GPSC55,
+                              family = binomial("logit"),
+                              weights = count_12F)
 
-# save model (use load("model.RData") to load model later)
-saveRDS(model_gam, file = "raw_data/model_Ne_gam.rds")
-saveRDS(model_gam_bayesian, file = "raw_data/model_Ne_gam_bayes.rds")
-saveRDS(model_glm, file = "raw_data/model_Ne_glm.rds")
+AIC(model_gam_binom, model_glm_binom)
+BIC(model_gam_binom, model_glm_binom)
+mgcv::gam.check(model_gam_binom)
+plot(model_gam_binom)
+
+# gam is better than glm
+saveRDS(model_gam_binom, file = "raw_data/model_Ne_gam_binom.rds")
+saveRDS(model_glm_binom, file = "raw_data/model_Ne_glm_binom.rds")
+
 
 earlier_ne_df <- interpolated_df %>%
-  dplyr::filter(yearWeek < as.Date("2017-08-01")) %>% # midpoint; they started intensively sequenced GPSC55 ("2017-07-01")
+  dplyr::filter(yearWeek <= as.Date("2017-08-01")) %>% # midpoint; they started intensively sequenced GPSC55 ("2017-08-01")
   dplyr::mutate(sin_week = sin(2*pi*lubridate::isoweek(yearWeek)/52),
                 cos_week = cos(2*pi*lubridate::isoweek(yearWeek)/52)) %>%
   glimpse()
 
-earlier_ne_df <- earlier_ne_df %>% 
-  dplyr::mutate(predicted_GPSC55_gam = predict(model_gam, newdata = earlier_ne_df),
-                predicted_GPSC55_gam_bayesian = predict(model_gam_bayesian, newdata = earlier_ne_df),
-                predicted_GPSC55_gam_bayesian_mean = rowMeans(predicted_GPSC55_gam_bayesian),
-                predicted_GPSC55_glm = predict(model_glm, newdata = earlier_ne_df)) %>% 
+# new model version; se extraction failed to load within dplyr::mutate command
+pred_gam_binom <- predict(model_gam_binom,
+                          newdata = earlier_ne_df,
+                          se.fit = TRUE,
+                          type = "link"
+)
+pred_glm_binom <- predict(model_glm_binom,
+                          newdata = earlier_ne_df,
+                          se.fit = TRUE,
+                          type = "link"
+)
+
+earlier_ne_df <- earlier_ne_df %>%
+  dplyr::mutate(
+    predicted_prop_GPSC55_gam_binom = plogis(pred_gam_binom$fit),
+    predicted_prop_GPSC55_gam_binom_lower = plogis(pred_gam_binom$fit+1.96*pred_gam_binom$se.fit),
+    predicted_prop_GPSC55_gam_binom_upper = plogis(pred_gam_binom$fit-1.96*pred_gam_binom$se.fit),
+    
+    predicted_prop_GPSC55_glm_binom = plogis(pred_glm_binom$fit),
+    predicted_prop_GPSC55_glm_binom_lower = plogis(pred_glm_binom$fit+1.96*pred_glm_binom$se.fit),
+    predicted_prop_GPSC55_glm_binom_upper = plogis(pred_glm_binom$fit-1.96*pred_glm_binom$se.fit),
+  ) %>% 
   glimpse()
 
-# save predicted model result for previous GPSC55 cases pre-August 2017
-write.csv(earlier_ne_df, "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel.csv", row.names = FALSE)
+write.csv(earlier_ne_df, "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom.csv", row.names = FALSE)
 
 # test GPSC55 previous WGS
 combined <- dplyr::bind_rows(
-  selected_GPSC55 %>% 
-    select(yearWeek, count) %>%
-    mutate(source = "1. WGS data")
+  test %>% 
+    select(yearWeek, prop_GPSC55) %>%
+    mutate(source = "1. Data GPSC55/12F") %>% 
+    rename(count = prop_GPSC55)
   ,
   earlier_ne_df %>%
-    select(yearWeek, contains("predicted_GPSC55"),
-           -predicted_GPSC55_gam_bayesian) %>% # weird matrix format (4 chains)
+    select(yearWeek, contains("predicted_prop_GPSC55"),
+           ) %>%
     tidyr::pivot_longer(
-      cols = contains("predicted_GPSC55"),
+      cols = contains("predicted_prop_"),
       names_to = "source",
       values_to = "count"
     ) %>%
     dplyr::mutate(
       source = case_when(
-        source == "predicted_GPSC55_gam" ~ "3.1. Predicted (GAM)",
-        source == "predicted_GPSC55_gam_bayesian_mean" ~ "3.2. Predicted mean (Bayesian GAM)",
-        source == "predicted_GPSC55_glm" ~ "3.3. Predicted (GLM)",
+        source == "predicted_prop_GPSC55_gam_binom" ~ "3.1. Predicted (GAM)",
+        source == "predicted_prop_GPSC55_glm_binom" ~ "3.3. Predicted (GLM)",
       )
     ) %>%
-    dplyr::filter(source != "predicted_GPSC55_gam_bayesian") %>% 
-    # weird array conversion
-    # dplyr::mutate(
-    #   count = as.data.frame(count)
-    # ) %>%
     unnest(cols = count)
   ,
   interpolated_df %>%
@@ -233,24 +285,42 @@ combined <- dplyr::bind_rows(
     count = as.data.frame(count)
   ) %>% 
   unnest(cols = count) %>% 
+  dplyr::filter(source != "2. Interpolated Ne") %>% # omit Ne
   glimpse()
 
 
-ggplot(combined, aes(x = yearWeek, y = count, color = source)) +
+ggplot(combined %>% 
+         dplyr::filter(source != "1. Data GPSC55/12F")
+       , aes(x = yearWeek, y = count, color = source)) +
   geom_line(size = 1) +
-  # geom_point(size = 0.5, alpha = 0.6) +
-  labs(
-    color = "source"
+  geom_ribbon(data = earlier_ne_df,
+              aes(x = yearWeek,
+                  ymin = predicted_prop_GPSC55_gam_binom_lower,
+                  ymax = predicted_prop_GPSC55_gam_binom_upper),
+              inherit.aes = FALSE,
+              fill = "darkgreen", alpha = 0.3
   ) +
-  # scale_x_date(limits = c(min(as.Date(dat_c$week_date)), max(as.Date(dat_c$week_date))), # 2009 instead of min(as.Date(dat_c$week_date))
-  #              date_breaks = "1 year",
-  #              date_labels = "%Y") +
+  geom_ribbon(data = earlier_ne_df,
+              aes(x = yearWeek,
+                  ymin = predicted_prop_GPSC55_glm_binom_lower,
+                  ymax = predicted_prop_GPSC55_glm_binom_upper),
+              inherit.aes = FALSE,
+              fill = "steelblue", alpha = 0.3
+  ) +
+  # geom_point(size = 0.5, alpha = 0.6) +
+  scale_x_date(# limits = c(min(as.Date(dat_c$week_date)), max(as.Date(dat_c$week_date))), # 2009 instead of min(as.Date(dat_c$week_date))
+               date_breaks = "1 year",
+               date_labels = "%Y") +
   theme_bw() +
+  labs(
+    colour = "source",
+    y = "proportion (GPSC55/12F)"
+  ) +
   theme(legend.position = c(0.15, 0.85),
         legend.title = element_blank(),
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
-        legend.background = element_rect(fill = "transparent", color = "transparent"))
+        legend.background = element_rect(fill = "transparent", colour = "transparent"))
 
 
 
