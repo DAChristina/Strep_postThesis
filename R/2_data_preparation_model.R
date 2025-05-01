@@ -220,9 +220,10 @@ allAges_weekly <- dat_c %>%
   #   names_to = "type",
   #   values_to = "count"
   # ) %>% 
+  dplyr::arrange(yearWeek) %>% 
   dplyr::mutate(yearWeek = as.Date(yearWeek),
-                day = lubridate::day(yearWeek)) %>%
-  mcstate::particle_filter_data(., time = "day", rate = 1, initial_time = 0) %>% 
+                day = as.numeric(round((yearWeek - as.Date("1987-09-14"))))) %>%
+  mcstate::particle_filter_data(., time = "day", rate = 1, initial_time = 0) %>%
   glimpse()
 
 saveRDS(allAges_weekly, "inputs/pmcmc_data_week_allAge.rds")
@@ -300,9 +301,10 @@ ageGroup3_weekly <- dat_c %>%
   #   names_to = "type",
   #   values_to = "count"
   # ) %>% 
+  dplyr::arrange(yearWeek) %>% 
   dplyr::mutate(yearWeek = as.Date(yearWeek),
-                day = lubridate::day(yearWeek)) %>%
-  mcstate::particle_filter_data(., time = "day", rate = 1, initial_time = 0) %>% 
+                day = as.numeric(round((yearWeek - as.Date("1987-09-14"))))) %>%
+  mcstate::particle_filter_data(., time = "day", rate = 1, initial_time = 0) %>%
   glimpse()
 
 saveRDS(ageGroup3_weekly, "inputs/pmcmc_data_week_ageGroup3.rds")

@@ -16,18 +16,10 @@ max_wane <- user(-5) # FIXED, scaled waning immunity
 min_wane <- user(-10) # FIXED, scaled waning immunity
 scaled_wane <- user(0)
 
-# No vaccination effect for 12F:
-# https://webarchive.nationalarchives.gov.uk/ukgwa/20211105111851mp_/https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/540290/hpr2416_ppv.pdf
-# https://fingertips.phe.org.uk/search/PPV#page/4/gid/1/pat/159/par/K02000001/ati/15/are/E92000001/iid/30313/age/27/sex/4/cat/-1/ctp/-1/yrr/1/cid/4/tbm/1
-# vacc_elderly <- 0.7*0.57 # FIXED PPV23 vaccination coverage * efficacy
-# ratio of vaccinated elderly for >64 y.o. people, averaged 69.7243% ~ 70%
-# vacc <- 0.9*0.862*0.02 # FIXED PCV13 vaccination coverage * efficacy * proportion of kids below 2 y.o.
-# ratio of vaccinated kids, averaged 90%
-# vacc <- (vacc_elderly + vacc_kids)/2 # FIXED, average
-
+# No vaccination effect for 12F
 # Country calibration:
 # Children: 1.07638532472038 (it is called delta in the spreadsheet)
-# Adults: 0.536936186788821 (basically gamma)
+# Adults: 0.536936186788821 (basically gamma in the spreadsheet)
 # Average: 0.8066608
 UK_calibration <- user(0.8066608) # FIXED (Lochen et al., 2022)
 
@@ -35,9 +27,15 @@ log_delta <- user(0) # required in mcState
 hypo_sigma_day <- user(28) # 28 days
 sigma_1 <- 1/hypo_sigma_day
 sigma_2 <- user(0)
-mu_0 <- 1/(80.70*365) # background mortality FIXED based on the inverse of life expectancy
-mu_1 <- user(192/(4064*4745)) # FIXED disease-associated mortality; ratio 192/4064 in 4745 days
+mu_0 <- 1/(80.70*365) # background mortality per day, the inverse of life expectancy
+mu_1 <- user(0)
 pi <- user(3.141593) # FIXED
+
+alpha <- user(1, min = 0) # proportionality factor relating Ne to D_tot
+gamma_annual <- user(0.01, min = 0) # annual rate of invasive disease
+gamma <- gamma_annual/365
+nu_annual <- user(83, min = 0)   # annual rate of non-55 cases
+nu <- nu_annual/365
 
 # 2. INITIAL VALUES ############################################################
 A_ini <- 10^(log_A_ini)*N
@@ -45,19 +43,20 @@ initial(A) <- A_ini
 initial(D) <- D_ini
 initial(S) <- N - A_ini - D_ini
 initial(R) <- 0
-initial(n_AD_weekly) <- 0
-initial(n_AD_cumul) <- 0
+initial(n_AD_weekly) <- 0 #infections
+# initial(n_AD_cumul) <- 0
+
+initial(Ne) <- D_ini*alpha
+initial(cases_55)     <- 0
+initial(cases_non55)  <- 0
+initial(cases_12F)    <- 0
 
 # 3. UPDATES ###################################################################
 beta <- beta_0*(
   (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) + 
     (1+beta_2*sin(2*pi*((time_shift_2*365)+time)/365)))
-# Infant vaccination coverage occurs when PCV13 introduced in April 2010 (day 2648 from 01.01.2003)
-# https://fingertips.phe.org.uk/search/vaccination#page/4/gid/1/pat/159/par/K02000001/ati/15/are/E92000001/iid/30306/age/30/sex/4/cat/-1/ctp/-1/yrr/1/cid/4/tbm/1/page-options/tre-do-0
-# https://cran.r-project.org/web/packages/finalsize/vignettes/varying_contacts.html
-# beta <- if (time >= 2648) beta_temporary*(1-vacc) else beta_temporary
 
-# lambda <- beta*(A+D)/N # infectious state from Asymtomatic & Diseased individuals
+# lambda <- beta*(A+D)/N
 lambda <- if ((A+D) > 0) beta*(A+D)/N else 0
 delta <- (10^(log_delta))*UK_calibration
 
@@ -94,6 +93,10 @@ n_Resist <- rbinom(R, p_RS)
 n_RS <- rbinom(n_Resist, wane)
 n_R_dead <- n_Resist - n_RS
 
+# GPSC-level compartments
+n_cases_55 <- rbinom(D, 1-exp(-gamma*dt)) # observed cases
+n_cases_non55 <- rpois(nu)
+
 # Closed system: births = deaths; all born susceptible
 n_S_born <- n_S_dead + n_Dd + n_D_dead + n_A_dead + n_R_dead
 
@@ -106,4 +109,10 @@ update(R) <- R + n_AR + n_DR - n_RS - n_R_dead
 # that "little trick" previously explained in https://github.com/mrc-ide/dust/blob/master/src/sir.cpp for cumulative incidence:
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
 update(n_AD_weekly) <- if (step %% 7 == 0) n_AD else n_AD_weekly + n_AD
-update(n_AD_cumul) <- n_AD_cumul + n_AD # no interest in asymptomatic cases that've recovered
+# update(n_AD_cumul) <- n_AD_cumul + n_AD # no interest in asymptomatic cases that've recovered
+
+update(Ne) <- D * alpha
+update(cases_55) <- if (step %% 7 == 0) n_cases_55 else cases_55 + n_cases_55
+update(cases_non55) <- if (step %% 7 == 0) n_cases_non55 else cases_non55 + n_cases_non55
+update(cases_12F) <- cases_55 + cases_non55
+
