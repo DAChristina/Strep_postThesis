@@ -185,20 +185,34 @@ selected_GPSC55 <- test %>%
                 !is.na(prop_GPSC55), # no 12F data available after 2020-05-11
                 prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
                 ) %>% 
+  dplyr::mutate(
+    count_GPSC55 = case_when(
+      yearWeek <= as.Date("2017-12-01") & yearWeek >= as.Date("2016-01-01") ~ NA,
+      TRUE ~ count_GPSC55
+      ),
+    count_12F = case_when(
+      yearWeek <= as.Date("2017-12-01") & yearWeek >= as.Date("2016-03-01") ~ NA,
+      TRUE ~ count_12F
+    )
+  ) %>% 
   dplyr::mutate(sin_week = sin(2*pi*lubridate::isoweek(yearWeek)/52),
                 cos_week = cos(2*pi*lubridate::isoweek(yearWeek)/52)) %>% 
   glimpse()
 
-ggplot(selected_GPSC55, aes(x = yearWeek)) +
+dat_model <- ggplot(selected_GPSC55, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F, colour = "12F")) +
   geom_line(aes(y = count_GPSC55, colour = "GPSC55")) +
+  geom_vline(xintercept = as.Date("2016-03-01"), color = "steelblue", linetype = "dashed") +
+  geom_vline(xintercept = as.Date("2017-12-01"), color = "steelblue", linetype = "dashed") +
   scale_colour_manual(values = c("12F" = "steelblue", "GPSC55" = "maroon")) +
   theme_bw() +
+  labs(title = "Data for Model Inference") +
   theme(legend.position = c(0.9, 0.85),
         legend.title = element_blank(),
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
+dat_model
 
 # test new model based on GPSC55/12F proportion
 model_gam_binom <- mgcv::gam(prop_GPSC55 ~ sin_week + cos_week + yearWeek + s(change_Ne),
@@ -289,9 +303,9 @@ combined <- dplyr::bind_rows(
   glimpse()
 
 
-ggplot(combined %>% 
-         dplyr::filter(source != "1. Data GPSC55/12F")
-       , aes(x = yearWeek, y = count, color = source)) +
+dat_fit <- ggplot(combined %>% 
+                    dplyr::filter(source != "1. Data GPSC55/12F")
+                  , aes(x = yearWeek, y = count, color = source)) +
   geom_line(size = 1) +
   geom_ribbon(data = earlier_ne_df,
               aes(x = yearWeek,
@@ -309,10 +323,11 @@ ggplot(combined %>%
   ) +
   # geom_point(size = 0.5, alpha = 0.6) +
   scale_x_date(# limits = c(min(as.Date(dat_c$week_date)), max(as.Date(dat_c$week_date))), # 2009 instead of min(as.Date(dat_c$week_date))
-               date_breaks = "1 year",
-               date_labels = "%Y") +
+    date_breaks = "1 year",
+    date_labels = "%Y") +
   theme_bw() +
   labs(
+    title = "Proportion Result",
     colour = "source",
     y = "proportion (GPSC55/12F)"
   ) +
@@ -321,7 +336,15 @@ ggplot(combined %>%
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
+dat_fit
 
+
+png("report/picts_proportion_modifiedWGS.png",
+    width = 24, height = 24, unit = "cm", res = 300)
+cowplot::plot_grid(dat_model, dat_fit,
+                   ncol = 1,
+                   labels = c("A", "B"))
+dev.off()
 
 
 
