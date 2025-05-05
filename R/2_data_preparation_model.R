@@ -165,7 +165,11 @@ dat_c <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>%
 # load genomic data
 gen <- read.csv("raw_data/genomic_data_cleaned.csv") %>% 
   dplyr::filter(!is.na(strain),
-                collection_date >= as.Date("2017-08-01")) # after 2017-08-01
+                collection_date >= as.Date("2017-08-01")) %>%  # after 2017-08-01
+  glimpse()
+
+earlier_ne_df <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom.csv") %>% 
+  glimpse()
 
 # load ne
 # ne_55 <- read.csv("raw_data/GPSC55_mlesky_cleaned.csv") %>% 
@@ -185,15 +189,24 @@ allAges_weekly <- dat_c %>%
   dplyr::summarise(count_serotype = sum(counts)) %>% 
   dplyr::ungroup() %>% 
   dplyr::full_join(
-  gen %>% 
-    dplyr::filter(strain == "GPSC55") %>% 
-    dplyr::mutate(week_date = as.Date(week_date),
-                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
-                  yearWeek =ISOweek::ISOweek2date(iso_week)
-    ) %>% 
-    dplyr::group_by(yearWeek) %>% 
-    dplyr::summarise(count_WGS_GPSC55 = n()) %>% 
-    dplyr::ungroup()
+    dplyr::bind_rows(
+      gen %>% 
+        dplyr::filter(strain == "GPSC55") %>% 
+        dplyr::mutate(week_date = as.Date(week_date),
+                      iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                      yearWeek =ISOweek::ISOweek2date(iso_week)
+        ) %>% 
+        dplyr::group_by(yearWeek) %>% 
+        dplyr::summarise(count_WGS_GPSC55 = n()) %>% 
+        dplyr::ungroup() %>% 
+        dplyr::mutate(yearWeek = as.Date(yearWeek))
+      ,
+      earlier_ne_df %>% 
+        dplyr::select(yearWeek, predicted_count_GPSC55) %>% 
+        dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
+        dplyr::filter(yearWeek <= as.Date("2017-08-01")) %>% 
+        dplyr::rename(count_WGS_GPSC55 = predicted_count_GPSC55)
+    )
   ,
   by = "yearWeek"
 ) %>% 
@@ -214,6 +227,8 @@ allAges_weekly <- dat_c %>%
     interpolated_ne
     ,
     by = "yearWeek"
+    ,
+    relationship = "many-to-many"
   ) %>%
   # tidyr::pivot_longer(
   #   cols = starts_with(c("count_")), # ignore Ne at the moment
@@ -227,6 +242,26 @@ allAges_weekly <- dat_c %>%
   glimpse()
 
 saveRDS(allAges_weekly, "inputs/pmcmc_data_week_allAge.rds")
+
+
+# test viz combined GPSC55
+ggplot(allAges_weekly
+       , aes(x = yearWeek, y = count_WGS_GPSC55)) +
+  geom_line(size = 0.5) +
+  geom_vline(xintercept = as.Date("2017-08-01"), color = "steelblue", linetype = "dashed") +
+  scale_x_date(limits = c(as.Date("2001-01-01"), as.Date("2022-06-01")), 
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  labs(
+    title = "GPSC55 Counts Prediction + Real Data",
+    y = "GPSC55 counts"
+  ) +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", colour = "transparent"))
 
 
 # ageGroup3, weekly

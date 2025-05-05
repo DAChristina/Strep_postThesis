@@ -382,6 +382,24 @@ earlier_ne_df <- earlier_ne_df %>%
     predicted_prop_GPSC55_glm_binom_lower = plogis(pred_glm_binom$fit+1.96*pred_glm_binom$se.fit),
     predicted_prop_GPSC55_glm_binom_upper = plogis(pred_glm_binom$fit-1.96*pred_glm_binom$se.fit),
   ) %>% 
+  dplyr::left_join(
+    read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+      dplyr::mutate(week_date = as.Date(week_date),
+                    iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                    yearWeek =ISOweek::ISOweek2date(iso_week)
+      ) %>% 
+      dplyr::group_by(yearWeek) %>% 
+      dplyr::summarise(count_12F = sum(counts)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::mutate(yearWeek = as.Date(yearWeek))
+    ,
+    by = "yearWeek"
+  ) %>% 
+  dplyr::mutate(
+    predicted_count_GPSC55 = predicted_prop_GPSC55_gam_binom_spline*count_12F,
+    predicted_count_GPSC55_lo = predicted_prop_GPSC55_gam_binom_spline_lower*count_12F,
+    predicted_count_GPSC55_up = predicted_prop_GPSC55_gam_binom_spline_upper*count_12F
+  ) %>%
   glimpse()
 
 write.csv(earlier_ne_df, "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom.csv", row.names = FALSE)
@@ -474,5 +492,30 @@ cowplot::plot_grid(dat_model, dat_fit,
                    labels = c("A", "B"))
 dev.off()
 
+# test GPSC55 case counts prediction
+ggplot(earlier_ne_df
+       , aes(x = yearWeek, y = predicted_count_GPSC55)) +
+  geom_line(size = 0.5) +
+  geom_ribbon(data = earlier_ne_df,
+              aes(x = yearWeek,
+                  ymin = predicted_count_GPSC55_lo,
+                  ymax = predicted_count_GPSC55_up),
+              inherit.aes = FALSE,
+              fill = "blue", alpha = 0.2
+  ) +
+  # geom_point(size = 0.5, alpha = 0.6) +
+  scale_x_date(limits = c(as.Date("2001-01-01"), as.Date("2018-01-01")), 
+    date_breaks = "1 year",
+    date_labels = "%Y") +
+  theme_bw() +
+  labs(
+    title = "GPSC55 Counts Prediction Result",
+    y = "GPSC55 counts prediction"
+  ) +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", colour = "transparent"))
 
 

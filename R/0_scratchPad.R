@@ -1,3 +1,112 @@
+rand_ss_counts <- data.frame(
+  time = c("2001.5", "2008.5", "2012.5", "2015.5"),
+  child_26 = c(0, 0, 0, 4),
+  child_32 = c(1, 3, 5, 1),
+  child_55 = c(0, 0, 5, 24),
+  adult_26 = c(0, 0, 0, 2),
+  adult_32 = c(3, 3, 2, 1),
+  adult_55 = c(0, 0, 0, 10)
+) %>% 
+  dplyr::mutate(
+    child_non_55 = child_26 + child_32,
+    adult_non_55 = adult_26 + adult_32,
+    
+    child_total = child_non_55 + child_55,
+    adult_total = adult_non_55 + adult_55,
+    
+    total = child_total + adult_total,
+    # assume normally distributed
+    count_WGS_GPSC55_1 = child_55*(2/15),
+    count_WGS_GPSC55_2 = (child_55*(13/15)) + (adult_55*(50/71)), # 15–85
+    count_WGS_GPSC55_3 = adult_55*(21/71)
+    
+  ) %>% 
+  glimpse()
+
+earlier_ne_df %>% 
+  dplyr::select(yearWeek, predicted_count_GPSC55) %>% 
+  dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
+  dplyr::filter(yearWeek <= as.Date("2017-08-01")) %>% 
+  dplyr::rename(count_WGS_GPSC55 = predicted_count_GPSC55) %>% 
+  # dplyr::mutate(
+  #   count_WGS_GPSC55_1 = ifelse(yearWeek >= as.Date("2010-01-01"), count_WGS_GPSC55/3, ),
+  # ) %>% 
+  glimpse()
+
+
+
+
+dplyr::bind_rows(
+  gen %>% 
+    dplyr::filter(strain == "GPSC55") %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+    ) %>% 
+    dplyr::group_by(yearWeek, ageGroup3) %>% 
+    dplyr::summarise(count_WGS_GPSC55 = n(), .groups = "drop") %>% 
+    dplyr::ungroup() %>% 
+    tidyr::pivot_wider(
+      names_from = ageGroup3,
+      values_from = count_WGS_GPSC55
+    ) %>% 
+    dplyr::rename(
+      count_WGS_GPSC55_1 = `<2`,
+      count_WGS_GPSC55_2 = `2-64`,
+      count_WGS_GPSC55_3 = `65+`
+    )
+  ,
+  earlier_ne_df %>% 
+    dplyr::select(yearWeek, predicted_count_GPSC55) %>% 
+    dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
+    dplyr::filter(yearWeek <= as.Date("2017-08-01")) %>% 
+    dplyr::rename(count_WGS_GPSC55 = predicted_count_GPSC55)
+) %>% 
+  glimpse()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # previous 3_pmcmc.R script for allAges inputs
 
 # 2. Data Fitting ##############################################################
