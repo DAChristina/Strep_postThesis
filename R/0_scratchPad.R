@@ -1,5 +1,5 @@
 rand_ss_counts <- data.frame(
-  time = c("2001.5", "2008.5", "2012.5", "2015.5"),
+  date = as.Date(c("2001-04-01", "2008-04-01", "2012-04-01", "2015-04-01")),
   child_26 = c(0, 0, 0, 4),
   child_32 = c(1, 3, 5, 1),
   child_55 = c(0, 0, 5, 24),
@@ -22,6 +22,60 @@ rand_ss_counts <- data.frame(
     
   ) %>% 
   glimpse()
+
+new_dates <- seq(from = min(rand_ss_counts$date), to = max(rand_ss_counts$date), by = "1 week") %>% 
+  glimpse()
+
+fn_Ne    <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne, method = "natural")
+fn_Ne_lo <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne_lb, method = "natural")
+fn_Ne_up <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne_ub, method = "natural")
+
+spline_fit_Ne    <- fn_Ne(new_dates)
+spline_fit_Ne_lo <- fn_Ne_lo(new_dates)
+spline_fit_Ne_up <- fn_Ne_up(new_dates)
+
+time_diffs_weeks <- as.numeric(diff(new_dates)) / 7
+change_Ne <- abs(diff(spline_fit_Ne)) / time_diffs_weeks
+change_Ne_lo <- abs(diff(spline_fit_Ne_lo)) / time_diffs_weeks
+change_Ne_up <- abs(diff(spline_fit_Ne_up)) / time_diffs_weeks
+
+interpolated_df <- tibble(
+  date = new_dates[-1],
+  itr_Ne = spline_fit_Ne[-1],
+  itr_Ne_lo = spline_fit_Ne_lo[-1],
+  itr_Ne_up = spline_fit_Ne_up[-1],
+  time_diffs_weeks = time_diffs_weeks,
+  change_Ne = change_Ne,
+  change_Ne_lo = change_Ne_lo,
+  change_Ne_up = change_Ne_up
+) %>%
+  mutate(
+    iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
+    yearWeek = ISOweek::ISOweek2date(iso_week)
+  ) %>%
+  glimpse()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 earlier_ne_df %>% 
   dplyr::select(yearWeek, predicted_count_GPSC55) %>% 

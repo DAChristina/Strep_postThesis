@@ -84,32 +84,36 @@ mcmc_pars <- prepare_parameters(initial_pars = pars,
 # dir.create("outputs/genomics/trial_deterministic_1000", FALSE, TRUE)
 
 # Trial combine pMCMC + tuning #################################################
-pmcmc_run_plus_tuning <- function(n_pars, n_sts){
-  dir_name <- paste0("outputs/genomics/trial_deterministic_", n_sts, "/")
+pmcmc_run_plus_tuning <- function(n_pars, n_sts, run_stochastic = TRUE){
+  dir_name <- paste0("outputs/genomics/trial_", ifelse(run_stochastic, "stochastic", "deterministic"), "_", n_sts, "/")
   dir.create(dir_name, FALSE, TRUE)
-  filter <- mcstate::particle_filter$new(data = sir_data,
-                                         model = gen_sir, # Use odin.dust input
-                                         n_particles = n_pars,
-                                         compare = case_compare,
-                                         seed = 1L)
   
-  # Use deterministic model by add filter_deterministic
-  # https://mrc-ide.github.io/mcstate/articles/deterministic.html
-  # Index function is optional when only a small number of states are used in comparison function.
-  filter_deterministic <- mcstate::particle_deterministic$new(data = sir_data,
-                                                              model = gen_sir,
-                                                              compare = case_compare,
-                                                              index = index_fun
-  )
-  
+  if(run_stochastic){
+    filter <- mcstate::particle_filter$new(data = sir_data,
+                                           model = gen_sir, # Use odin.dust input
+                                           n_particles = n_pars,
+                                           compare = case_compare,
+                                           seed = 1L)
+  } else {
+    filter <- mcstate::particle_deterministic$new(data = sir_data,
+                                                  model = gen_sir,
+                                                  compare = case_compare,
+                                                  index = index_fun)
+  }
   
   control <- mcstate::pmcmc_control(n_steps = n_sts,
                                     rerun_every = 50,
                                     rerun_random = TRUE,
-                                    progress = TRUE)
+                                    progress = TRUE,
+                                    
+                                    n_chains = 4,
+                                    n_workers = 4,
+                                    n_threads_total = 48,
+                                    save_state = TRUE,
+                                    save_trajectories = TRUE)
   
   # The pmcmc
-  pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
+  pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter, control = control)
   pmcmc_result
   saveRDS(pmcmc_result, paste0(dir_name, "pmcmc_result.rds"))
   
@@ -142,37 +146,68 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta", "alpha", "gamma_annual", "nu_annual", "kappa_Ne", "kappa_12F", "kappa_55")
   # isSymmetric(new_proposal_matrix)
   
-  tune_mcmc_pars <- prepare_parameters(initial_pars = pars, priors = priors, proposal = new_proposal_matrix, transform = transform)
+  tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
+                                       priors = priors,
+                                       proposal = new_proposal_matrix,
+                                       transform = transform)
   
   # Including adaptive proposal control
   # https://mrc-ide.github.io/mcstate/reference/adaptive_proposal_control.html
-  tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                         n_chains = 4,
-                                         rerun_every = 50,
-                                         rerun_random = TRUE,
-                                         progress = TRUE,
-                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
-                                                                                       initial_scaling = 1,
-                                                                                       # scaling_increment = NULL,
-                                                                                       log_scaling_update = T,
-                                                                                       acceptance_target = 0.234,
-                                                                                       # forget_rate = 0.1,
-                                                                                       # forget_end = n_sts*0.75,
-                                                                                       # adapt_end = n_sts*0.95,
-                                                                                       pre_diminish = n_sts*0.1)
-  )
   
-  filter <- mcstate::particle_filter$new(data = sir_data,
-                                         model = gen_sir, # Use odin.dust input
-                                         n_particles = n_pars,
-                                         compare = case_compare,
-                                         seed = 1L
-  )
+  if(run_stochastic){
+    tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
+                                           rerun_every = 50,
+                                           rerun_random = TRUE,
+                                           progress = TRUE,
+                                           
+                                           n_chains = 4,
+                                           n_workers = 4,
+                                           n_threads_total = 48,
+                                           save_state = TRUE,
+                                           save_trajectories = TRUE)
+    
+    
+    filter <- mcstate::particle_filter$new(data = sir_data,
+                                           model = gen_sir, # Use odin.dust input
+                                           n_particles = n_pars,
+                                           compare = case_compare,
+                                           seed = 1L
+    )
+  } else {
+    tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
+                                           rerun_every = 50,
+                                           rerun_random = TRUE,
+                                           progress = TRUE,
+                                           
+                                           n_chains = 4,
+                                           n_workers = 4,
+                                           n_threads_total = 48,
+                                           save_state = TRUE,
+                                           save_trajectories = TRUE,
+                                           adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 1000,
+                                                                                         initial_scaling = 1,
+                                                                                         # scaling_increment = NULL,
+                                                                                         log_scaling_update = T,
+                                                                                         acceptance_target = 0.234,
+                                                                                         # forget_rate = 0.1,
+                                                                                         # forget_end = n_sts*0.75,
+                                                                                         # adapt_end = n_sts*0.95,
+                                                                                         pre_diminish = n_sts*0.1)
+    )
+    
+    filter <- mcstate::particle_filter$new(data = sir_data,
+                                           model = gen_sir, # Use odin.dust input
+                                           n_particles = n_pars,
+                                           compare = case_compare,
+                                           seed = 1L
+    )
+  }
   
   # The pmcmc
-  tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter_deterministic, control = tune_control)
+  tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter, control = tune_control)
   tune_pmcmc_result
   saveRDS(tune_pmcmc_result, paste0(dir_name, "tune_pmcmc_result.rds"))
+  
   
   new_proposal_mtx <- cov(pmcmc_result$pars)
   write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx.csv"), row.names = FALSE)
@@ -200,6 +235,13 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts){
   fig <- pmcmc_trace(mcmc2)
   fig <- pmcmc_trace(mcmc2_burnedin)
   
+  # save pmcmc samples
+  pmcmc_samples <- mcstate::pmcmc_sample(tune_pmcmc_result,
+                                         n_sample = 1000,
+                                         burnin = 500)
+  
+  saveRDS(pmcmc_samples, paste0(dir_name, "pmcmc_samples.rds"))
+  
   ##############################################################################
   # MCMC Diagnostics
   
@@ -222,4 +264,7 @@ args <- commandArgs(trailingOnly = T)
 n_pars <- as.numeric(args[which(args == "--n_particles") + 1])
 n_sts <- as.numeric(args[which(args == "--n_steps") + 1])
 
-pmcmc_run_plus_tuning(n_pars, n_sts)
+run_stochastic_flag <- args[which(args == "--run_stochastic") + 1]
+run_stochastic <- tolower(run_stochastic_flag) %in% c("true", "t", "1")
+
+pmcmc_run_plus_tuning(n_pars, n_sts, run_stochastic)
