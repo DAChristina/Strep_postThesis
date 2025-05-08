@@ -9,27 +9,28 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
 
 # Running the SIR model with dust
 pars <- list(N_ini = 6.7e7,
-             log_A_ini = -1,
+             log_A_ini = -6.5,
              D_ini = 0,
              R_ini = 0,
              time_shift_1 = 0.265185074455071,
              time_shift_2 = 0.2688027206357,
-             beta_0 = 0.00904100678898,
-             beta_1 = 0.193999573638097,
-             beta_2 = 0.184928540835887,
+             beta_0 = 0.000000000678898,
+             beta_1 = 0.000193999573638097,
+             beta_2 = 0.000184928540835887,
              scaled_wane = (0.486156008428636),
              psi = (0.5),
              sigma_2 = (0.10738841030217),
              log_delta = (-2),
-             alpha = 100,
+             alpha = 0.01,
              gamma_annual = 0.01,
              nu_annual = 0.01
 )
 
-n_times <- round(seq(1, by = 365/52, length.out = 52*3)) # per-week, 22 years
+time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
+n_times <- length(time_points)
 sir_model <- gen_sir$new(pars = pars,
                          time = 1,
-                         n_particles = 15L,
+                         n_particles = 1L,
                          n_threads = 4L,
                          seed = 1L)
 
@@ -45,8 +46,6 @@ sir_model <- gen_sir$new(pars = pars,
 # incidence <- read.csv("inputs/incidence_week_12F_allAge.csv") %>% 
 #   dplyr::mutate(day = week*7) 
 
-n_times <- 200 # 500 for trial
-n_particles <- 15L
 model <- array(NA, dim = c(sir_model$info()$len, n_particles, n_times))
 
 # R0 estimation
@@ -58,6 +57,11 @@ for (t in seq_len(n_times)) {
 }
 # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
 # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
+
+sir_data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
+  glimpse()
+
+
 
 daily_incidence_modelled <- 
   reshape2::melt(model) %>% 
@@ -100,7 +104,7 @@ ggplot(daily_incidence_modelled %>%
            colour = compartment)) +
   geom_line() +
   scale_y_continuous(trans = "log1p") +
-  ggtitle("Cases (Aggregated by Days)") +
+  ggtitle("Cases (Aggregated by Week)") +
   xlab("Time") +
   ylab("Number of People") +
   theme_bw()

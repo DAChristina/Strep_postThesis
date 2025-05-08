@@ -262,11 +262,11 @@ diag_init_gelman_rubin <- function(tune_pmcmc_result){
   
   # Convert chains to mcmc objects
   mcmc_chains <- lapply(chains, function(chain) {
-    as.mcmc(cbind(chain$probabilities, chain$pars))
+    coda::as.mcmc(cbind(chain$probabilities, chain$pars))
   })
   
   # Combine chains into a list
-  mcmc_chains_list <- do.call(mcmc.list, mcmc_chains)
+  mcmc_chains_list <- do.call(coda::mcmc.list, mcmc_chains)
   mcmc_chains_list
 }
 

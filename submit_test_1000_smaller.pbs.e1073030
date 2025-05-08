@@ -1,0 +1,25 @@
+Loading required package: ggplot2
+Registered S3 method overwritten by 'GGally':
+  method from   
+  +.gg   ggplot2
+Warning messages:
+1: package ‘GGally’ was built under R version 4.3.3 
+2: package ‘ggplot2’ was built under R version 4.3.3 
+Loading required namespace: pkgbuild
+ℹ 21 functions decorated with [[cpp11::register]]
+✔ generated file 'cpp11.R'
+✔ generated file 'cpp11.cpp'
+ℹ Re-compiling dust621955d0
+ℹ Loading dust621955d0
+Running chain 1 / 1
+Finished 1100 steps in 25 mins
+Running chain 1 / 4
+Finished 1100 steps in 26 mins
+Running chain 2 / 4
+Finished 1100 steps in 21 mins
+Running chain 3 / 4
+Finished 1100 steps in 21 mins
+Running chain 4 / 4
+Finished 1100 steps in 20 mins
+There were 50 or more warnings (use warnings() to see the first 50)
+

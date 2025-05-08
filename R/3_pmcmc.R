@@ -107,7 +107,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts, run_stochastic = TRUE){
                                     progress = TRUE,
                                     
                                     n_chains = 4,
-                                    n_workers = 4,
+                                    # n_workers = 4,
                                     n_threads_total = 48,
                                     save_state = TRUE,
                                     save_trajectories = TRUE)
@@ -161,7 +161,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts, run_stochastic = TRUE){
                                            progress = TRUE,
                                            
                                            n_chains = 4,
-                                           n_workers = 4,
+                                           # n_workers = 4,
                                            n_threads_total = 48,
                                            save_state = TRUE,
                                            save_trajectories = TRUE)
@@ -180,7 +180,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts, run_stochastic = TRUE){
                                            progress = TRUE,
                                            
                                            n_chains = 4,
-                                           n_workers = 4,
+                                           # n_workers = 4,
                                            n_threads_total = 48,
                                            save_state = TRUE,
                                            save_trajectories = TRUE,
