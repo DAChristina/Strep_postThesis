@@ -115,13 +115,13 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (-4.69897), min = (-10), max = 0,
+    list(mcstate::pmcmc_parameter("log_A_ini", (-7.69897), min = (-10), max = 0,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.2, min = 0, max = 1,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("time_shift_2", 0.2, min = 0, max = 1,
+         mcstate::pmcmc_parameter("time_shift_2", 0.2, min = 0, max = 0.5,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.06565, min = 0, max = 0.8,
+         mcstate::pmcmc_parameter("beta_0", 0.0000006565, min = 0, max = 0.8,
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.07, min = 0, max = 0.7,
                                   prior = priors$betas),
@@ -136,7 +136,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
          
          mcstate::pmcmc_parameter("alpha", 1, min = 0, max = 100,
                                   prior = priors$alpha),
-         mcstate::pmcmc_parameter("gamma_annual", 1, min = 0, max = 100,
+         mcstate::pmcmc_parameter("gamma_annual", 0.004, min = 0,
                                   prior = priors$gamma_annual),
          mcstate::pmcmc_parameter("nu_annual", 1, min = 0, max = 100,
                                   prior = priors$nu_annual),
@@ -180,8 +180,11 @@ prepare_priors <- function(pars) {
     dunif(s, min = 0, max = 100, log = TRUE)
   }
   priors$gamma_annual <- function(s) {
-    dunif(s, min = 0, max = 100, log = TRUE)
+    dlnorm(s, meanlog = -4.788920616, sdlog = 0.467902993, log = TRUE)
   }
+  # priors$gamma_annual <- function(s) {
+  #   dunif(s, min = 0, max = 100, log = TRUE)
+  # }
   priors$nu_annual <- function(s) {
     dunif(s, min = 0, max = 100, log = TRUE)
   }

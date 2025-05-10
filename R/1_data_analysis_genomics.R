@@ -207,6 +207,119 @@ invasiveness <- read.csv("raw_data/gen_lw/invasiveness_12F.csv") %>%
   tidyr::pivot_wider(names_from = Age_group, values_from = Adjusted_invasiveness) %>%
   glimpse()
 
+# 28 days of carriage, exp distribution (CI 8.05-103.29 days)
+# Lilith's script to specify gamma in terms of mean and variance rather than shape and scale
+# convert mean and variance of gamma to shape and scale
+mv_to_ss <- function(mean, var) {
+  scale <- var / mean
+  shape <- mean / scale
+  list(shape = shape, scale = scale)
+}
+# gamma dist functions
+qgammamv <- function(p, mean, var) {
+  X <- mv_to_ss(mean, var)
+  qgamma(p = p, shape = X$shape, scale = X$scale)
+}
+dgammav <- function(x, mean, var) {
+  X <- mv_to_ss(mean, var)
+  dgamma(x = x, shape = X$shape, scale = X$scale)
+}
+
+# fitting function by least-squares based on mean and CIs
+fit_gamma <- function(mean, l, u, max_v = 100, ci = 0.95) {
+  
+  a <- (1 - ci) / 2
+  p <- c(a, 1 - a)
+  
+  f <- function(v) {
+    x <- qgammamv(p = p, mean = mean, var = v)
+    sum((x - c(l, u)) ^ 2)
+  }
+  
+  var_D <- optimise(f = f, interval = c(0, max_v), maximum = FALSE)$minimum
+  x <- mv_to_ss(mean, var_D)
+  qs <- qgamma(p, shape = x$shape, scale = x$scale)
+  print(sprintf("fitted qs = (%.3f, %.3f)", qs[1], qs[2]))
+  print(sprintf("target qs = (%f, %f)", l, u))
+  print(sprintf("fitted var = %.3f", var_D))
+  data.frame(dist = "gamma", scale = x$scale, shape = x$shape, mean = mean,
+             q2.5 = qs[1], q97.5 = qs[2])
+  
+}
+
+plot_gamma <- function(shape, scale, xlab, aim = NULL, ci = 0.95, ...) {
+  a <- (1 - ci) / 2
+  p <- c(a, 1 - a)
+  qs <- qgamma(p = p, shape = shape, scale = scale)
+  xlim <- c(0, max(qs, aim, na.rm = TRUE) * 1.1)
+  curve(dgamma(x, shape = shape, scale = scale),
+        xlab = xlab,
+        xlim = xlim,
+        ylab = "density", ...)
+  abline(v = c(shape * scale, qs), lty = c(1, 2, 2), col = "darkred")
+  if (!is.null(aim)) {
+    abline(v = aim, lty = c(1, 2, 2), col = "darkblue")
+  }
+}
+
+# test script
+qexp(c(0.25, 0.975), 1 / 28)
+duration <- fit_gamma(28, 14, 56, max_v = 1e3)
+plot_gamma(duration$shape, duration$scale, "Duration of carriage (days)",
+           aim = c(28, 14, 56))
+
+
+# tobecontinued Fit invasiveness priors
+data <- read.csv("outputs/invasiveness.csv", row.names = 1) %>% 
+  dplyr::mutate(ave = (child+adult)/2) %>% 
+  glimpse()
+
+fits_gamma <- lapply(data, MASS::fitdistr, "gamma")
+fits_weibull <- lapply(data, MASS::fitdistr, "weibull")
+fits_lnorm <- lapply(data, MASS::fitdistr, "lognormal")
+
+# Lognormal fits are the best (?)
+priors <- sapply(fits_lnorm, "[[", "estimate")
+priors <- rbind(priors,
+                mean = exp(priors["meanlog", ]),
+                q2.5 = qlnorm(0.025, priors["meanlog", ], priors["sdlog", ]),
+                q97.5 = qlnorm(0.975, priors["meanlog", ], priors["sdlog", ]))
+
+# write.csv(priors, "parameters.csv")
+
+par(mfrow = c(3, 2), mgp = c(1.5, 0.5, 0), mar = c(3, 3, 1, 1), bty = "n")
+for (i in c("adult", "child", "ave")) {
+  x <- data[[i]]
+  hist(x, breaks = seq(0, 0.4, 0.001), main = i, xlim = c(0, 0.05), freq = FALSE,
+       xlab = "Adjusted invasiveness")
+  curve(dgamma(x, shape = fits_gamma[[i]]$estimate["shape"],
+               rate = fits_gamma[[i]]$estimate["rate"]), add = TRUE, col = 2)
+  curve(dweibull(x, shape = fits_weibull[[i]]$estimate["shape"],
+                 scale = fits_weibull[[i]]$estimate["scale"]),
+        add = TRUE, col = 3)
+  curve(dlnorm(x, fits_lnorm[[i]]$estimate["meanlog"],
+               fits_lnorm[[i]]$estimate["sdlog"]),
+        add = TRUE, col = 4)
+  
+  p <- seq(0, 1, 0.01)
+  q <- quantile(x, p)
+  plot(p, pgamma(q, shape = fits_gamma[[i]]$estimate["shape"],
+                 rate = fits_gamma[[i]]$estimate["rate"]), pch = 20,
+       xlim = c(0, 1), ylim = c(0, 1), col = 2, ylab = "P(expected)",
+       xlab = "P(observed)")
+  points(p, pweibull(q, shape = fits_weibull[[i]]$estimate["shape"],
+                     scale = fits_weibull[[i]]$estimate["scale"]),
+         col = 3, pch = 20)
+  points(p, plnorm(q, fits_lnorm[[i]]$estimate["meanlog"],
+                   fits_lnorm[[i]]$estimate["sdlog"]), 
+         col = 4, pch = 20)
+  abline(0, 1)
+}
+legend("topleft", fill = 2:4, legend = c("Gamma", "Weibull", "LogNorm"),
+       bty = "n")
+
+
+# load gen data
 gen <-  read.csv("raw_data/gen_lw/genomic_epi_12F.csv") %>% 
   dplyr::mutate(strain = if_else(GPSC == 55, "GPSC55", "non55"),
                 ageGroup3 = case_when(
