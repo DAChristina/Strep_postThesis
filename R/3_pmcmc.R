@@ -84,7 +84,9 @@ mcmc_pars <- prepare_parameters(initial_pars = pars,
 # dir.create("outputs/genomics/trial_deterministic_1000", FALSE, TRUE)
 
 # Trial combine pMCMC + tuning #################################################
-pmcmc_run_plus_tuning <- function(n_pars, n_sts, run1_stochastic = TRUE, run2_stochastic = TRUE){
+pmcmc_run_plus_tuning <- function(n_pars, n_sts,
+                                  run1_stochastic = TRUE, run2_stochastic = TRUE,
+                                  ncpus){
   # dir_name <- paste0("outputs/genomics/trial_", ifelse(run_stochastic, "stochastic", "deterministic"), "_", n_sts, "/")
   dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
   dir.create(dir_name, FALSE, TRUE)
@@ -109,7 +111,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts, run1_stochastic = TRUE, run2_st
                                     
                                     n_chains = 1,
                                     # n_workers = 4,
-                                    n_threads_total = 48,
+                                    n_threads_total = ncpus,
                                     save_state = TRUE,
                                     save_trajectories = TRUE)
   
@@ -131,7 +133,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts, run1_stochastic = TRUE, run2_st
   
   # Calculating ESS & Acceptance Rate
   calc_ess <- ess_calculation(mcmc1)
-  write.csv(calc_ess, paste0(dir_name, "calc_ess.csv"), row.names = FALSE)
+  write.csv(calc_ess, paste0(dir_name, "calc_ess.csv")) #, row.names = FALSE)
   
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc1)
@@ -163,7 +165,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts, run1_stochastic = TRUE, run2_st
                                            
                                            n_chains = 4,
                                            # n_workers = 4,
-                                           n_threads_total = 48,
+                                           n_threads_total = ncpus,
                                            save_state = TRUE,
                                            save_trajectories = TRUE)
     
@@ -182,7 +184,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts, run1_stochastic = TRUE, run2_st
                                            
                                            n_chains = 4,
                                            # n_workers = 4,
-                                           n_threads_total = 48,
+                                           n_threads_total = ncpus,
                                            save_state = TRUE,
                                            save_trajectories = TRUE,
                                            adaptive_proposal = mcstate::adaptive_proposal_control(initial_vcv_weight = 1000,
@@ -226,10 +228,10 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts, run1_stochastic = TRUE, run2_st
   
   # Calculating ESS & Acceptance Rate
   tune_calc_ess <- ess_calculation(mcmc2)
-  write.csv(tune_calc_ess, paste0(dir_name, "tune_calc_ess.csv"), row.names = FALSE)
+  write.csv(tune_calc_ess, paste0(dir_name, "tune_calc_ess.csv")) #, row.names = FALSE)
   
   tune_calc_ess_burnedin <- ess_calculation(mcmc2_burnedin)
-  write.csv(tune_calc_ess_burnedin, paste0(dir_name, "tune_calc_ess_burnedin.csv"), row.names = FALSE)
+  write.csv(tune_calc_ess_burnedin, paste0(dir_name, "tune_calc_ess_burnedin.csv")) #, row.names = FALSE)
   
   # Figures! (still failed, margin error)
   fig <- pmcmc_trace(mcmc2)
@@ -278,7 +280,8 @@ run1_stochastic_flag <- args[which(args == "--run1_stochastic") + 1]
 run1_stochastic <- tolower(run1_stochastic_flag) %in% c("true", "t", "1")
 run2_stochastic_flag <- args[which(args == "--run2_stochastic") + 1]
 run2_stochastic <- tolower(run2_stochastic_flag) %in% c("true", "t", "1")
+ncpus <- as.numeric(args[which(args == "--ncpus") + 1])
 
-pmcmc_run_plus_tuning(n_pars, n_sts, run1_stochastic, run2_stochastic)
+pmcmc_run_plus_tuning(n_pars, n_sts, run1_stochastic, run2_stochastic, ncpus)
 
-# pmcmc_run_plus_tuning(10, 800, run1_stochastic = T, run2_stochastic = F)
+# pmcmc_run_plus_tuning(10, 800, run1_stochastic = T, run2_stochastic = F, ncpus = 4)
