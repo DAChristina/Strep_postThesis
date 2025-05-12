@@ -30,6 +30,17 @@ png(paste0(dir_name, "figs/mcmc2_burnedin_%02d.png"),
 pmcmc_trace(coda::as.mcmc(mcmc2_burnedin))
 dev.off()
 
+# final parameters with CI
+tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
+mcmc_lo_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.025))
+mcmc_hi_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.975))
+
+binds_tune_initial <- rbind(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]), mcmc_lo_CI, mcmc_hi_CI)
+t_tune_initial <- t(binds_tune_initial)
+colnames(t_tune_initial) <- c("values", "low_CI", "high_CI")
+
+write.csv(t_tune_initial,
+          paste0(dir_name, "tune_initial_with_CI.csv"), row.names = T)
 
 # MCMC diagnostics
 # 1. Gelman-Rubin
