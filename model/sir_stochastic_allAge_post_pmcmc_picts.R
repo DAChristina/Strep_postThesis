@@ -6,7 +6,7 @@ library(odin.dust)
 source("global/all_function_allAge.R")
 
 # load chains
-n_sts <- 1000
+n_sts <- 2500
 dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
 dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
 results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv"))
@@ -108,15 +108,15 @@ daily_incidence_modelled <-
                                    index == 9 ~ "model_cases_non55",
                                    index == 10 ~ "model_cases_12F"
                   )) %>% 
-  dplyr::mutate(
-    week = floor(time / 7)
-  ) %>% 
-  dplyr::group_by(
-    week, compartment
-  ) %>% 
-  dplyr::summarise(
-    value = sum(value, na.rm = TRUE), .groups = "drop"
-  ) %>% 
+  # dplyr::mutate(
+  #   week = floor(time / 7)
+  # ) %>% 
+  # dplyr::group_by(
+  #   week, compartment
+  # ) %>% 
+  # dplyr::summarise(
+  #   value = sum(value, na.rm = TRUE), .groups = "drop"
+  # ) %>% 
   # dplyr::select(-index) %>% 
   glimpse()
 
@@ -132,8 +132,8 @@ daily_incidence_modelled <-
 #   theme_bw()
 
 ggplot(daily_incidence_modelled %>% 
-         dplyr::filter(grepl("cases|D", compartment)),
-       aes(x = week, y = value,
+         dplyr::filter(grepl("cases", compartment)),
+       aes(x = time, y = value,
            group = compartment, #interaction(compartment,replicate),
            colour = compartment)) +
   geom_line() +

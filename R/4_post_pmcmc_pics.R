@@ -1,7 +1,7 @@
 source("global/all_function_allAge.R")
 
 # load chains
-n_sts <- 1000
+n_sts <- 2500
 dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
 dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
 mcmc1 <- read.csv(paste0(dir_name, "mcmc1.csv"))
@@ -94,7 +94,9 @@ plot_states <- function(state, data) {
 
   matplot(data$yearWeek, t(state["cases_non55", , -1]),
           type = "l", lty = 1, col = col,
-          xlab = "", ylab = "non55 cases")
+          xlab = "", ylab = "non55 cases",
+          ylim = c(0, max(data$count_WGS_non55, na.rm = TRUE))
+          )
   lines(data$yearWeek, data$count_WGS_non55, col = 2,lty = 1, lwd = 2)
 
   matplot(data$yearWeek, t(state["n_AD_weekly", , -1]),

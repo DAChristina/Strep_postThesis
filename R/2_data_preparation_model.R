@@ -230,6 +230,12 @@ allAges_weekly <- dat_c %>%
     ,
     relationship = "many-to-many"
   ) %>%
+  dplyr::mutate(
+    count_serotype = as.numeric(count_serotype),
+    count_WGS_GPSC55 = as.numeric(count_WGS_GPSC55),
+    count_WGS_non55 = as.numeric(count_WGS_non55),
+    Ne = as.numeric(Ne)
+  ) %>% 
   # tidyr::pivot_longer(
   #   cols = starts_with(c("count_")), # ignore Ne at the moment
   #   names_to = "type",
@@ -246,8 +252,11 @@ saveRDS(allAges_weekly, "inputs/pmcmc_data_week_allAge.rds")
 
 # test viz combined GPSC55
 ggplot(allAges_weekly
-       , aes(x = yearWeek, y = count_WGS_GPSC55)) +
-  geom_line(size = 0.5) +
+       , aes(x = yearWeek)) +
+  geom_line(aes(y = count_serotype), colour = "maroon") +
+  geom_line(aes(y = count_WGS_GPSC55), colour = "black") +
+  geom_line(aes(y = count_WGS_non55), colour = "darkgreen", size = 1.5) +
+  geom_line(aes(y = Ne), colour = "gold2") +
   geom_vline(xintercept = as.Date("2017-08-01"), color = "steelblue", linetype = "dashed") +
   scale_x_date(limits = c(as.Date("2001-01-01"), as.Date("2022-06-01")), 
                date_breaks = "1 year",
