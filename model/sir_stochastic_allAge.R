@@ -31,11 +31,11 @@ mu_0 <- 1/(80.70*365) # background mortality per day, the inverse of life expect
 mu_1 <- user(0)
 pi <- user(3.141593) # FIXED
 
-alpha <- user(1, min = 0) # proportionality factor relating Ne to D_tot
-gamma_annual <- user(0.01, min = 0) # annual rate of invasive disease
-gamma <- gamma_annual/365
-nu_annual <- user(83, min = 0)   # annual rate of non-55 cases
-nu <- nu_annual/365
+# alpha <- user(1, min = 0) # proportionality factor relating Ne to D_tot
+# gamma_annual <- user(0.01, min = 0) # annual rate of invasive disease
+# gamma <- gamma_annual/365
+# nu_annual <- user(83, min = 0)   # annual rate of non-55 cases
+# nu <- nu_annual/365
 
 # 2. INITIAL VALUES ############################################################
 A_ini <- 10^(log_A_ini)*N
@@ -46,10 +46,10 @@ initial(R) <- 0
 initial(n_AD_weekly) <- 0 #infections
 # initial(n_AD_cumul) <- 0
 
-initial(Ne) <- D_ini*alpha
-initial(cases_55)     <- 0
-initial(cases_non55)  <- 0
-initial(cases_12F)    <- 0
+# initial(Ne) <- D_ini*alpha
+# initial(cases_55)     <- 0
+# initial(cases_non55)  <- 0
+# initial(cases_12F)    <- 0
 
 # 3. UPDATES ###################################################################
 beta <- beta_0*(
@@ -94,8 +94,8 @@ n_RS <- rbinom(n_Resist, wane)
 n_R_dead <- n_Resist - n_RS
 
 # GPSC-level compartments
-n_cases_55 <- rbinom(D, 1-exp(-gamma*dt)) # observed cases
-n_cases_non55 <- rpois(nu)
+# n_cases_55 <- rbinom(D, 1-exp(-gamma*dt)) # observed cases
+# n_cases_non55 <- rpois(nu)
 
 # Closed system: births = deaths; all born susceptible
 n_S_born <- n_S_dead + n_Dd + n_D_dead + n_A_dead + n_R_dead
@@ -111,8 +111,8 @@ update(R) <- R + n_AR + n_DR - n_RS - n_R_dead
 update(n_AD_weekly) <- if (step %% 7 == 0) n_AD else n_AD_weekly + n_AD
 # update(n_AD_cumul) <- n_AD_cumul + n_AD # no interest in asymptomatic cases that've recovered
 
-update(Ne) <- D * alpha
-update(cases_55) <- if (step %% 7 == 0) n_cases_55 else cases_55 + n_cases_55
-update(cases_non55) <- if (step %% 7 == 0) n_cases_non55 else cases_non55 + n_cases_non55
-update(cases_12F) <- cases_55 + cases_non55
+# update(Ne) <- D * alpha
+# update(cases_55) <- if (step %% 7 == 0) n_cases_55 else cases_55 + n_cases_55
+# update(cases_non55) <- if (step %% 7 == 0) n_cases_non55 else cases_non55 + n_cases_non55
+# update(cases_12F) <- cases_55 + cases_non55
 
