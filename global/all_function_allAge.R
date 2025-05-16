@@ -69,15 +69,15 @@ index_fun <- function(info){
 # https://github.com/mrc-ide/mcstate/blob/da9f79e4b5dd421fd2e26b8b3d55c78735a29c27/tests/testthat/test-if2.R#L40
 # https://github.com/mrc-ide/mcstate/issues/184
 parameter_transform <- function(pars) {
-  log_A_ini <- pars[["log_A_ini"]]
+  scaled_A_ini <- pars[["scaled_A_ini"]]
   time_shift_1 <- pars[["time_shift_1"]]
   time_shift_2 <- pars[["time_shift_2"]]
   beta_0 <- pars[["beta_0"]]
   beta_1 <- pars[["beta_1"]]
   beta_2 <- pars[["beta_2"]]
-  scaled_wane <- pars[["scaled_wane"]]
+  # scaled_wane <- pars[["scaled_wane"]]
   log_delta <- pars[["log_delta"]]
-  # sigma_2 <- pars[["sigma_2"]]
+  # hypo_sigma_2 <- pars[["hypo_sigma_2"]]
   
   # alpha <- pars[["alpha"]]
   # gamma_annual <- pars[["gamma_annual"]]
@@ -87,15 +87,15 @@ parameter_transform <- function(pars) {
   kappa_55 <- pars[["kappa_55"]]
   # kappa_12F <- pars[["kappa_12F"]]
   
-  list(log_A_ini = log_A_ini,
+  list(scaled_A_ini = scaled_A_ini,
        time_shift_1 = time_shift_1,
        time_shift_2 = time_shift_2,
        beta_0 = beta_0,
        beta_1 = beta_1,
        beta_2 = beta_2,
-       scaled_wane = scaled_wane,
+       # scaled_wane = scaled_wane,
        log_delta = log_delta,
-       # sigma_2 = sigma_2
+       # hypo_sigma_2 = hypo_sigma_2,
        
        # alpha = alpha,
        # gamma_annual = gamma_annual,
@@ -115,24 +115,24 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (-7.69897), min = (-10), max = 0,
-                                  prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("time_shift_1", 0.2, min = 0, max = 1,
+    list(mcstate::pmcmc_parameter("scaled_A_ini", 0.7530098999, min = 0, max = 1, # precaution for 10^(-8)*6.7e7 = 0.67 Asymptomatic person
+                                  prior = priors$scaled_A_ini),
+         mcstate::pmcmc_parameter("time_shift_1", 0.0765, min = 0, max = 1,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("time_shift_2", 0.2, min = 0, max = 0.5,
+         mcstate::pmcmc_parameter("time_shift_2", 0.3688, min = 0, max = 0.5,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.0000006565, min = 0, max = 0.8,
+         mcstate::pmcmc_parameter("beta_0", 0.0219757657, min = 0, max = 0.8,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("beta_1", 0.07, min = 0, max = 0.7,
+         mcstate::pmcmc_parameter("beta_1", 0.045939, min = 0, max = 0.7,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("beta_2", 0.07, min = 0, max = 0.7,
+         mcstate::pmcmc_parameter("beta_2", 0.511849, min = 0, max = 0.7,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("scaled_wane", (0.5), min = (0), max = 1,
-                                  prior = priors$scaled_wane),
-         mcstate::pmcmc_parameter("log_delta", (-4.98), min = (-10), max = 0.7,
+         # mcstate::pmcmc_parameter("scaled_wane", 0.657388, min = 0, max = 1,
+         #                          prior = priors$scaled_wane),
+         mcstate::pmcmc_parameter("log_delta", (-4.5), min = (-10), max = 0,
                                   prior = priors$log_delta),
-         # mcstate::pmcmc_parameter("sigma_2", 1, min = 0, max = 10,
-         #                          prior = priors$sigma_2)
+         # mcstate::pmcmc_parameter("hypo_sigma_2", 1, min = 0, max = 10,
+         #                          prior = priors$sigma_2),
          
          # mcstate::pmcmc_parameter("alpha", 1, min = 0, max = 100,
          #                          prior = priors$alpha),
@@ -145,7 +145,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
          #                          prior = priors$kappas),
          # mcstate::pmcmc_parameter("kappa_12F", 1, min = 0, max = 100,
          #                          prior = priors$kappas),
-         mcstate::pmcmc_parameter("kappa_55", 1, min = 0, max = 100,
+         mcstate::pmcmc_parameter("kappa_55", 2, min = 0, max = 10,
                                   prior = priors$kappas)
          
     ),
@@ -157,8 +157,8 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
 prepare_priors <- function(pars) {
   priors <- list()
   
-  priors$log_A_ini <- function(s) {
-    dunif(s, min = (-10), max = 0, log = TRUE)
+  priors$scaled_A_ini <- function(s) {
+    dbeta(s, shape1 = 2.5, shape2 = 2.5, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
@@ -166,13 +166,13 @@ prepare_priors <- function(pars) {
   priors$betas <- function(s) {
     dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
-  priors$scaled_wane <- function(s) {
-    dbeta(s, shape1 = 2.5, shape2 = 2.5, log = TRUE)
-  }
+  # priors$scaled_wane <- function(s) {
+  #   dbeta(s, shape1 = 2.5, shape2 = 2.5, log = TRUE)
+  # }
   priors$log_delta <- function(s) {
-    dunif(s, min = (-10), max = 0.7, log = TRUE)
+    dunif(s, min = (-10), max = 0, log = TRUE)
   }
-  # priors$sigma_2 <- function(s) {
+  # priors$hypo_sigma_2 <- function(s) {
   #   dgamma(s, shape = 1, scale = 1, log = TRUE)
   # }
   
@@ -189,7 +189,7 @@ prepare_priors <- function(pars) {
   #   dunif(s, min = 0, max = 100, log = TRUE)
   # }
   priors$kappas <- function(s) {
-    dunif(s, min = 0, max = 100, log = TRUE)
+    dunif(s, min = 0, max = 10, log = TRUE)
   }
   
   priors

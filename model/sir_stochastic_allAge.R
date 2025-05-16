@@ -4,17 +4,21 @@ initial(time) <- 0
 
 # 1. PARAMETERS ################################################################
 N <- user(6.7e7) # FIXED England's pop size is roughly 67,000,000
-log_A_ini <- user(0) # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
+
+max_A_ini <- user(0) # FIXED
+min_A_ini <- user(-20) # FIXED
+scaled_A_ini <- user(0) # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
 D_ini <- user(0) 
 time_shift_1 <- user(0)
 time_shift_2 <- user(0)
-beta_0 <- user(0)
+# log_beta_0 <- user(0)
+beta_0 <- user(0) # 10^(log_beta_0)
 beta_1 <- user(0)
 beta_2 <- user(0)
 
-max_wane <- user(-5) # FIXED, scaled waning immunity
-min_wane <- user(-10) # FIXED, scaled waning immunity
-scaled_wane <- user(0)
+# max_wane <- user(-5) # FIXED, scaled waning immunity
+# min_wane <- user(-10) # FIXED, scaled waning immunity
+# scaled_wane <- user(0)
 
 # No vaccination effect for 12F
 # Country calibration:
@@ -24,9 +28,10 @@ scaled_wane <- user(0)
 UK_calibration <- user(0.8066608) # FIXED (Lochen et al., 2022)
 
 log_delta <- user(0) # required in mcState
-hypo_sigma_day <- user(28) # 28 days
-sigma_1 <- 1/hypo_sigma_day
-sigma_2 <- user(0)
+hypo_sigma1_day <- user(28) # 28 days
+sigma_1 <- 1/hypo_sigma1_day
+hypo_sigma2_day <- user(1) # 1 day
+sigma_2 <- 1/hypo_sigma2_day
 mu_0 <- 1/(80.70*365) # background mortality per day, the inverse of life expectancy
 mu_1 <- user(0)
 pi <- user(3.141593) # FIXED
@@ -38,12 +43,13 @@ pi <- user(3.141593) # FIXED
 # nu <- nu_annual/365
 
 # 2. INITIAL VALUES ############################################################
+log_A_ini <- scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini # scaled_A_ini*(max_A_ini−min_A_ini)+min_A_ini; rescaled using (A_ini-A_ini_min)/(A_ini_max-A_ini_min)
 A_ini <- 10^(log_A_ini)*N
 initial(A) <- A_ini
 initial(D) <- D_ini
 initial(S) <- N - A_ini - D_ini
 initial(R) <- 0
-initial(n_AD_weekly) <- 0 #infections
+initial(n_AD_weekly) <- 0 # infections
 # initial(n_AD_cumul) <- 0
 
 # initial(Ne) <- D_ini*alpha
@@ -52,17 +58,20 @@ initial(n_AD_weekly) <- 0 #infections
 # initial(cases_12F)    <- 0
 
 # 3. UPDATES ###################################################################
+# beta <- beta_0*(
+#   (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)))
+
 beta <- beta_0*(
-  (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) + 
+  (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) +
     (1+beta_2*sin(2*pi*((time_shift_2*365)+time)/365)))
 
 # lambda <- beta*(A+D)/N
 lambda <- if ((A+D) > 0) beta*(A+D)/N else 0
 delta <- (10^(log_delta))*UK_calibration
 
-log_wane <- scaled_wane*(max_wane-min_wane)+min_wane # scaled_wane*(max_wane−min_wane)+min_wane; rescaled using (wane-wane_min)/(wane_max-wane_min)
-wane <- 10^(log_wane)
-# wane <- 0
+# log_wane <- scaled_wane*(max_wane-min_wane)+min_wane # scaled_wane*(max_wane−min_wane)+min_wane; rescaled using (wane-wane_min)/(wane_max-wane_min)
+# wane <- 10^(log_wane)
+wane <- 0
 
 # Individual probabilities of transition
 p_SA <- 1- exp(-(lambda+mu_0) * dt)

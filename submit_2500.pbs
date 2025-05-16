@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#PBS -N All_2500
 #PBS -l walltime=70:00:00
 #PBS -l select=1:ncpus=124:mem=300gb
 
@@ -9,7 +10,12 @@ source ~/anaconda3/etc/profile.d/conda.sh
 
 cd $PBS_O_WORKDIR
 #mkdir /trialFolder # Failed
-conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" --n_particles 500 --n_steps 2500 --run1_stochastic true --run2_stochastic false --ncpus 124 > "$HOME/Strep_postThesis/myresult.txt"
+conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" \
+    --mode run_all \
+    --n_particles 500 --n_steps 2500 \
+    --run1_stochastic true --run2_stochastic false \
+    --ncpus 124 \
+    > "$HOME/Strep_postThesis/myresult.txt"
 #mv *.pdf myresult.txt $PBS_O_WORKDIR
 
 printenv > "$HOME/Strep_postThesis/myenv.txt"

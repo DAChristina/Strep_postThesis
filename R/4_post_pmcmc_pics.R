@@ -1,7 +1,7 @@
 source("global/all_function_allAge.R")
 
 # load chains
-n_sts <- 2500
+n_sts <- 600
 dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
 dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
 mcmc1 <- read.csv(paste0(dir_name, "mcmc1.csv"))
@@ -136,22 +136,22 @@ plot_states <- function(state, data) {
 
 
 
-png("figs/traces.png", width = 17, height = 12, unit = "cm", res = 1200)
-par(mfrow = c(3, 4), mar = c(3, 3, 1, 1), mgp = c(1.7, 0.7, 0), bty = "n")
-plot_traces(pmcmc_results$pars, metrics = pmcmc_results$metrics)
-plot_traces(pmcmc_results$probabilities)
-dev.off()
+# png("figs/traces.png", width = 17, height = 12, unit = "cm", res = 1200)
+# par(mfrow = c(3, 4), mar = c(3, 3, 1, 1), mgp = c(1.7, 0.7, 0), bty = "n")
+# plot_traces(pmcmc_results$pars, metrics = pmcmc_results$metrics)
+# plot_traces(pmcmc_results$probabilities)
+# dev.off()
 
 
-png("figs/posteriors.png", width = 17, height = 8, unit = "cm", res = 1200)
-par(mfrow = c(3, 3), mar = c(3, 3, 1, 1), mgp = c(1.7, 0.7, 0), bty = "n")
-for (nm in names(initial_pars)) {
-  hist(pmcmc_samples$pars[, nm], xlab = nm, main = "", freq = FALSE)
-  if (nm %in% names(priors)) {
-    curve(exp(priors[[nm]](x)), add = TRUE, col = 2)
-  }
-}
-dev.off()
+# png("figs/posteriors.png", width = 17, height = 8, unit = "cm", res = 1200)
+# par(mfrow = c(3, 3), mar = c(3, 3, 1, 1), mgp = c(1.7, 0.7, 0), bty = "n")
+# for (nm in names(initial_pars)) {
+#   hist(pmcmc_samples$pars[, nm], xlab = nm, main = "", freq = FALSE)
+#   if (nm %in% names(priors)) {
+#     curve(exp(priors[[nm]](x)), add = TRUE, col = 2)
+#   }
+# }
+# dev.off()
 
 
 # fixed pics

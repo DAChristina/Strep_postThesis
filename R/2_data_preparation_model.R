@@ -242,9 +242,17 @@ allAges_weekly <- dat_c %>%
   #   values_to = "count"
   # ) %>% 
   dplyr::arrange(yearWeek) %>% 
-  dplyr::mutate(yearWeek = as.Date(yearWeek),
-                day = as.numeric(round((yearWeek - as.Date("1987-09-14"))))) %>%
-  mcstate::particle_filter_data(., time = "day", rate = 1, initial_time = 0) %>%
+  dplyr::filter(
+    yearWeek >= as.Date("2010-01-01") # filter out data not based on initial Ne but the first time GPSC55 was predicted 
+  ) %>%
+  dplyr::mutate(# count_WGS_GPSC55 = round(count_WGS_GPSC55), # rounded cases
+                # count_WGS_GPSC55 = ifelse(count_WGS_GPSC55 == 0, NA_real_, count_WGS_GPSC55),
+                yearWeek = as.Date(yearWeek),
+                day = as.numeric(round((yearWeek - as.Date("2010-01-04"))))) %>%
+  mcstate::particle_filter_data(.,
+                                time = "day",
+                                rate = 1,
+                                initial_time = 0) %>%
   glimpse()
 
 saveRDS(allAges_weekly, "inputs/pmcmc_data_week_allAge.rds")
