@@ -1,3 +1,44 @@
+dat_c <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+  dplyr::filter(ageGroup3 != "Unknown") %>% 
+  dplyr::mutate(week_date = as.Date(week_date),
+                iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                yearWeek =ISOweek::ISOweek2date(iso_week)
+  ) %>% 
+  dplyr::group_by(yearWeek) %>% 
+  dplyr::summarise(count_serotype = sum(counts)) %>% 
+  dplyr::ungroup() %>% 
+  glimpse()
+
+# load genomic data
+gen <- read.csv("raw_data/genomic_data_cleaned.csv") %>% 
+  dplyr::filter(!is.na(strain),
+                collection_date >= as.Date("2017-08-01")) %>%  # after 2017-08-01
+  glimpse()
+
+earlier_ne_df <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom.csv") %>% 
+  glimpse()
+
+all_GPSC55 <- dplyr::bind_rows(
+  gen %>% 
+    dplyr::filter(strain == "GPSC55") %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+    ) %>% 
+    dplyr::group_by(yearWeek) %>% 
+    dplyr::summarise(count_WGS_GPSC55 = n()) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::mutate(yearWeek = as.Date(yearWeek))
+  ,
+  earlier_ne_df %>% 
+    dplyr::select(yearWeek, predicted_count_GPSC55) %>% 
+    dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
+    dplyr::filter(yearWeek <= as.Date("2017-08-01")) %>% 
+    dplyr::rename(count_WGS_GPSC55 = predicted_count_GPSC55)
+) %>% 
+  dplyr::arrange(yearWeek) %>% 
+  glimpse()
+
 rand_ss_counts <- data.frame(
   date = as.Date(c("2001-04-01", "2008-04-01", "2012-04-01", "2015-04-01")),
   child_26 = c(0, 0, 0, 4),
@@ -14,49 +55,108 @@ rand_ss_counts <- data.frame(
     child_total = child_non_55 + child_55,
     adult_total = adult_non_55 + adult_55,
     
-    total = child_total + adult_total,
-    # assume normally distributed
-    count_WGS_GPSC55_1 = child_55*(2/15),
-    count_WGS_GPSC55_2 = (child_55*(13/15)) + (adult_55*(50/71)), # 15–85
-    count_WGS_GPSC55_3 = adult_55*(21/71)
+    total = child_total + adult_total
+  ) %>% 
+  dplyr::transmute(
+    date = date,
+    # assume normally distributed across ages; count/total
+    prop_WGS_GPSC55_1 = (child_55*(2/15))/total,
+    prop_WGS_GPSC55_2 = ((child_55*(13/15)) + (adult_55*(50/71)))/total, # 15–85
+    prop_WGS_GPSC55_3 = (adult_55*(21/71))/total
     
   ) %>% 
   glimpse()
 
-new_dates <- seq(from = min(rand_ss_counts$date), to = max(rand_ss_counts$date), by = "1 week") %>% 
+# all recorded dates
+new_dates <- seq(from = as.Date(min(earlier_ne_df$yearWeek)),
+                 to = as.Date(max(earlier_ne_df$yearWeek)),
+                 by = "week") %>% 
   glimpse()
 
-fn_Ne    <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne, method = "natural")
-fn_Ne_lo <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne_lb, method = "natural")
-fn_Ne_up <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne_ub, method = "natural")
+fn_1 <- splinefun(x = as.Date(rand_ss_counts$date),
+                  y = rand_ss_counts$prop_WGS_GPSC55_1, method = "natural")
+fn_2 <- splinefun(x = as.Date(rand_ss_counts$date),
+                  y = rand_ss_counts$prop_WGS_GPSC55_2, method = "natural")
+fn_3 <- splinefun(x = as.Date(rand_ss_counts$date),
+                  y = rand_ss_counts$prop_WGS_GPSC55_3, method = "natural")
 
-spline_fit_Ne    <- fn_Ne(new_dates)
-spline_fit_Ne_lo <- fn_Ne_lo(new_dates)
-spline_fit_Ne_up <- fn_Ne_up(new_dates)
-
-time_diffs_weeks <- as.numeric(diff(new_dates)) / 7
-change_Ne <- abs(diff(spline_fit_Ne)) / time_diffs_weeks
-change_Ne_lo <- abs(diff(spline_fit_Ne_lo)) / time_diffs_weeks
-change_Ne_up <- abs(diff(spline_fit_Ne_up)) / time_diffs_weeks
-
-interpolated_df <- tibble(
-  date = new_dates[-1],
-  itr_Ne = spline_fit_Ne[-1],
-  itr_Ne_lo = spline_fit_Ne_lo[-1],
-  itr_Ne_up = spline_fit_Ne_up[-1],
-  time_diffs_weeks = time_diffs_weeks,
-  change_Ne = change_Ne,
-  change_Ne_lo = change_Ne_lo,
-  change_Ne_up = change_Ne_up
-) %>%
-  mutate(
-    iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
-    yearWeek = ISOweek::ISOweek2date(iso_week)
-  ) %>%
+all_GPSC55_ageGroup3 <- dplyr::bind_rows(
+  earlier_ne_df %>% 
+    dplyr::transmute(
+      yearWeek = as.Date(yearWeek),
+      p_1 = pmax(0, fn_1(yearWeek)),
+      p_2 = pmax(0, fn_2(yearWeek)),
+      p_3 = pmax(0, fn_3(yearWeek)),
+      
+      # proportions; p/total_p
+      prop_1 = p_1 / (p_1 + p_2 + p_3),
+      prop_2 = p_2 / (p_1 + p_2 + p_3),
+      prop_3 = p_3 / (p_1 + p_2 + p_3),
+      
+      # counts
+      count_WGS_GPSC55_1 = prop_1*predicted_count_GPSC55,
+      count_WGS_GPSC55_2 = prop_2*predicted_count_GPSC55,
+      count_WGS_GPSC55_3 = prop_3*predicted_count_GPSC55,
+    ) %>% 
+    dplyr::select(
+      yearWeek, contains("count_WGS")
+    )
+  ,
+  gen %>% 
+    dplyr::filter(strain == "GPSC55") %>% 
+    dplyr::mutate(week_date = as.Date(week_date),
+                  iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+    ) %>% 
+    dplyr::group_by(yearWeek, ageGroup3) %>% 
+    dplyr::summarise(count = n()) %>% 
+    dplyr::ungroup() %>% 
+    tidyr::pivot_wider(
+      id_cols = yearWeek,
+      names_from = ageGroup3,
+      values_from = count
+    ) %>% 
+    dplyr::rename(
+      count_WGS_GPSC55_1 = `<2`,
+      count_WGS_GPSC55_2 = `2-64`,
+      count_WGS_GPSC55_3 = `65+`
+    ) %>% 
+    dplyr::mutate(
+      count_WGS_GPSC55_1 = as.numeric(count_WGS_GPSC55_1),
+      count_WGS_GPSC55_2 = as.numeric(count_WGS_GPSC55_2),
+      count_WGS_GPSC55_3 = as.numeric(count_WGS_GPSC55_3)
+    )
+) %>% 
+  # test combine all GPSC55
+  dplyr::full_join(
+    all_GPSC55,
+    by = "yearWeek",
+    relationship = "many-to-many"
+  ) %>% 
   glimpse()
 
 
-
+# test viz GPSC55 stratified by agegroups
+ggplot(all_GPSC55_ageGroup3
+       , aes(x = yearWeek)) +
+  geom_line(aes(y = count_WGS_GPSC55_1), colour = "maroon") +
+  geom_line(aes(y = count_WGS_GPSC55_2), colour = "gold2") +
+  geom_line(aes(y = count_WGS_GPSC55_3), colour = "darkgreen") +
+  geom_line(aes(y = count_WGS_GPSC55), colour = "black") +
+  geom_vline(xintercept = as.Date("2017-08-01"), color = "steelblue", linetype = "dashed") +
+  scale_x_date(limits = c(as.Date("2012-01-01"), as.Date("2022-06-01")), 
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  labs(
+    title = "GPSC55 Counts Prediction + Real Data",
+    y = "GPSC55 counts"
+  ) +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", colour = "transparent"))
 
 
 
@@ -118,307 +218,3 @@ dplyr::bind_rows(
 ) %>% 
   glimpse()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# previous 3_pmcmc.R script for allAges inputs
-
-# 2. Data Fitting ##############################################################
-library(mcstate)
-library(coda)
-library(odin.dust)
-library(dust)
-library(GGally)
-library(socialmixr)
-
-source("global/all_function.R")
-sir_data <- readRDS("inputs/pmcmc_data_week_allAge.rds")
-rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the particle filter to use
-
-# Contact matrix:
-# Create contact_matrix 5 demographic groups:
-# > 2
-# 2-64
-# 65+
-age.limits = c(0, 2, 65)
-N_age <- length(age.limits)
-
-contact_demographic <- socialmixr::contact_matrix(polymod,
-                                                  countries = "United Kingdom",
-                                                  age.limits = age.limits,
-                                                  symmetric = TRUE
-)
-
-transmission <- contact_demographic$matrix /
-  rep(contact_demographic$demography$population, each = ncol(contact_demographic$matrix))
-transmission
-
-
-## 2a. Model Load ##############################################################
-# The model below is stochastic, closed system SADR model that I have created before
-# I updated the code, filled the parameters with numbers;
-# e.g.dt <- user(0) because if dt <- user() generates error during MCMC run
-gen_sir <- odin.dust::odin_dust("model/sir_stochastic.R")
-
-# This is part of sir odin model:
-pars <- list(m = transmission,
-             N_ini = contact_demographic$demography$population,
-             D_ini = c(0,0,0),
-             R_ini = c(0,0,0),
-             vacc = c(0,0,0), # no vaccination coverage for 12F
-             # we will parameterise pars below:
-             # log_A_ini_1 = -4,
-             # log_A_ini_2 = -4,
-             # log_A_ini_3 = -4,
-             # log_A_ini = c(pars$log_A_ini_1, pars$log_A_ini_2, pars$log_A_ini_3),
-             log_A_ini = c(-4, -4, -4),
-             time_shift_1 = 0.366346711348848,
-             time_shift_2 = 0.366346711348848,
-             beta_0 = 0.063134635077278,
-             beta_1 = 0.161472506104886,
-             beta_2 = 0.161472506104886,
-             scaled_wane = (0.9),
-             log_delta_kids = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
-             log_delta_adults = (-4.03893492453891), # will be fitted to logN(-10, 0.7)
-             psi = (0.5)
-)
-
-# https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model-over-time
-# n_particles <- 50 # Trial n_particles = 50
-# filter <- mcstate::particle_filter$new(data = sir_data,
-#                                        model = gen_sir, # Use odin.dust input
-#                                        n_particles = n_particles,
-#                                        compare = case_compare,
-#                                        seed = 1L)
-# 
-# filter$run(pars)
-
-# Variance and particles estimation (as suggested by Rich)
-# parallel::detectCores() # 4 cores
-# x <- replicate(30, filter$run(pars))
-# var(x)
-# [1] 3520.937
-# Trial 320000 particles to get var(x) = 1 on 4 chains/4 nodes/4 cores per-node
-# (320000/4/4/4)/3520.937
-# Trial 320000 particles to get var(x) = 1 on 4 chains/1 nodes/20 cores per-node
-# 3520.937*(4*1*20) # ~ 281675
-# (281675/4/1/20)/3520.937
-
-# Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
-
-priors <- prepare_priors(pars)
-proposal_matrix <- diag(200, 12)
-proposal_matrix <- (proposal_matrix + t(proposal_matrix)) / 2
-rownames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
-colnames(proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
-
-transform <- parameter_transform(transmission)
-mcmc_pars <- prepare_parameters(initial_pars = pars,
-                                priors = priors,
-                                proposal = proposal_matrix,
-                                transform = transform)
-
-# Check the transform function:
-# transform(mcmc_pars$initial())
-
-# n_steps <- 100 #1e6
-
-# I change pmcmc_run into a function that involve control inside:
-# pmcmc_run <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
-
-# Directory for saving the outputs
-dir.create("outputs/heterogeneity/trial_stochastic_500p_1e3/figs", FALSE, TRUE)
-
-# Trial combine pMCMC + tuning #################################################
-pmcmc_run_plus_tuning <- function(n_pars, n_sts){
-  filter <- mcstate::particle_filter$new(data = sir_data,
-                                         model = gen_sir, # Use odin.dust input
-                                         n_particles = n_pars,
-                                         compare = case_compare,
-                                         seed = 1L)
-  
-  # Use deterministic model by add filter_deterministic
-  # https://mrc-ide.github.io/mcstate/articles/deterministic.html
-  # Index function is optional when only a small number of states are used in comparison function.
-  filter_deterministic <- mcstate::particle_deterministic$new(data = sir_data,
-                                                              model = gen_sir,
-                                                              compare = case_compare,
-                                                              index = index_fun
-  )
-  
-  
-  control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                    rerun_every = 50,
-                                    rerun_random = TRUE,
-                                    progress = TRUE)
-  
-  # The pmcmc
-  pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter_deterministic, control = control)
-  pmcmc_result
-  saveRDS(pmcmc_result, "outputs/heterogeneity/pmcmc_result.rds")
-  
-  new_proposal_mtx <- cov(pmcmc_result$pars)
-  write.csv(new_proposal_mtx, "outputs/heterogeneity/new_proposal_mtx.csv", row.names = TRUE)
-  
-  lpost_max <- which.max(pmcmc_result$probabilities[, "log_posterior"])
-  write.csv(as.list(pmcmc_result$pars[lpost_max, ]),
-            "outputs/heterogeneity/initial.csv", row.names = FALSE)
-  
-  # Further processing for thinning chains
-  mcmc1 <- pmcmc_further_process(n_sts, pmcmc_result)
-  write.csv(mcmc1, "outputs/heterogeneity/mcmc1.csv", row.names = TRUE)
-  
-  # Calculating ESS & Acceptance Rate
-  calc_ess <- ess_calculation(mcmc1)
-  write.csv(calc_ess, "outputs/heterogeneity/calc_ess.csv", row.names = TRUE)
-  
-  # Figures! (still failed, margin error)
-  fig <- pmcmc_trace(mcmc1)
-  # trial recursively save figs
-  png("outputs/heterogeneity/trial_deterministic_5e3/figs/mcmc1_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  pmcmc_trace(mcmc1)
-  dev.off()
-  
-  Sys.sleep(10) # wait 10 secs before conducting tuning
-  
-  # New proposal matrix
-  new_proposal_matrix <- as.matrix(read.csv("outputs/heterogeneity/new_proposal_mtx.csv"))
-  new_proposal_matrix <- new_proposal_matrix[, -1]
-  new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix/1e3 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
-  new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix)) / 2
-  rownames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
-  colnames(new_proposal_matrix) <- c("log_A_ini_1", "log_A_ini_2", "log_A_ini_3", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "scaled_wane", "log_delta_kids", "log_delta_adults", "psi")
-  # isSymmetric(new_proposal_matrix)
-  
-  tune_mcmc_pars <- prepare_parameters(initial_pars = pars, priors = priors, proposal = new_proposal_matrix, transform = transform)
-  
-  # Including adaptive proposal control
-  # https://mrc-ide.github.io/mcstate/reference/adaptive_proposal_control.html
-  tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                         n_chains = 4,
-                                         rerun_every = 50,
-                                         rerun_random = TRUE,
-                                         progress = TRUE,
-                                         adaptive_proposal = adaptive_proposal_control(initial_vcv_weight = 20,
-                                                                                       initial_scaling = 0.2,
-                                                                                       scaling_increment = 0.02,
-                                                                                       log_scaling_update = T,
-                                                                                       acceptance_target = 0.234,
-                                                                                       forget_rate = 0.5,
-                                                                                       forget_end = n_sts/2,
-                                                                                       adapt_end = n_sts,
-                                                                                       pre_diminish = 0)
-  )
-  
-  filter <- mcstate::particle_filter$new(data = sir_data,
-                                         model = gen_sir, # Use odin.dust input
-                                         n_particles = n_pars,
-                                         compare = case_compare,
-                                         seed = 1L
-  )
-  
-  # The pmcmc
-  tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter_deterministic, control = tune_control)
-  tune_pmcmc_result
-  saveRDS(tune_pmcmc_result, "outputs/heterogeneity/tune_pmcmc_result.rds")
-  
-  new_proposal_mtx <- cov(pmcmc_result$pars)
-  write.csv(new_proposal_mtx, "outputs/heterogeneity/new_proposal_mtx.csv", row.names = TRUE)
-  
-  tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
-  write.csv(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]),
-            "outputs/heterogeneity/tune_initial.csv", row.names = FALSE)
-  
-  # Further processing for thinning chains
-  mcmc2 <- tuning_pmcmc_further_process(n_sts, tune_pmcmc_result)
-  mcmc2 <- coda::as.mcmc(cbind(
-    tune_pmcmc_result$probabilities, tune_pmcmc_result$pars))
-  write.csv(mcmc2, "outputs/heterogeneity/mcmc2.csv", row.names = TRUE)
-  
-  # Calculating ESS & Acceptance Rate
-  tune_calc_ess <- ess_calculation(mcmc2)
-  write.csv(tune_calc_ess, "outputs/heterogeneity/tune_calc_ess.csv", row.names = TRUE)
-  
-  # Figures! (still failed, margin error)
-  fig <- pmcmc_trace(mcmc2)
-  
-  png("outputs/heterogeneity/trial_deterministic_5e3/figs/mcmc2_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  pmcmc_trace(mcmc2)
-  dev.off()
-  
-  ##############################################################################
-  # MCMC Diagnostics
-  
-  # 1. Gelman-Rubin Diagnostic
-  # https://cran.r-project.org/web/packages/coda/coda.pdf
-  # png("pictures/diag_gelman_rubin.png", width = 17, height = 12, unit = "cm", res = 1200)
-  figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
-  fig <- diag_cov_mtx(figs_gelman_init)
-  fig <- diag_gelman_rubin(figs_gelman_init)
-  # dev.off()
-  
-  png("outputs/heterogeneity/trial_deterministic_5e3/figs/mcmc2_diag_gelmanRubin_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  diag_gelman_rubin(figs_gelman_init)
-  dev.off()
-  
-  # 2. Autocorrelation
-  # png("pictures/diag_aucorr.png", width = 17, height = 12, unit = "cm", res = 1200)
-  fig <- diag_aucorr(mcmc2)
-  # dev.off()
-  
-  png("outputs/heterogeneity/trial_deterministic_5e3/figs/mcmc2_diag_auCorr_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  diag_aucorr(mcmc2)
-  dev.off()
-  
-  # png("outputs/heterogeneity/temporary_deterministic_1e3/figs/mcmc2_ggpairs_%03d.png", width = 20, height = 20, unit = "cm", res = 600)
-  fig <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
-  # dev.off()
-  
-  png("outputs/heterogeneity/trial_deterministic_5e3/figs/mcmc2_diag_ggPairs_%02d.png", width = 17, height = 17, unit = "cm", res = 600)
-  GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
-  dev.off()
-  
-}
-
-# pmcmc_run_plus_tuning(320000, 1000)

@@ -80,7 +80,7 @@ change_Ne <- abs(diff(spline_fit_Ne)) / time_diffs_weeks
 change_Ne_lo <- abs(diff(spline_fit_Ne_lo)) / time_diffs_weeks
 change_Ne_up <- abs(diff(spline_fit_Ne_up)) / time_diffs_weeks
 
-interpolated_df <- tibble(
+interpolated_df <- tidyr::tibble(
   date = new_dates[-1],
   itr_Ne = spline_fit_Ne[-1],
   itr_Ne_lo = spline_fit_Ne_lo[-1],
@@ -90,7 +90,7 @@ interpolated_df <- tibble(
   change_Ne_lo = change_Ne_lo,
   change_Ne_up = change_Ne_up
 ) %>%
-  mutate(
+  dplyr::mutate(
     iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
     yearWeek = ISOweek::ISOweek2date(iso_week)
   ) %>%

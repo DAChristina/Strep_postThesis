@@ -177,7 +177,8 @@ earlier_ne_df <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predicted
 interpolated_ne <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated.csv") %>% 
   dplyr::select(change_Ne, yearWeek) %>% 
   dplyr::rename(Ne = change_Ne) %>% 
-  dplyr::mutate(yearWeek = as.Date(yearWeek))
+  dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
+  glimpse()
 
 # non-heterogeneity (allAges), weekly
 allAges_weekly <- dat_c %>% 
