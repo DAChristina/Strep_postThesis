@@ -9,7 +9,7 @@
 source ~/anaconda3/etc/profile.d/conda.sh
 
 cd $PBS_O_WORKDIR
-steps_folder = 800
+steps_folder=800 # no space
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" \
     --mode run_all \
     --n_particles 5 --n_steps "$steps_folder" \

@@ -491,8 +491,12 @@ ncpus <- as.numeric(get_arg("--ncpus"))
 
 run1_stochastic_flag <- tolower(get_arg("--run1_stochastic"))
 run1_stochastic <- run1_stochastic_flag %in% c("true", "t", "1")
-run2_stochastic_flag <- tolower(get_arg("--run2_stochastic"))
-run2_stochastic <- run2_stochastic_flag %in% c("true", "t", "1")
+if (mode %in% c("pmcmc2", "run_all")) {
+  run2_stochastic_flag <- tolower(get_arg("--run2_stochastic"))
+  run2_stochastic <- run2_stochastic_flag %in% c("true", "t", "1")
+} else {
+  run2_stochastic <- NA
+}
 
 
 if (mode == "pmcmc1") {

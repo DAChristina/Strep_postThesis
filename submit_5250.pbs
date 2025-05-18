@@ -1,20 +1,20 @@
 #!/bin/bash
 
-#PBS -N All_1000
-#PBS -l walltime=20:00:00
-#PBS -l select=1:ncpus=48:mem=50gb
+#PBS -N Det1_5250
+#PBS -l walltime=70:00:00
+#PBS -l select=1:ncpus=124:mem=300gb
 
 # https://icl-rcs-user-guide.readthedocs.io/en/latest/hpc/pilot/cx3-phase2/#job-sizing-guidance
 
 source ~/anaconda3/etc/profile.d/conda.sh
 
 cd $PBS_O_WORKDIR
-steps_folder=1000 # no space
+steps_folder=5250 # no space
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" \
-    --mode run_all \
+    --mode pmcmc1 \
     --n_particles 500 --n_steps "$steps_folder" \
-    --run1_stochastic true --run2_stochastic false \
-    --ncpus 48 \
+    --run1_stochastic false \
+    --ncpus 124 \
     > "$HOME/Strep_postThesis/myresult.txt"
 
 sleep 2

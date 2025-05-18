@@ -9,14 +9,20 @@
 source ~/anaconda3/etc/profile.d/conda.sh
 
 cd $PBS_O_WORKDIR
-#mkdir /trialFolder # Failed
+steps_folder=5000 # no space
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" \
     --mode run_all \
-    --n_particles 500 --n_steps 5000 \
+    --n_particles 500 --n_steps "$steps_folder" \
     --run1_stochastic true --run2_stochastic false \
     --ncpus 124 \
     > "$HOME/Strep_postThesis/myresult.txt"
-#mv *.pdf myresult.txt $PBS_O_WORKDIR
+
+sleep 2
+conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/4_post_pmcmc_pics.R" \
+    --n_steps "$steps_folder"
+
+sleep 2
+conda run -n R_envConda Rscript "$HOME/Strep_postThesis/model/sir_stochastic_allAge_2post_pmcmc_picts.R" \
+    --n_steps "$steps_folder"
 
 printenv > "$HOME/Strep_postThesis/myenv.txt"
-#mv myenv.txt $PBS_O_WORKDIR
