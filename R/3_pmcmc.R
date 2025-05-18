@@ -472,17 +472,29 @@ pmcmc_run2_only <- function(n_pars, n_sts,
 }
 
 # a slight modification for college's HPC
+# PRECAUTION: will be resulteed in errors if run locally
 args <- commandArgs(trailingOnly = T)
-n_pars <- as.numeric(args[which(args == "--n_particles") + 1])
-n_sts <- as.numeric(args[which(args == "--n_steps") + 1])
 
-run1_stochastic_flag <- args[which(args == "--run1_stochastic") + 1]
-run1_stochastic <- tolower(run1_stochastic_flag) %in% c("true", "t", "1")
-run2_stochastic_flag <- args[which(args == "--run2_stochastic") + 1]
-run2_stochastic <- tolower(run2_stochastic_flag) %in% c("true", "t", "1")
-ncpus <- as.numeric(args[which(args == "--ncpus") + 1])
+# get_arg as a function
+get_arg <- function(flag){
+  idx <- which(args == flag)
+  if (length(idx) == 0 || idx == length(args)) {
+    stop(paste("Missing/malformed argument for", flag))
+  }
+  args[idx + 1]
+}
 
 mode <- get_arg("--mode")
+n_pars <- as.numeric(get_arg("--n_particles"))
+n_sts <- as.numeric(get_arg("--n_steps"))
+ncpus <- as.numeric(get_arg("--ncpus"))
+
+run1_stochastic_flag <- tolower(get_arg("--run1_stochastic"))
+run1_stochastic <- run1_stochastic_flag %in% c("true", "t", "1")
+run2_stochastic_flag <- tolower(get_arg("--run2_stochastic"))
+run2_stochastic <- run2_stochastic_flag %in% c("true", "t", "1")
+
+
 if (mode == "pmcmc1") {
   pmcmc_run1_only(n_pars, n_sts, run1_stochastic, ncpus)
 } else if (mode == "pmcmc2") {
@@ -490,7 +502,7 @@ if (mode == "pmcmc1") {
 } else if (mode == "run_all") {
   pmcmc_run_plus_tuning(n_pars, n_sts, run1_stochastic, run2_stochastic, ncpus)
 } else {
-  stop("Invalid mode selected. Choose: pmcmc1, pmcmc2, run_all.")
+  stop("Invalid mode selected. Choose: pmcmc1, pmcmc2, or run_all.")
 }
 
 
