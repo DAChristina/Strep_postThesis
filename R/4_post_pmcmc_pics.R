@@ -62,7 +62,8 @@ post_pmcmc_pics <- function(n_sts){
   # 3. ggpairs
   png(paste0(dir_name, "figs/mcmc2_diag_ggPairs_%02d.png"),
       width = 17, height = 17, unit = "cm", res = 600)
-  GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
+  p <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
+  print(p)
   dev.off()
 }
 

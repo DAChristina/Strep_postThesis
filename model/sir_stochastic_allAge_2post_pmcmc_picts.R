@@ -23,14 +23,14 @@ model_vs_data <- function(n_sts){
                D_ini = 0,
                R_ini = 0,
                time_shift_1 = results[2,2],
-               time_shift_2 = results[3,2],
-               beta_0 = results[4,2],
-               beta_1 = results[5,2],
-               beta_2 = results[6,2],
-               scaled_wane = results[7,2],
+               # time_shift_2 = results[3,2],
+               beta_0 = results[3,2],
+               beta_1 = results[4,2],
+               # beta_2 = results[6,2],
+               # scaled_wane = results[7,2],
                # psi = (0.5),
                hypo_sigma_2 = (1),
-               log_delta = results[8,2]
+               log_delta = results[5,2]
                # alpha = results[9,2],
                # gamma_annual = results[10,2],
                # nu_annual = results[11,2]
@@ -117,15 +117,15 @@ model_vs_data <- function(n_sts){
   
   png(paste0(dir_name, "figs/model_vs_data.png"),
       width = 17, height = 17, unit = "cm", res = 600)
-  ggplot(incidence_modelled %>% 
-           dplyr::filter(grepl("AD|data", compartment),
-                         # compartment %in% c("D", "count_WGS_GPSC55"),
-                         # compartment != "Time"
-           )
-         ,
-         aes(x = yearWeek, y = value,
-             group = interaction(compartment,replicate),
-             colour = compartment)) +
+  p <- ggplot(incidence_modelled %>% 
+                dplyr::filter(grepl("AD|data", compartment),
+                              # compartment %in% c("D", "count_WGS_GPSC55"),
+                              # compartment != "Time"
+                )
+              ,
+              aes(x = yearWeek, y = value,
+                  group = interaction(compartment,replicate),
+                  colour = compartment)) +
     geom_line() +
     geom_line() +
     # scale_y_continuous(trans = "log1p") +
@@ -136,11 +136,14 @@ model_vs_data <- function(n_sts){
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +
-    theme(legend.position = c(0.15, 0.85),
+    theme(legend.position = c(0.20, 0.85),
           legend.title = element_blank(),
           legend.key.size = unit(0.8, "lines"),
           legend.text = element_text(size = 10),
           legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  print(p)
+  
   dev.off()
   
 }

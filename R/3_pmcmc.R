@@ -19,14 +19,14 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
 # This is part of sir odin model:
 pars <- list(scaled_A_ini = 0.7555, # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
              time_shift_1 = 0.07,
-             time_shift_2 = 0.23,
-             beta_0 = 0.02,
-             beta_1 = 0.3, # in toy data the real value of beta_1 = 0.07
-             beta_2 = 0.2,
+             # time_shift_2 = 0.23,
+             beta_0 = 0.04,
+             beta_1 = 0.04, # in toy data the real value of beta_1 = 0.07
+             # beta_2 = 0.2,
              # max_wane = (-0.5),
              # min_wane = (-4),
              # scaled_wane = (0.5),
-             log_delta = (-2.4),
+             log_delta = (-4.82),
              # hypo_sigma_2 = 1,
              
              # alpha = 1,
@@ -62,10 +62,10 @@ pars <- list(scaled_A_ini = 0.7555, # S_ini*10^(log10(-5.69897)) = 120 people; c
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(200, 8)
+proposal_matrix <- diag(200, 6)
 proposal_matrix <- (proposal_matrix + t(proposal_matrix))
-rownames(proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "log_delta", "kappa_55")
-colnames(proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "log_delta", "kappa_55")
+rownames(proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
+colnames(proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -143,10 +143,10 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 10 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
+  new_proposal_matrix <- new_proposal_matrix * 0.001 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "log_delta", "kappa_55")
-  colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "log_delta", "kappa_55")
+  rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
+  colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -188,14 +188,14 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            save_state = TRUE,
                                            save_trajectories = TRUE,
                                            # another option is to construct vcv first then ignore adaptive_proposal settings
-                                           adaptive_proposal = mcstate::adaptive_proposal_control(initial_vcv_weight = 1, # lower for faster adaptation; don't fully trust prev vcv matrix
-                                                                                                  initial_scaling = 1,
+                                           adaptive_proposal = mcstate::adaptive_proposal_control(initial_vcv_weight = 0.1, # lower for faster adaptation; don't fully trust prev vcv matrix
+                                                                                                  initial_scaling = 0.2,
                                                                                                   # scaling_increment = NULL,
                                                                                                   # log_scaling_update = T,
                                                                                                   acceptance_target = 0.234,
                                                                                                   forget_rate = 0.1,
                                                                                                   # forget_end = n_sts*0.75,
-                                                                                                  # adapt_end = n_sts*0.95,
+                                                                                                  adapt_end = n_sts*0.8,
                                                                                                   pre_diminish = n_sts*0.1)
     )
     
@@ -342,10 +342,10 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 2 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
+  new_proposal_matrix <- new_proposal_matrix * 0.001 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "log_delta", "kappa_55")
-  colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "time_shift_2", "beta_0", "beta_1", "beta_2", "log_delta", "kappa_55")
+  rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
+  colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -387,14 +387,14 @@ pmcmc_run2_only <- function(n_pars, n_sts,
                                            save_state = TRUE,
                                            save_trajectories = TRUE,
                                            # another option is to construct vcv first then ignore adaptive_proposal settings
-                                           adaptive_proposal = mcstate::adaptive_proposal_control(initial_vcv_weight = 1, # lower for faster adaptation; don't fully trust prev vcv matrix
-                                                                                                  initial_scaling = 1,
+                                           adaptive_proposal = mcstate::adaptive_proposal_control(initial_vcv_weight = 0.1, # lower for faster adaptation; don't fully trust prev vcv matrix
+                                                                                                  initial_scaling = 0.2,
                                                                                                   # scaling_increment = NULL,
                                                                                                   # log_scaling_update = T,
                                                                                                   acceptance_target = 0.234,
                                                                                                   forget_rate = 0.1,
                                                                                                   # forget_end = n_sts*0.75,
-                                                                                                  # adapt_end = n_sts*0.95,
+                                                                                                  adapt_end = n_sts*0.8,
                                                                                                   pre_diminish = n_sts*0.1)
     )
     
@@ -472,7 +472,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
 }
 
 # a slight modification for college's HPC
-# PRECAUTION: will be resulteed in errors if run locally
+# PRECAUTION: will be resulted in errors if run locally
 args <- commandArgs(trailingOnly = T)
 
 # get_arg as a function
