@@ -143,7 +143,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 0.001 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
+  new_proposal_matrix <- new_proposal_matrix * 2.38^2/6 # 6 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
   rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
   colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
@@ -156,6 +156,19 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   
   # Including adaptive proposal control
   # https://mrc-ide.github.io/mcstate/reference/adaptive_proposal_control.html
+  if(n_sts <= 1000){
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 0.1, # lower for faster adaptation; don't fully trust prev vcv matrix
+                                                                 initial_scaling = 0.2,
+                                                                 # scaling_increment = NULL,
+                                                                 # log_scaling_update = T,
+                                                                 acceptance_target = 0.234,
+                                                                 forget_rate = 0.1,
+                                                                 # forget_end = n_sts*0.75,
+                                                                 adapt_end = n_sts*0.8,
+                                                                 pre_diminish = n_sts*0.1)
+  } else {
+    adaptive_proposal_run2 <- FALSE
+  }
   
   if(run2_stochastic){
     tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
@@ -188,15 +201,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            save_state = TRUE,
                                            save_trajectories = TRUE,
                                            # another option is to construct vcv first then ignore adaptive_proposal settings
-                                           adaptive_proposal = mcstate::adaptive_proposal_control(initial_vcv_weight = 0.1, # lower for faster adaptation; don't fully trust prev vcv matrix
-                                                                                                  initial_scaling = 0.2,
-                                                                                                  # scaling_increment = NULL,
-                                                                                                  # log_scaling_update = T,
-                                                                                                  acceptance_target = 0.234,
-                                                                                                  forget_rate = 0.1,
-                                                                                                  # forget_end = n_sts*0.75,
-                                                                                                  adapt_end = n_sts*0.8,
-                                                                                                  pre_diminish = n_sts*0.1)
+                                           adaptive_proposal = adaptive_proposal_run2
     )
     
     filter <- mcstate::particle_deterministic$new(data = sir_data,
@@ -342,7 +347,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 0.001 # 100 resulted in bad chains while lower denominators resulted in jumpy steps among chains
+  new_proposal_matrix <- new_proposal_matrix * 2.38^2/6 # 6 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
   rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
   colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
@@ -355,6 +360,19 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   
   # Including adaptive proposal control
   # https://mrc-ide.github.io/mcstate/reference/adaptive_proposal_control.html
+  if(n_sts <= 1000){
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 0.1, # lower for faster adaptation; don't fully trust prev vcv matrix
+                                                                 initial_scaling = 0.2,
+                                                                 # scaling_increment = NULL,
+                                                                 # log_scaling_update = T,
+                                                                 acceptance_target = 0.234,
+                                                                 forget_rate = 0.1,
+                                                                 # forget_end = n_sts*0.75,
+                                                                 adapt_end = n_sts*0.8,
+                                                                 pre_diminish = n_sts*0.1)
+  } else {
+    adaptive_proposal_run2 <- FALSE
+  }
   
   if(run2_stochastic){
     tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
@@ -387,15 +405,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
                                            save_state = TRUE,
                                            save_trajectories = TRUE,
                                            # another option is to construct vcv first then ignore adaptive_proposal settings
-                                           adaptive_proposal = mcstate::adaptive_proposal_control(initial_vcv_weight = 0.1, # lower for faster adaptation; don't fully trust prev vcv matrix
-                                                                                                  initial_scaling = 0.2,
-                                                                                                  # scaling_increment = NULL,
-                                                                                                  # log_scaling_update = T,
-                                                                                                  acceptance_target = 0.234,
-                                                                                                  forget_rate = 0.1,
-                                                                                                  # forget_end = n_sts*0.75,
-                                                                                                  adapt_end = n_sts*0.8,
-                                                                                                  pre_diminish = n_sts*0.1)
+                                           adaptive_proposal = adaptive_proposal_run2
     )
     
     filter <- mcstate::particle_deterministic$new(data = sir_data,

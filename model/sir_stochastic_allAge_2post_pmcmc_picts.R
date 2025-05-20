@@ -116,7 +116,7 @@ model_vs_data <- function(n_sts){
     glimpse()
   
   png(paste0(dir_name, "figs/model_vs_data.png"),
-      width = 17, height = 17, unit = "cm", res = 600)
+      width = 24, height = 17, unit = "cm", res = 600)
   p <- ggplot(incidence_modelled %>% 
                 dplyr::filter(grepl("AD|data", compartment),
                               # compartment %in% c("D", "count_WGS_GPSC55"),
