@@ -26,7 +26,7 @@ pars <- list(scaled_A_ini = 0.7555, # S_ini*10^(log10(-5.69897)) = 120 people; c
              # max_wane = (-0.5),
              # min_wane = (-4),
              # scaled_wane = (0.5),
-             log_delta = (-4.82),
+             log_delta = (-4.82)
              # hypo_sigma_2 = 1,
              
              # alpha = 1,
@@ -35,7 +35,7 @@ pars <- list(scaled_A_ini = 0.7555, # S_ini*10^(log10(-5.69897)) = 120 people; c
              
              # kappa_Ne = 1,
              # kappa_12F = 1,
-             kappa_55 = 1
+             # kappa_55 = 1
 )
 
 # https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model-over-time
@@ -62,10 +62,10 @@ pars <- list(scaled_A_ini = 0.7555, # S_ini*10^(log10(-5.69897)) = 120 people; c
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(200, 6)
+proposal_matrix <- diag(200, 5)
 proposal_matrix <- (proposal_matrix + t(proposal_matrix))
-rownames(proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
-colnames(proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
+rownames(proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta")
+colnames(proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -143,10 +143,10 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 2.38^2/6 # 6 = parms number (Roberts et al., 1997)
+  new_proposal_matrix <- new_proposal_matrix * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
-  colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
+  rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta")
+  colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -347,10 +347,10 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 2.38^2/6 # 6 = parms number (Roberts et al., 1997)
+  new_proposal_matrix <- new_proposal_matrix * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
-  colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_55")
+  rownames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta")
+  colnames(new_proposal_matrix) <- c("scaled_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,

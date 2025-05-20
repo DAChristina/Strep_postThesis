@@ -13,7 +13,7 @@ steps_folder=1250 # no space
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" \
     --mode run_all \
     --n_particles 500 --n_steps "$steps_folder" \
-    --run1_stochastic true --run2_stochastic true \
+    --run1_stochastic false --run2_stochastic false \
     --ncpus 16 \
     > "$HOME/Strep_postThesis/myresult.txt"
 

@@ -1,11 +1,11 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
-ll_nbinom <- function(data, model, kappa, exp_noise) {
-  if (is.na(data)) {
-    return(numeric(length(model)))
-  }
-  mu <- model + rexp(length(model), rate = exp_noise)
-  dnbinom(data, kappa, mu = mu, log = TRUE)
-}
+# ll_nbinom <- function(data, model, kappa, exp_noise) {
+#   if (is.na(data)) {
+#     return(numeric(length(model)))
+#   }
+#   mu <- model + rexp(length(model), rate = exp_noise)
+#   dnbinom(data, kappa, mu = mu, log = TRUE)
+# }
  
 case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
@@ -32,8 +32,9 @@ case_compare <- function(state, observed, pars = NULL) {
   if (is.na(observed$count_WGS_GPSC55)) {
     ll_55 <- numeric(n)
   } else {
-    ll_55 <- ll_nbinom(observed$count_WGS_GPSC55, model_55,
-                        pars$kappa_55, exp_noise)
+    ll_55 <- dpois(x = observed$count_WGS_GPSC55,
+                   lambda = model_55 + rexp(ncol(state), exp_noise),
+                   log = T)
   }
   
   # if (is.na(observed$count_serotype)) {
@@ -84,7 +85,7 @@ parameter_transform <- function(pars) {
   # nu_annual <- pars[["nu_annual"]]
   
   # kappa_Ne <- pars[["kappa_Ne"]]
-  kappa_55 <- pars[["kappa_55"]]
+  # kappa_55 <- pars[["kappa_55"]]
   # kappa_12F <- pars[["kappa_12F"]]
   
   list(scaled_A_ini = scaled_A_ini,
@@ -94,7 +95,7 @@ parameter_transform <- function(pars) {
        beta_1 = beta_1,
        # beta_2 = beta_2,
        # scaled_wane = scaled_wane,
-       log_delta = log_delta,
+       log_delta = log_delta
        # hypo_sigma_2 = hypo_sigma_2,
        
        # alpha = alpha,
@@ -102,7 +103,7 @@ parameter_transform <- function(pars) {
        # nu_annual = nu_annual,
        
        # kappa_Ne = kappa_Ne,
-       kappa_55 = kappa_55
+       # kappa_55 = kappa_55
        # kappa_12F = kappa_12F
   )
   
@@ -130,7 +131,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
          # mcstate::pmcmc_parameter("scaled_wane", 0.657388, min = 0, max = 1,
          #                          prior = priors$scaled_wane),
          mcstate::pmcmc_parameter("log_delta", (-4.82), min = (-10), max = 0,
-                                  prior = priors$log_delta),
+                                  prior = priors$log_delta)
          # mcstate::pmcmc_parameter("hypo_sigma_2", 1, min = 0, max = 10,
          #                          prior = priors$sigma_2),
          
@@ -145,8 +146,8 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
          #                          prior = priors$kappas),
          # mcstate::pmcmc_parameter("kappa_12F", 1, min = 0, max = 100,
          #                          prior = priors$kappas),
-         mcstate::pmcmc_parameter("kappa_55", 2, min = 0, max = 10,
-                                  prior = priors$kappas)
+         # mcstate::pmcmc_parameter("kappa_55", 2, min = 0, max = 10,
+         #                          prior = priors$kappas)
          
     ),
     proposal = proposal,
