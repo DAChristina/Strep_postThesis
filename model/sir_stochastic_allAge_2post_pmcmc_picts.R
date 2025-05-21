@@ -69,74 +69,82 @@ model_vs_data <- function(n_sts){
   # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
-  sir_data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
+  data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
+    glimpse()
+  
+  sir_data <- data %>% 
     dplyr::transmute(
       replicate = 1,
-      steps = seq_along(yearWeek),
+      steps = time_start+1,
       value = count_WGS_GPSC55,
       compartment = "data_count_WGS_GPSC55"
-    ) %>% 
+    ) %>%
     glimpse()
   
-  all_dates <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
-    dplyr::transmute(
-      yearWeek = as.Date(yearWeek),
-      steps = seq_along(yearWeek)
-    ) %>% 
+  all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>% 
+    dplyr::mutate(
+      steps = seq_along(date)
+    ) %>%
     glimpse()
   
-  # n_AD_weekly have already in weeks
+  # focused on n_AD_weekly (already in weeks)
   incidence_modelled <- 
     reshape2::melt(model) %>% 
     dplyr::rename(index = Var1,     # Var1 = dimension that stored SADR values
                   replicate = Var2, # Var2 = particles
-                  steps = Var3       # Var3 = steps are in days, but n_AD_weekly is aggregated in weeeks
+                  steps = Var3       # Var3 = steps are in days, but n_AD_weekly is aggregated in weeks
     ) %>% 
-    # dplyr::filter(index < 5) %>% 
+    # dplyr::filter(index < 5) %>%
     dplyr::mutate(compartment = 
                     dplyr::case_when(index == 1 ~ "Time",
                                      index == 2 ~ "A",
                                      index == 3 ~ "D",
                                      index == 4 ~ "S",
                                      index == 5 ~ "R",
-                                     index == 6 ~ "n_AD_weekly",
+                                     index == 6 ~ "model_AD_weekly",
                                      index == 7 ~ "Ne",
                                      index == 8 ~ "cases_55",
                                      index == 9 ~ "cases_non55",
                                      index == 10 ~ "cases_12F"
                     )) %>% 
-    dplyr::rename(value = value) %>% 
-    dplyr::select(-index) %>% 
-    dplyr::bind_rows(sir_data) %>% 
+    dplyr::select(-index) %>%
+    dplyr::bind_rows(sir_data) %>%
     dplyr::full_join(
       all_dates
       ,
       by = "steps"
-    ) %>% 
+    ) %>%
+    dplyr::filter(date %in% data$yearWeek) %>%
     glimpse()
   
   png(paste0(dir_name, "figs/model_vs_data.png"),
       width = 24, height = 17, unit = "cm", res = 600)
   p <- ggplot(incidence_modelled %>% 
-                dplyr::filter(grepl("AD|data", compartment),
-                              # compartment %in% c("D", "count_WGS_GPSC55"),
-                              # compartment != "Time"
+                dplyr::filter(
+                  # grepl("cases|D|data", compartment),
+                  compartment %in% c("model_AD_weekly", "data_count_WGS_GPSC55"),
+                  # compartment %in% c("D", "n_AD_weekly"),
+                  # compartment %in% c("D", "data_count_WGS_GPSC55"),
+                  # compartment %in% c("D"),
+                  compartment != "Time",
+                  # compartment %in% c("S")
                 )
               ,
-              aes(x = yearWeek, y = value,
+              aes(x = date, y = value,
                   group = interaction(compartment,replicate),
                   colour = compartment)) +
     geom_line() +
-    geom_line() +
     # scale_y_continuous(trans = "log1p") +
-    scale_y_continuous(limits = c(0, 50)) +
+    # scale_y_continuous(limits = c(0, 50)) +
     # scale_x_continuous(limits = c(0, 700)) +
-    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek)))) +
+    scale_x_date(limits = c(as.Date(min(all_dates$date)), as.Date(max(all_dates$date))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
     ggtitle("Cases (Aggregated by Week)") +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +
-    theme(legend.position = c(0.20, 0.85),
+    theme(legend.position = c(0.15, 0.85),
           legend.title = element_blank(),
           legend.key.size = unit(0.8, "lines"),
           legend.text = element_text(size = 10),

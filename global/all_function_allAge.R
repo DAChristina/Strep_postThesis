@@ -14,7 +14,7 @@ case_compare <- function(state, observed, pars = NULL) {
   # incidence based on model's "n_AD_daily" from gen_sir$new(pars = list(), time = 0, n_particles = 1L)$info()
   # sir_model$info()$index$n_AD_weekly
   # model_Ne <- state[7, , drop = TRUE]
-  model_55 <- state[6, , drop = TRUE]
+  model_55 <- state[6, , drop = TRUE] # fit to D (GPSC55) instead of n_AD_weekly
   # model_12F <- state[10, , drop = TRUE]
   
   # incidence based on data
@@ -118,19 +118,19 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   mcmc_pars <- mcstate::pmcmc_parameters$new(
     list(mcstate::pmcmc_parameter("scaled_A_ini", 0.7530098999, min = 0, max = 1, # precaution for 10^(-8)*6.7e7 = 0.67 Asymptomatic person
                                   prior = priors$scaled_A_ini),
-         mcstate::pmcmc_parameter("time_shift_1", 0.0765, min = 0, max = 1,
+         mcstate::pmcmc_parameter("time_shift_1", 0.302114578070083, min = 0, max = 1,
                                   prior = priors$time_shifts),
          # mcstate::pmcmc_parameter("time_shift_2", 0.3688, min = 0, max = 0.5,
          #                          prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.0419757657, min = 0, max = 0.8,
+         mcstate::pmcmc_parameter("beta_0", 0.0381562615720545, min = 0, max = 0.8,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("beta_1", 0.045939, min = 0, max = 0.7,
+         mcstate::pmcmc_parameter("beta_1", 0.464821184134391, min = 0, max = 0.7,
                                   prior = priors$betas),
          # mcstate::pmcmc_parameter("beta_2", 0.511849, min = 0, max = 0.7,
          #                          prior = priors$betas),
          # mcstate::pmcmc_parameter("scaled_wane", 0.657388, min = 0, max = 1,
          #                          prior = priors$scaled_wane),
-         mcstate::pmcmc_parameter("log_delta", (-4.82), min = (-10), max = 0,
+         mcstate::pmcmc_parameter("log_delta", (-4.65135010884371), min = (-10), max = 0,
                                   prior = priors$log_delta)
          # mcstate::pmcmc_parameter("hypo_sigma_2", 1, min = 0, max = 10,
          #                          prior = priors$sigma_2),

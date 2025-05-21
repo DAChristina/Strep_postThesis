@@ -4,7 +4,7 @@ library(coda)
 library(odin.dust)
 library(dust)
 library(GGally)
-library(socialmixr)
+# library(socialmixr)
 
 source("global/all_function_allAge.R")
 sir_data <- readRDS("inputs/pmcmc_data_week_allAge.rds")

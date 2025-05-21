@@ -1,4 +1,4 @@
-freq <- user(1) # model is daily but aggregated to weekly
+freq <- user(1) # 1 step is weekly due to seasonality error
 dt <- 1/freq
 initial(time) <- 0
 
@@ -29,9 +29,9 @@ UK_calibration <- user(0.8066608) # FIXED (Lochen et al., 2022)
 
 log_delta <- user(0) # required in mcState
 hypo_sigma1_day <- user(28) # 28 days
-sigma_1 <- 1/hypo_sigma1_day
+sigma_1 <- 1/(hypo_sigma1_day)
 hypo_sigma2_day <- user(1) # 1 day
-sigma_2 <- 1/hypo_sigma2_day
+sigma_2 <- 1/(hypo_sigma2_day)
 mu_0 <- 1/(80.70*365) # background mortality per day, the inverse of life expectancy
 mu_1 <- user(0)
 pi <- user(3.141593) # FIXED
@@ -59,7 +59,11 @@ initial(n_AD_weekly) <- 0 # infections
 
 # 3. UPDATES ###################################################################
 beta <- beta_0*(
-  (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)))
+  (1+beta_1*cos((2*pi*(time) +(time_shift_1*(365)))/(365))))
+
+
+# beta <- beta_0*(
+#   (1+beta_1*cos(2*pi*((time_shift_1*(365/7))+time)/(363/7)))) # expand the wave to fit weekly data
 
 # beta <- beta_0*(
 #   (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) +

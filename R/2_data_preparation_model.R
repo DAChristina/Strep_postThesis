@@ -249,10 +249,12 @@ allAges_weekly <- dat_c %>%
   dplyr::mutate(# count_WGS_GPSC55 = round(count_WGS_GPSC55), # rounded cases
                 # count_WGS_GPSC55 = ifelse(count_WGS_GPSC55 == 0, NA_real_, count_WGS_GPSC55),
                 yearWeek = as.Date(yearWeek),
-                day = as.numeric(round((yearWeek - as.Date("2010-01-04"))))) %>%
+                day = as.numeric(round((yearWeek - as.Date("2010-01-04")))),
+                # day = seq_len(n())
+                ) %>%
   mcstate::particle_filter_data(.,
-                                time = "day",
-                                rate = 1,
+                                time = "day", # I use steps instead of day
+                                rate = 1, # I change the model to weekly, therefore weekly rate is required
                                 initial_time = 0) %>%
   glimpse()
 
