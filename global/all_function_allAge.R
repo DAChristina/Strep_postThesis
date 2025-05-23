@@ -70,7 +70,7 @@ index_fun <- function(info){
 # https://github.com/mrc-ide/mcstate/blob/da9f79e4b5dd421fd2e26b8b3d55c78735a29c27/tests/testthat/test-if2.R#L40
 # https://github.com/mrc-ide/mcstate/issues/184
 parameter_transform <- function(pars) {
-  scaled_A_ini <- pars[["scaled_A_ini"]]
+  log_A_ini <- pars[["log_A_ini"]]
   time_shift_1 <- pars[["time_shift_1"]]
   # time_shift_2 <- pars[["time_shift_2"]]
   beta_0 <- pars[["beta_0"]]
@@ -88,7 +88,7 @@ parameter_transform <- function(pars) {
   # kappa_55 <- pars[["kappa_55"]]
   # kappa_12F <- pars[["kappa_12F"]]
   
-  list(scaled_A_ini = scaled_A_ini,
+  list(log_A_ini = log_A_ini,
        time_shift_1 = time_shift_1,
        # time_shift_2 = time_shift_2,
        beta_0 = beta_0,
@@ -116,21 +116,21 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("scaled_A_ini", 0.7530098999, min = 0, max = 1, # precaution for 10^(-8)*6.7e7 = 0.67 Asymptomatic person
-                                  prior = priors$scaled_A_ini),
-         mcstate::pmcmc_parameter("time_shift_1", 0.302114578070083, min = 0, max = 1,
+    list(mcstate::pmcmc_parameter("log_A_ini", (-3.77), min = (-10), max = 0,
+                                  prior = priors$log_A_ini),
+         mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
          # mcstate::pmcmc_parameter("time_shift_2", 0.3688, min = 0, max = 0.5,
          #                          prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.0381562615720545, min = 0, max = 0.8,
+         mcstate::pmcmc_parameter("beta_0", 0.031, min = 0, max = 0.8,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("beta_1", 0.464821184134391, min = 0, max = 0.7,
+         mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
          # mcstate::pmcmc_parameter("beta_2", 0.511849, min = 0, max = 0.7,
          #                          prior = priors$betas),
          # mcstate::pmcmc_parameter("scaled_wane", 0.657388, min = 0, max = 1,
          #                          prior = priors$scaled_wane),
-         mcstate::pmcmc_parameter("log_delta", (-4.65135010884371), min = (-10), max = 0,
+         mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
                                   prior = priors$log_delta)
          # mcstate::pmcmc_parameter("hypo_sigma_2", 1, min = 0, max = 10,
          #                          prior = priors$sigma_2),
@@ -158,8 +158,8 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
 prepare_priors <- function(pars) {
   priors <- list()
   
-  priors$scaled_A_ini <- function(s) {
-    dbeta(s, shape1 = 2.5, shape2 = 2.5, log = TRUE)
+  priors$log_A_ini <- function(s) {
+    dunif(s, min = (-10), max = 0, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
@@ -171,7 +171,7 @@ prepare_priors <- function(pars) {
   #   dbeta(s, shape1 = 2.5, shape2 = 2.5, log = TRUE)
   # }
   priors$log_delta <- function(s) {
-    dunif(s, min = (-10), max = 0, log = TRUE)
+    dunif(s, min = (-10), max = 0.7, log = TRUE)
   }
   # priors$hypo_sigma_2 <- function(s) {
   #   dgamma(s, shape = 1, scale = 1, log = TRUE)
@@ -198,7 +198,7 @@ prepare_priors <- function(pars) {
 
 
 pmcmc_further_process <- function(n_steps, pmcmc_result) {
-  processed_chains <- mcstate::pmcmc_thin(pmcmc_result, burnin = n_steps*0.1, thin = NULL)
+  processed_chains <- mcstate::pmcmc_thin(pmcmc_result, burnin = round(n_steps*0.1), thin = NULL)
   parameter_mean_hpd <- apply(processed_chains$pars, 2, mean)
   parameter_mean_hpd
   
@@ -237,7 +237,7 @@ pmcmc_trace <- function(mcmc1) {
 ################################################################################
 # Tuning functions
 tuning_pmcmc_further_process <- function(n_steps, tune_pmcmc_result) {
-  processed_chains <- mcstate::pmcmc_thin(tune_pmcmc_result, burnin = n_steps*0.1, thin = 2)
+  processed_chains <- mcstate::pmcmc_thin(tune_pmcmc_result, burnin = round(n_steps*0.1), thin = 2)
   parameter_mean_hpd <- apply(processed_chains$pars, 2, mean)
   parameter_mean_hpd
   

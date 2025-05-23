@@ -9,16 +9,16 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
 
 # Running the SIR model with dust
 pars <- list(N_ini = 6.7e7,
-             scaled_A_ini = 0.7530098999,
-             time_shift_1 = 0.302114578070083,
+             log_A_ini = -4.0763973707201,
+             time_shift_1 = 0.0639227346367733, #0.302114578070083, # 0.100043419341372, # 
              # time_shift_2 = 0.3766235,
-             beta_0 = 0.0381562615720545, #0.0338357657, #, # ,
-             beta_1 = 0.464821184134391, #0.302972, #, # ,
+             beta_0 = 0.0365789436634438, # 0.0381562615720545, #  # 
+             beta_1 = 0.2647984930712, # 0.464821184134391, #  # 
              # beta_2 = 0.58190970,
              # scaled_wane = 0.0682579543,
              # psi = (0.5),
              hypo_sigma_2 = (1),
-             log_delta = (-4.65135010884371)
+             log_delta = (-4.65219600756188) # (-4.65135010884371) #  # 
              # alpha = 0.01,
              # gamma_annual = 0.01,
              # nu_annual = 0.01
@@ -62,15 +62,22 @@ data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>%
 sir_data <- data %>% 
   dplyr::transmute(
     replicate = 1,
-    steps = time_start+1,
+    # steps = time_start+1,
+    weekly = seq_along(replicate),
     value = count_WGS_GPSC55,
     compartment = "data_count_WGS_GPSC55"
   ) %>%
   glimpse()
 
-all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>% 
+# all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>%
+#   dplyr::mutate(
+#     steps = seq_along(date)
+#   ) %>%
+#   glimpse()
+all_dates <- data %>%
+  dplyr::select(yearWeek) %>% 
   dplyr::mutate(
-    steps = seq_along(date)
+    weekly = seq_along(yearWeek)
   ) %>%
   glimpse()
 
@@ -95,36 +102,42 @@ incidence_modelled <-
                                    index == 10 ~ "cases_12F"
                   )) %>% 
   dplyr::select(-index) %>%
+  dplyr::mutate(weekly = ceiling(steps/7)) %>% 
+  dplyr::group_by(replicate, weekly, compartment) %>% 
+  dplyr::summarise(value = sum(value, na.rm = T),
+                   # date = max(date),
+                   .groups = "drop") %>% 
+  dplyr::ungroup() %>% 
   dplyr::bind_rows(sir_data) %>%
   dplyr::full_join(
     all_dates
     ,
-    by = "steps"
+    by = "weekly"
   ) %>%
-  dplyr::filter(date %in% data$yearWeek) %>%
+  # dplyr::filter(date %in% data$yearWeek) %>%
   glimpse()
 
 
 ggplot(incidence_modelled %>% 
          dplyr::filter(
            # grepl("cases|D|data", compartment),
-           # compartment %in% c("D", "n_AD_weekly", "data_count_WGS_GPSC55"), # redesign the model, would rather fit to D
-           compartment %in% c("model_n_AD_weekly", "data_count_WGS_GPSC55"),
+           # compartment %in% c("D", "model_n_AD_weekly", "data_count_WGS_GPSC55"), # redesign the model, would rather fit to D
+           # compartment %in% c("model_n_AD_weekly", "data_count_WGS_GPSC55"),
            # compartment %in% c("D", "n_AD_weekly"),
-           # compartment %in% c("D", "data_count_WGS_GPSC55"),
+           compartment %in% c("D", "data_count_WGS_GPSC55"),
            # compartment %in% c("D"),
            compartment != "Time",
            # compartment %in% c("S")
          )
        ,
-       aes(x = date, y = value,
+       aes(x = yearWeek, y = value,
            group = interaction(compartment,replicate),
            colour = compartment)) +
   geom_line() +
   # scale_y_continuous(trans = "log1p") +
   # scale_y_continuous(limits = c(0, 50)) +
   # scale_x_continuous(limits = c(0, 700)) +
-  scale_x_date(limits = c(as.Date(min(all_dates$date)), as.Date(max(all_dates$date))),
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                date_breaks = "year",
                date_labels = "%Y") +
   ggtitle("Cases (Aggregated by Week)") +
@@ -148,4 +161,21 @@ transformations <- data.frame(
                 log_A_ini = scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini,
                 A_ini = 10^(log_A_ini)*6.7e7) %>% 
   glimpse()
+
+# test A_ini
+scaled_A_ini = 0.7484698
+# scaled to log
+(scaled_A_ini*(0-(-15)+(-15))) # scaled_x * (max - min) + min
+
+log_A_ini = -3.77295312521097
+# log to scaled
+(log_A_ini-(-15)) / (0-(-15)) # (x - min) / (max - min)
+
+
+
+
+
+
+
+
 

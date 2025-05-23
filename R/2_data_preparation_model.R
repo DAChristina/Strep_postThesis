@@ -255,7 +255,8 @@ allAges_weekly <- dat_c %>%
   mcstate::particle_filter_data(.,
                                 time = "day", # I use steps instead of day
                                 rate = 1, # I change the model to weekly, therefore weekly rate is required
-                                initial_time = 0) %>%
+                                initial_time = 0
+                                ) %>%
   glimpse()
 
 saveRDS(allAges_weekly, "inputs/pmcmc_data_week_allAge.rds")
@@ -283,6 +284,92 @@ ggplot(allAges_weekly
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
 
+# test only available GPSC55 data
+gen <- read.csv("raw_data/genomic_data_cleaned.csv") %>% 
+  dplyr::filter(!is.na(strain),
+                # collection_date >= as.Date("2017-08-01")
+  ) %>%  # after 2017-08-01
+  glimpse()
+
+edited_data <- dat_c %>% 
+  dplyr::mutate(week_date = as.Date(week_date),
+                iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                yearWeek =ISOweek::ISOweek2date(iso_week)
+  ) %>% 
+  dplyr::group_by(yearWeek) %>% 
+  dplyr::summarise(count_serotype = sum(counts)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::full_join(
+    dplyr::bind_rows(
+      gen %>% 
+        dplyr::filter(strain == "GPSC55") %>% 
+        dplyr::mutate(week_date = as.Date(week_date),
+                      iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                      yearWeek =ISOweek::ISOweek2date(iso_week)
+        ) %>% 
+        dplyr::group_by(yearWeek) %>% 
+        dplyr::summarise(count_WGS_GPSC55 = n()) %>% 
+        dplyr::ungroup() %>% 
+        dplyr::mutate(yearWeek = as.Date(yearWeek))
+      # ,
+      # earlier_ne_df %>% 
+      #   dplyr::select(yearWeek, predicted_count_GPSC55) %>% 
+      #   dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
+      #   dplyr::filter(yearWeek <= as.Date("2017-08-01")) %>% 
+      #   dplyr::rename(count_WGS_GPSC55 = predicted_count_GPSC55)
+    )
+    ,
+    by = "yearWeek"
+  ) %>% 
+  dplyr::full_join(
+    gen %>% 
+      dplyr::filter(strain == "non55") %>% 
+      dplyr::mutate(week_date = as.Date(week_date),
+                    iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                    yearWeek =ISOweek::ISOweek2date(iso_week)
+      ) %>% 
+      dplyr::group_by(yearWeek) %>% 
+      dplyr::summarise(count_WGS_non55 = n()) %>% 
+      dplyr::ungroup()
+    ,
+    by = "yearWeek"
+  ) %>% 
+  dplyr::full_join(
+    interpolated_ne
+    ,
+    by = "yearWeek"
+    ,
+    relationship = "many-to-many"
+  ) %>%
+  dplyr::mutate(
+    count_serotype = as.numeric(count_serotype),
+    count_WGS_GPSC55 = as.numeric(count_WGS_GPSC55),
+    count_WGS_non55 = as.numeric(count_WGS_non55),
+    Ne = as.numeric(Ne)
+  ) %>% 
+  # tidyr::pivot_longer(
+  #   cols = starts_with(c("count_")), # ignore Ne at the moment
+  #   names_to = "type",
+  #   values_to = "count"
+  # ) %>% 
+  dplyr::arrange(yearWeek) %>% 
+  dplyr::filter(
+    yearWeek >= as.Date("2010-01-01") # filter out data not based on initial Ne but the first time GPSC55 was predicted 
+  ) %>%
+  dplyr::mutate(# count_WGS_GPSC55 = round(count_WGS_GPSC55), # rounded cases
+    # count_WGS_GPSC55 = ifelse(count_WGS_GPSC55 == 0, NA_real_, count_WGS_GPSC55),
+    yearWeek = as.Date(yearWeek),
+    day = as.numeric(round((yearWeek - as.Date("2010-01-04")))),
+    # day = seq_len(n())
+  ) %>%
+  mcstate::particle_filter_data(.,
+                                time = "day", # I use steps instead of day
+                                rate = 1, # I change the model to weekly, therefore weekly rate is required
+                                initial_time = 0
+  ) %>%
+  glimpse()
+
+saveRDS(edited_data, "inputs/pmcmc_data_week_allAge_nonGAM.rds")
 
 # ageGroup3, weekly
 ageGroup3_weekly <- dat_c %>% 

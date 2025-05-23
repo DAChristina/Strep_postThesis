@@ -5,9 +5,9 @@ initial(time) <- 0
 # 1. PARAMETERS ################################################################
 N <- user(6.7e7) # FIXED England's pop size is roughly 67,000,000
 
-max_A_ini <- user(0) # FIXED
-min_A_ini <- user(-20) # FIXED
-scaled_A_ini <- user(0) # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
+# max_A_ini <- user(0) # FIXED
+# min_A_ini <- user(-20) # FIXED
+# scaled_A_ini <- user(0) # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
 D_ini <- user(0) 
 time_shift_1 <- user(0)
 # time_shift_2 <- user(0)
@@ -43,7 +43,7 @@ pi <- user(3.141593) # FIXED
 # nu <- nu_annual/365
 
 # 2. INITIAL VALUES ############################################################
-log_A_ini <- scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini # scaled_A_ini*(max_A_ini−min_A_ini)+min_A_ini; rescaled using (A_ini-A_ini_min)/(A_ini_max-A_ini_min)
+log_A_ini <- user(0) # scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini # scaled_A_ini*(max_A_ini−min_A_ini)+min_A_ini; rescaled using (A_ini-A_ini_min)/(A_ini_max-A_ini_min)
 A_ini <- 10^(log_A_ini)*N
 initial(A) <- A_ini
 initial(D) <- D_ini

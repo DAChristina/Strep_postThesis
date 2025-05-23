@@ -19,7 +19,7 @@ model_vs_data <- function(n_sts){
   
   # Running the SIR model with dust
   pars <- list(N_ini = 6.7e7,
-               scaled_A_ini = results[1,2],
+               log_A_ini = results[1,2],
                D_ini = 0,
                R_ini = 0,
                time_shift_1 = results[2,2],
@@ -75,15 +75,22 @@ model_vs_data <- function(n_sts){
   sir_data <- data %>% 
     dplyr::transmute(
       replicate = 1,
-      steps = time_start+1,
+      # steps = time_start+1,
+      weekly = seq_along(replicate),
       value = count_WGS_GPSC55,
       compartment = "data_count_WGS_GPSC55"
     ) %>%
     glimpse()
   
-  all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>% 
+  # all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>%
+  #   dplyr::mutate(
+  #     steps = seq_along(date)
+  #   ) %>%
+  #   glimpse()
+  all_dates <- data %>%
+    dplyr::select(yearWeek) %>% 
     dplyr::mutate(
-      steps = seq_along(date)
+      weekly = seq_along(yearWeek)
     ) %>%
     glimpse()
   
@@ -101,20 +108,35 @@ model_vs_data <- function(n_sts){
                                      index == 3 ~ "D",
                                      index == 4 ~ "S",
                                      index == 5 ~ "R",
-                                     index == 6 ~ "model_AD_weekly",
+                                     index == 6 ~ "model_n_AD_weekly",
                                      index == 7 ~ "Ne",
                                      index == 8 ~ "cases_55",
                                      index == 9 ~ "cases_non55",
                                      index == 10 ~ "cases_12F"
                     )) %>% 
     dplyr::select(-index) %>%
+    dplyr::mutate(weekly = ceiling(steps/7)) %>% 
+    dplyr::group_by(replicate, weekly, compartment) %>% 
+    dplyr::summarise(value = sum(value, na.rm = T),
+                     # date = max(date),
+                     .groups = "drop") %>% 
+    dplyr::ungroup() %>% 
     dplyr::bind_rows(sir_data) %>%
+    # add 12F data for comparison
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = seq_along(replicate),
+          value = count_serotype,
+          compartment = "data_count_12F"
+        )
+    ) %>% 
     dplyr::full_join(
       all_dates
       ,
-      by = "steps"
+      by = "weekly"
     ) %>%
-    dplyr::filter(date %in% data$yearWeek) %>%
     glimpse()
   
   png(paste0(dir_name, "figs/model_vs_data.png"),
@@ -122,22 +144,23 @@ model_vs_data <- function(n_sts){
   p <- ggplot(incidence_modelled %>% 
                 dplyr::filter(
                   # grepl("cases|D|data", compartment),
-                  compartment %in% c("model_AD_weekly", "data_count_WGS_GPSC55"),
+                  # compartment %in% c("D", "model_n_AD_weekly", "data_count_WGS_GPSC55"), # redesign the model, would rather fit to D
+                  # compartment %in% c("model_n_AD_weekly", "data_count_WGS_GPSC55"),
                   # compartment %in% c("D", "n_AD_weekly"),
-                  # compartment %in% c("D", "data_count_WGS_GPSC55"),
+                  compartment %in% c("D", "data_count_WGS_GPSC55"),
                   # compartment %in% c("D"),
                   compartment != "Time",
                   # compartment %in% c("S")
                 )
               ,
-              aes(x = date, y = value,
+              aes(x = yearWeek, y = value,
                   group = interaction(compartment,replicate),
                   colour = compartment)) +
     geom_line() +
     # scale_y_continuous(trans = "log1p") +
     # scale_y_continuous(limits = c(0, 50)) +
     # scale_x_continuous(limits = c(0, 700)) +
-    scale_x_date(limits = c(as.Date(min(all_dates$date)), as.Date(max(all_dates$date))),
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                  date_breaks = "year",
                  date_labels = "%Y") +
     ggtitle("Cases (Aggregated by Week)") +
@@ -161,5 +184,4 @@ args <- commandArgs(trailingOnly = T)
 n_sts <- as.numeric(args[which(args == "--n_steps") + 1])
 
 model_vs_data(n_sts)
-
 
