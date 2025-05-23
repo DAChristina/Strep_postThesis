@@ -18,10 +18,10 @@ pars <- list(N_ini = 6.7e7,
              # scaled_wane = 0.0682579543,
              # psi = (0.5),
              hypo_sigma_2 = (1),
-             log_delta = (-4.65219600756188) # (-4.65135010884371) #  # 
-             # alpha = 0.01,
-             # gamma_annual = 0.01,
-             # nu_annual = 0.01
+             log_delta = (-4.65219600756188), # (-4.65135010884371) #  # 
+             alpha = 10,
+             gamma_annual = 200,
+             nu_annual = 100
 )
 
 # time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
@@ -56,7 +56,9 @@ for (t in seq_len(n_times)) {
 }
 # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
 # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
-data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
+
+# use GPSC-leevel only data (no GAM prediction)
+data <- readRDS("inputs/pmcmc_data_week_allAge_nonGAM.rds") %>% 
   glimpse()
 
 sir_data <- data %>% 
@@ -109,6 +111,16 @@ incidence_modelled <-
                    .groups = "drop") %>% 
   dplyr::ungroup() %>% 
   dplyr::bind_rows(sir_data) %>%
+  # add 12F data for comparison
+  dplyr::bind_rows(
+    data %>% 
+      dplyr::transmute(
+        replicate = 1,
+        weekly = seq_along(replicate),
+        value = count_serotype,
+        compartment = "data_count_12F"
+      )
+    ) %>% 
   dplyr::full_join(
     all_dates
     ,
@@ -124,7 +136,7 @@ ggplot(incidence_modelled %>%
            # compartment %in% c("D", "model_n_AD_weekly", "data_count_WGS_GPSC55"), # redesign the model, would rather fit to D
            # compartment %in% c("model_n_AD_weekly", "data_count_WGS_GPSC55"),
            # compartment %in% c("D", "n_AD_weekly"),
-           compartment %in% c("D", "data_count_WGS_GPSC55"),
+           compartment %in% c("D", "data_count_WGS_GPSC55", "data_count_12F"),
            # compartment %in% c("D"),
            compartment != "Time",
            # compartment %in% c("S")
@@ -170,6 +182,7 @@ scaled_A_ini = 0.7484698
 log_A_ini = -3.77295312521097
 # log to scaled
 (log_A_ini-(-15)) / (0-(-15)) # (x - min) / (max - min)
+
 
 
 

@@ -13,21 +13,22 @@ case_compare <- function(state, observed, pars = NULL) {
   
   # incidence based on model's "n_AD_daily" from gen_sir$new(pars = list(), time = 0, n_particles = 1L)$info()
   # sir_model$info()$index$n_AD_weekly
-  # model_Ne <- state[7, , drop = TRUE]
-  model_55 <- state[6, , drop = TRUE] # fit to D (GPSC55) instead of n_AD_weekly
-  # model_12F <- state[10, , drop = TRUE]
+  model_Ne <- state[7, , drop = TRUE]
+  model_55 <- state[8, , drop = TRUE]
+  model_12F <- state[10, , drop = TRUE]
   
   # incidence based on data
-  # obs_Ne <- observed$Ne
-  # obs_55 <- observed$count_WGS_GPSC55
-  # obs_12F <- observed$count_serotype
+  obs_Ne <- observed$Ne
+  obs_55 <- observed$count_WGS_GPSC55
+  obs_12F <- observed$count_serotype
   
-  # if (is.na(observed$Ne)) {
-  #   ll_Ne <- numeric(n)
-  # } else {
-  #   ll_Ne <- ll_nbinom(observed$Ne, model_Ne,
-  #                      pars$kappa_Ne, exp_noise)
-  # }
+  if (is.na(observed$Ne)) {
+    ll_Ne <- numeric(n)
+  } else {
+    ll_Ne <- dpois(x = observed$Ne,
+                   lambda = model_Ne + rexp(ncol(state), exp_noise),
+                   log = T)
+  }
   
   if (is.na(observed$count_WGS_GPSC55)) {
     ll_55 <- numeric(n)
@@ -37,14 +38,15 @@ case_compare <- function(state, observed, pars = NULL) {
                    log = T)
   }
   
-  # if (is.na(observed$count_serotype)) {
-  #   ll_12F <- numeric(n)
-  # } else {
-  #   ll_12F <- ll_nbinom(observed$count_serotype, model_12F,
-  #                      pars$kappa_12F, exp_noise)
-  # }
+  if (is.na(observed$count_serotype)) {
+    ll_12F <- numeric(n)
+  } else {
+    ll_12F <- dpois(x = observed$count_serotype,
+                    lambda = model_12F + rexp(ncol(state), exp_noise),
+                    log = T)
+  }
   
-  ll <- ll_55 # ll_Ne + ll_55 + ll_12F
+  ll <- ll_Ne + ll_55 + ll_12F
   
   
   if (any(!is.finite(ll))) {
@@ -80,9 +82,9 @@ parameter_transform <- function(pars) {
   log_delta <- pars[["log_delta"]]
   # hypo_sigma_2 <- pars[["hypo_sigma_2"]]
   
-  # alpha <- pars[["alpha"]]
-  # gamma_annual <- pars[["gamma_annual"]]
-  # nu_annual <- pars[["nu_annual"]]
+  alpha <- pars[["alpha"]]
+  gamma_annual <- pars[["gamma_annual"]]
+  nu_annual <- pars[["nu_annual"]]
   
   # kappa_Ne <- pars[["kappa_Ne"]]
   # kappa_55 <- pars[["kappa_55"]]
@@ -95,12 +97,12 @@ parameter_transform <- function(pars) {
        beta_1 = beta_1,
        # beta_2 = beta_2,
        # scaled_wane = scaled_wane,
-       log_delta = log_delta
+       log_delta = log_delta,
        # hypo_sigma_2 = hypo_sigma_2,
        
-       # alpha = alpha,
-       # gamma_annual = gamma_annual,
-       # nu_annual = nu_annual,
+       alpha = alpha,
+       gamma_annual = gamma_annual,
+       nu_annual = nu_annual
        
        # kappa_Ne = kappa_Ne,
        # kappa_55 = kappa_55
@@ -116,31 +118,31 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (-3.77), min = (-10), max = 0,
+    list(mcstate::pmcmc_parameter("log_A_ini", (-4), min = (-10), max = 0,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
+         mcstate::pmcmc_parameter("time_shift_1", 0.01, min = 0, max = 1,
                                   prior = priors$time_shifts),
          # mcstate::pmcmc_parameter("time_shift_2", 0.3688, min = 0, max = 0.5,
          #                          prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.031, min = 0, max = 0.8,
+         mcstate::pmcmc_parameter("beta_0", 0.03, min = 0, max = 0.8,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
+         mcstate::pmcmc_parameter("beta_1", 0.26, min = 0, max = 0.7,
                                   prior = priors$betas),
          # mcstate::pmcmc_parameter("beta_2", 0.511849, min = 0, max = 0.7,
          #                          prior = priors$betas),
          # mcstate::pmcmc_parameter("scaled_wane", 0.657388, min = 0, max = 1,
          #                          prior = priors$scaled_wane),
-         mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
-                                  prior = priors$log_delta)
+         mcstate::pmcmc_parameter("log_delta", (-4), min = (-10), max = 0.7,
+                                  prior = priors$log_delta),
          # mcstate::pmcmc_parameter("hypo_sigma_2", 1, min = 0, max = 10,
          #                          prior = priors$sigma_2),
          
-         # mcstate::pmcmc_parameter("alpha", 1, min = 0, max = 100,
-         #                          prior = priors$alpha),
-         # mcstate::pmcmc_parameter("gamma_annual", 0.004, min = 0,
-         #                          prior = priors$gamma_annual),
-         # mcstate::pmcmc_parameter("nu_annual", 1, min = 0, max = 100,
-         #                          prior = priors$nu_annual),
+         mcstate::pmcmc_parameter("alpha", 10, min = 0, max = 100,
+                                  prior = priors$alpha),
+         mcstate::pmcmc_parameter("gamma_annual", 200, min = 0,
+                                  prior = priors$gamma_annual),
+         mcstate::pmcmc_parameter("nu_annual", 100, min = 0, max = 200,
+                                  prior = priors$nu_annual)
          
          # mcstate::pmcmc_parameter("kappa_Ne", 1, min = 0, max = 100,
          #                          prior = priors$kappas),
@@ -177,18 +179,18 @@ prepare_priors <- function(pars) {
   #   dgamma(s, shape = 1, scale = 1, log = TRUE)
   # }
   
-  # priors$alpha <- function(s) {
-  #   dunif(s, min = 0, max = 100, log = TRUE)
-  # }
+  priors$alpha <- function(s) {
+    dunif(s, min = 0, max = 100, log = TRUE)
+  }
+  priors$gamma_annual <- function(s) {
+    dlnorm(s, meanlog = -4.788920616, sdlog = 0.467902993, log = TRUE)
+  }
   # priors$gamma_annual <- function(s) {
-  #   dlnorm(s, meanlog = -4.788920616, sdlog = 0.467902993, log = TRUE)
-  # }
-  # priors$gamma_annual <- function(s) {
   #   dunif(s, min = 0, max = 100, log = TRUE)
   # }
-  # priors$nu_annual <- function(s) {
-  #   dunif(s, min = 0, max = 100, log = TRUE)
-  # }
+  priors$nu_annual <- function(s) {
+    dunif(s, min = 0, max = 200, log = TRUE)
+  }
   priors$kappas <- function(s) {
     dunif(s, min = 0, max = 10, log = TRUE)
   }

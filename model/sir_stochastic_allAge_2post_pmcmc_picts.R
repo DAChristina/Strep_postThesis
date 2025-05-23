@@ -30,10 +30,10 @@ model_vs_data <- function(n_sts){
                # scaled_wane = results[7,2],
                # psi = (0.5),
                hypo_sigma_2 = (1),
-               log_delta = results[5,2]
-               # alpha = results[9,2],
-               # gamma_annual = results[10,2],
-               # nu_annual = results[11,2]
+               log_delta = results[5,2],
+               alpha = results[6,2],
+               gamma_annual = results[7,2],
+               nu_annual = results[8,2]
   )
   
   time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
@@ -69,7 +69,7 @@ model_vs_data <- function(n_sts){
   # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
-  data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
+  data <- readRDS("inputs/pmcmc_data_week_allAge_nonGAM.rds") %>% 
     glimpse()
   
   sir_data <- data %>% 
@@ -147,7 +147,7 @@ model_vs_data <- function(n_sts){
                   # compartment %in% c("D", "model_n_AD_weekly", "data_count_WGS_GPSC55"), # redesign the model, would rather fit to D
                   # compartment %in% c("model_n_AD_weekly", "data_count_WGS_GPSC55"),
                   # compartment %in% c("D", "n_AD_weekly"),
-                  compartment %in% c("D", "data_count_WGS_GPSC55"),
+                  compartment %in% c("D", "data_count_WGS_GPSC55", "data_count_12F"),
                   # compartment %in% c("D"),
                   compartment != "Time",
                   # compartment %in% c("S")
