@@ -69,7 +69,7 @@ model_vs_data <- function(n_sts){
   # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
-  data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
+  data <- readRDS("inputs/pmcmc_data_week_allAge_nonGAM.rds") %>% 
     glimpse()
   
   sir_data <- data %>% 

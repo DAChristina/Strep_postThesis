@@ -136,7 +136,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   write.csv(calc_ess, paste0(dir_name, "calc_ess.csv")) #, row.names = FALSE)
   
   # Figures! (still failed, margin error)
-  # fig <- pmcmc_trace(mcmc1)
+  # # fig <- pmcmc_trace(mcmc1)
   
   Sys.sleep(1)
   
@@ -254,8 +254,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   write.csv(tune_calc_ess_burnedin, paste0(dir_name, "tune_calc_ess_burnedin.csv")) #, row.names = FALSE)
   
   # Figures! (still failed, margin error)
-  fig <- pmcmc_trace(mcmc2)
-  fig <- pmcmc_trace(mcmc2_burnedin)
+  # fig <- pmcmc_trace(mcmc2)
+  # fig <- pmcmc_trace(mcmc2_burnedin)
   
   # save pmcmc samples
   if(run2_stochastic){
@@ -280,14 +280,14 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # 1. Gelman-Rubin Diagnostic
   # https://cran.r-project.org/web/packages/coda/coda.pdf
   figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
-  fig <- diag_cov_mtx(figs_gelman_init)
-  fig <- diag_gelman_rubin(figs_gelman_init)
+  # fig <- diag_cov_mtx(figs_gelman_init)
+  # fig <- diag_gelman_rubin(figs_gelman_init)
   
   # 2. Autocorrelation
-  fig <- diag_aucorr(mcmc2)
+  # fig <- diag_aucorr(mcmc2)
   
   # 3. ggpairs
-  fig <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
+  # fig <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
   
 }
 
@@ -345,7 +345,7 @@ pmcmc_run1_only <- function(n_pars, n_sts,
   write.csv(calc_ess, paste0(dir_name, "calc_ess.csv")) #, row.names = FALSE)
   
   # Figures! (still failed, margin error)
-  # fig <- pmcmc_trace(mcmc1)
+  # # fig <- pmcmc_trace(mcmc1)
   
 }
 
@@ -458,8 +458,8 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   write.csv(tune_calc_ess_burnedin, paste0(dir_name, "tune_calc_ess_burnedin.csv")) #, row.names = FALSE)
   
   # Figures! (still failed, margin error)
-  fig <- pmcmc_trace(mcmc2)
-  fig <- pmcmc_trace(mcmc2_burnedin)
+  # fig <- pmcmc_trace(mcmc2)
+  # fig <- pmcmc_trace(mcmc2_burnedin)
   
   # save pmcmc samples
   if(run2_stochastic){
@@ -483,15 +483,15 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   
   # 1. Gelman-Rubin Diagnostic
   # https://cran.r-project.org/web/packages/coda/coda.pdf
-  figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
-  fig <- diag_cov_mtx(figs_gelman_init)
-  fig <- diag_gelman_rubin(figs_gelman_init)
+  # figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
+  # fig <- diag_cov_mtx(figs_gelman_init)
+  # fig <- diag_gelman_rubin(figs_gelman_init)
   
   # 2. Autocorrelation
-  fig <- diag_aucorr(mcmc2)
+  # fig <- diag_aucorr(mcmc2)
   
   # 3. ggpairs
-  fig <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
+  # fig <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
   
 }
 
