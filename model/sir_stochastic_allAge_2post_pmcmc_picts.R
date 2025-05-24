@@ -174,7 +174,44 @@ model_vs_data <- function(n_sts){
           legend.background = element_rect(fill = "transparent", color = "transparent"))
   
   print(p)
+  dev.off()
   
+  png(paste0(dir_name, "figs/model_vs_data2.png"),
+      width = 24, height = 17, unit = "cm", res = 600)
+  p <- ggplot(incidence_modelled %>% 
+                dplyr::filter(
+                  # grepl("cases|D|data", compartment),
+                  # compartment %in% c("D", "model_n_AD_weekly", "data_count_WGS_GPSC55"), # redesign the model, would rather fit to D
+                  # compartment %in% c("model_n_AD_weekly", "data_count_WGS_GPSC55"),
+                  # compartment %in% c("D", "n_AD_weekly"),
+                  # compartment %in% c("D", "data_count_WGS_GPSC55", "data_count_12F"),
+                  grepl("cases|data", compartment),
+                  # compartment %in% c("D"),
+                  compartment != "Time",
+                  # compartment %in% c("S")
+                )
+              ,
+              aes(x = yearWeek, y = value,
+                  group = interaction(compartment,replicate),
+                  colour = compartment)) +
+    geom_line() +
+    # scale_y_continuous(trans = "log1p") +
+    # scale_y_continuous(limits = c(0, 50)) +
+    # scale_x_continuous(limits = c(0, 700)) +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    ggtitle("Cases (Aggregated by Week)") +
+    xlab("Time") +
+    ylab("Number of People") +
+    theme_bw() +
+    theme(legend.position = c(0.15, 0.85),
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  print(p)
   dev.off()
   
 }
