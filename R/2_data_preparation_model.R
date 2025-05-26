@@ -252,6 +252,7 @@ allAges_weekly <- dat_c %>%
                 day = as.numeric(round((yearWeek - as.Date("2010-01-04")))),
                 # day = seq_len(n())
                 ) %>%
+  dplyr::filter(day > 0) %>%
   mcstate::particle_filter_data(.,
                                 time = "day", # I use steps instead of day
                                 rate = 1, # I change the model to weekly, therefore weekly rate is required
@@ -362,6 +363,7 @@ edited_data <- dat_c %>%
     day = as.numeric(round((yearWeek - as.Date("2010-01-04")))),
     # day = seq_len(n())
   ) %>%
+  dplyr::filter(day > 0) %>% 
   mcstate::particle_filter_data(.,
                                 time = "day", # I use steps instead of day
                                 rate = 1, # I change the model to weekly, therefore weekly rate is required
