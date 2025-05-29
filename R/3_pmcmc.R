@@ -385,7 +385,14 @@ pmcmc_run2_only <- function(n_pars, n_sts,
                                                                  adapt_end = n_sts*0.8,
                                                                  pre_diminish = n_sts*0.1)
   } else {
-    adaptive_proposal_run2 <- FALSE
+    # adaptive_proposal_run2 <- FALSE
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1000,
+                                                                 # initial_scaling = 1,
+                                                                 scaling_increment = NULL,
+                                                                 acceptance_target = 0.234,
+                                                                 forget_rate = 0.2,
+                                                                 forget_end = Inf,
+                                                                 adapt_end = Inf)
   }
   
   if(run2_stochastic){
