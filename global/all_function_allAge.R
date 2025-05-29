@@ -304,3 +304,53 @@ diag_aucorr <- function(mcmc2){
     print(coda::acfplot(mcmc2[, name], main = name))
   }
 }
+
+################################################################################
+# Particle samples (adapted from Lilith's)
+observe_pois <- function(lambda) {
+  n_par <- nrow(lambda)
+  n_obs <- ncol(lambda)
+  ret <- vapply(seq_len(n_par), function(i) {
+    rpois(n_obs, lambda[i, ])}, numeric(n_obs))
+  t(ret)
+}
+
+observe <- function(pmcmc_samples) {
+  
+  state <- pmcmc_samples$trajectories$state
+  pars <- apply(pmcmc_samples$pars, MARGIN = 1, pmcmc_samples$predict$transform)
+  time <- pmcmc_samples$trajectories$time
+  
+  ## extract model outputs
+  model_55 <- state[6, , , drop = TRUE]
+  
+  observed <- list()
+  observed$cases_child_GPSC55 <- observe_pois(model_55)
+  
+  abind::abind(c(list(state), observed), along = 1)
+}
+
+plot_states <- function(state, data) {
+  col <- grey(0.3, 0.1)
+  matplot(data$yearWeek, t(state[6, , -1]),
+          type = "l", lty = 1, col = col,
+          xlab = "", ylab = "GPSC55 cases")
+  points(data$yearWeek, data$count_WGS_GPSC55, col = 3, pch = 20)
+  
+  
+  matplot(data$yearWeek, xlab = "", t(state["A", , -1]),
+          type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6e7), yaxt = "n")
+  axis(side = 2, at = seq(0, 6e7, length.out = 5),
+       labels = seq(0, 100, length.out = 5))
+  
+  matlines(data$yearWeek, t(state["D", , -1]), lty = 1, col = 3)
+  # matlines(data$yearWeek, t(state["R", , -1]), lty = 1, col = 4)
+  legend("right", bty = "n", fill = 2:4, legend = c("A", "D"))
+  # 
+  # matplot(data$yearWeek, xlab = "", t(state["I_tot", , -1]),
+  #         type = "l", lty = 1, col = 3, ylab = "carriers")
+}
+
+
+
+
