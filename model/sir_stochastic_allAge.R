@@ -38,12 +38,13 @@ pi <- user(3.141593) # FIXED
 
 alpha <- user(1, min = 0) # proportionality factor relating Ne to D_tot
 gamma_annual <- user(0.01, min = 0) # annual rate of invasive disease
-gamma <- gamma_annual/365
+gamma <- gamma_annual/(365/7)
 nu_annual <- user(83, min = 0)   # annual rate of non-55 cases
-nu <- nu_annual/365
+nu <- nu_annual/(365/7)
 
 # 2. INITIAL VALUES ############################################################
 log_A_ini <- user(0) # scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini # scaled_A_ini*(max_A_ini−min_A_ini)+min_A_ini; rescaled using (A_ini-A_ini_min)/(A_ini_max-A_ini_min)
+
 A_ini <- 10^(log_A_ini)*N
 initial(A) <- A_ini
 initial(D) <- D_ini
