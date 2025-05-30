@@ -32,8 +32,8 @@ model_vs_data <- function(n_sts){
                hypo_sigma_2 = (1),
                log_delta = results[5,2],
                alpha = results[6,2],
-               gamma_annual = results[7,2],
-               nu_annual = results[8,2]
+               gamma_weekly = results[7,2],
+               nu_weekly = results[8,2]
   )
   
   time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
@@ -132,6 +132,24 @@ model_vs_data <- function(n_sts){
           compartment = "data_count_12F"
         )
     ) %>% 
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = seq_along(replicate),
+          value = count_serotype,
+          compartment = "data_count_WGS_non55"
+        )
+    ) %>% 
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = seq_along(replicate),
+          value = count_serotype,
+          compartment = "data_Ne"
+        )
+    ) %>% 
     dplyr::full_join(
       all_dates
       ,
@@ -139,7 +157,7 @@ model_vs_data <- function(n_sts){
     ) %>%
     glimpse()
   
-  png(paste0(dir_name, "figs/model_vs_data.png"),
+  png(paste0(dir_name, "figs/model_vs_data1.png"),
       width = 24, height = 17, unit = "cm", res = 600)
   p <- ggplot(incidence_modelled %>% 
                 dplyr::filter(
@@ -213,6 +231,112 @@ model_vs_data <- function(n_sts){
   
   print(p)
   dev.off()
+  
+  
+  ser12 <- ggplot(incidence_modelled %>% 
+                    dplyr::filter(
+                      compartment %in% c("data_count_WGS_GPSC55", "data_count_12F",
+                                         "cases_12F"),
+                      compartment != "Time"
+                    )
+                  ,
+                  aes(x = yearWeek, y = value,
+                      group = interaction(compartment,replicate),
+                      colour = compartment)) +
+    geom_line() +
+    # scale_y_continuous(trans = "log1p") +
+    # scale_y_continuous(limits = c(0, 50)) +
+    # scale_x_continuous(limits = c(0, 700)) +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    theme_bw() +
+    theme(legend.position = "right",
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  gps55 <- ggplot(incidence_modelled %>% 
+                    dplyr::filter(
+                      compartment %in% c("data_count_WGS_GPSC55", "data_count_12F",
+                                         "cases_55"),
+                      compartment != "Time"
+                    )
+                  ,
+                  aes(x = yearWeek, y = value,
+                      group = interaction(compartment,replicate),
+                      colour = compartment)) +
+    geom_line() +
+    # scale_y_continuous(trans = "log1p") +
+    # scale_y_continuous(limits = c(0, 50)) +
+    # scale_x_continuous(limits = c(0, 700)) +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    theme_bw() +
+    theme(legend.position = "right",
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  non55 <- ggplot(incidence_modelled %>% 
+                    dplyr::filter(
+                      compartment %in% c("data_count_WGS_GPSC55", "data_count_12F",
+                                         "cases_non55"),
+                      compartment != "Time"
+                    )
+                  ,
+                  aes(x = yearWeek, y = value,
+                      group = interaction(compartment,replicate),
+                      colour = compartment)) +
+    geom_line() +
+    # scale_y_continuous(trans = "log1p") +
+    # scale_y_continuous(limits = c(0, 50)) +
+    # scale_x_continuous(limits = c(0, 700)) +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    theme_bw() +
+    theme(legend.position = "right",
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  Ne <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(
+                   compartment %in% c("data_count_WGS_GPSC55", "data_count_12F",
+                                      "Ne", "data_Ne"),
+                   compartment != "Time"
+                 )
+               ,
+               aes(x = yearWeek, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
+    geom_line() +
+    # scale_y_continuous(trans = "log1p") +
+    # scale_y_continuous(limits = c(0, 50)) +
+    # scale_x_continuous(limits = c(0, 700)) +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    theme_bw() +
+    theme(legend.position = "right",
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  png(paste0(dir_name, "figs/model_vs_data3.png"),
+      width = 24, height = 24, unit = "cm", res = 600)
+  p <- cowplot::plot_grid(ser12, gps55, non55, Ne,
+                          nrow = 4,
+                          labels = c("A", "B", "C", "D"))
+  print(p)
+  dev.off()
+  
   
 }
 

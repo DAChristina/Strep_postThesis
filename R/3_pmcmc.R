@@ -29,9 +29,9 @@ pars <- list(log_A_ini = -4, # S_ini*10^(log10(-5.69897)) = 120 people; change A
              log_delta = (-4.82),
              # hypo_sigma_2 = 1,
              
-             alpha = 1,
-             gamma_annual = 1,
-             nu_annual = 1
+             alpha = 1.4,
+             gamma_weekly = 28,
+             nu_weekly = 14
              
              # kappa_Ne = 1,
              # kappa_12F = 1,
@@ -64,8 +64,8 @@ pars <- list(log_A_ini = -4, # S_ini*10^(log10(-5.69897)) = 120 people; change A
 priors <- prepare_priors(pars)
 proposal_matrix <- diag(300, 8)
 proposal_matrix <- (proposal_matrix + t(proposal_matrix))
-rownames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_annual", "nu_annual")
-colnames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_annual", "nu_annual")
+rownames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
+colnames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -143,10 +143,10 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
+  new_proposal_matrix <- new_proposal_matrix * 2.38^2/8 # 6 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_annual", "nu_annual")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_annual", "nu_annual")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -174,14 +174,14 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                                                  adapt_end = Inf)
   } else {
     # whatver
-    # adaptive_proposal_run2 <- FALSE
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1000,
-                                                                 # initial_scaling = 1,
-                                                                 scaling_increment = NULL,
-                                                                 acceptance_target = 0.234,
-                                                                 forget_rate = 0.2,
-                                                                 forget_end = Inf,
-                                                                 adapt_end = Inf)
+    adaptive_proposal_run2 <- FALSE
+    # adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1000,
+    #                                                              # initial_scaling = 1,
+    #                                                              scaling_increment = NULL,
+    #                                                              acceptance_target = 0.234,
+    #                                                              forget_rate = 0.2,
+    #                                                              forget_end = Inf,
+    #                                                              adapt_end = Inf)
   }
   
   if(run2_stochastic){
@@ -205,8 +205,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     )
   } else {
     tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                           rerun_every = 50,
-                                           rerun_random = TRUE,
+                                           # rerun_every = 50,
+                                           # rerun_random = TRUE,
                                            progress = TRUE,
                                            
                                            n_chains = 4,
@@ -340,10 +340,10 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
+  new_proposal_matrix <- new_proposal_matrix * 2.38^2/8 # 6 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_annual", "nu_annual")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_annual", "nu_annual")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -388,8 +388,8 @@ pmcmc_run2_only <- function(n_pars, n_sts,
     )
   } else {
     tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                           rerun_every = 50,
-                                           rerun_random = TRUE,
+                                           # rerun_every = 50,
+                                           # rerun_random = TRUE,
                                            progress = TRUE,
                                            
                                            n_chains = 4,

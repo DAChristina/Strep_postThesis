@@ -83,8 +83,8 @@ parameter_transform <- function(pars) {
   # hypo_sigma_2 <- pars[["hypo_sigma_2"]]
   
   alpha <- pars[["alpha"]]
-  gamma_annual <- pars[["gamma_annual"]]
-  nu_annual <- pars[["nu_annual"]]
+  gamma_weekly <- pars[["gamma_weekly"]]
+  nu_weekly <- pars[["nu_weekly"]]
   
   # kappa_Ne <- pars[["kappa_Ne"]]
   # kappa_55 <- pars[["kappa_55"]]
@@ -101,8 +101,8 @@ parameter_transform <- function(pars) {
        # hypo_sigma_2 = hypo_sigma_2,
        
        alpha = alpha,
-       gamma_annual = gamma_annual,
-       nu_annual = nu_annual
+       gamma_weekly = gamma_weekly,
+       nu_weekly = nu_weekly
        
        # kappa_Ne = kappa_Ne,
        # kappa_55 = kappa_55
@@ -137,12 +137,12 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
          # mcstate::pmcmc_parameter("hypo_sigma_2", 1, min = 0, max = 10,
          #                          prior = priors$sigma_2),
          
-         mcstate::pmcmc_parameter("alpha", 10, min = 0, max = 100,
+         mcstate::pmcmc_parameter("alpha", 1.4, min = 0, max = 100,
                                   prior = priors$alpha),
-         mcstate::pmcmc_parameter("gamma_annual", 200, min = 0,
-                                  prior = priors$gamma_annual),
-         mcstate::pmcmc_parameter("nu_annual", 100, min = 0, max = 200,
-                                  prior = priors$nu_annual)
+         mcstate::pmcmc_parameter("gamma_weekly", 28, min = 0,
+                                  prior = priors$gamma_weekly),
+         mcstate::pmcmc_parameter("nu_weekly", 14, min = 0, max = 200,
+                                  prior = priors$nu_weekly)
          
          # mcstate::pmcmc_parameter("kappa_Ne", 1, min = 0, max = 100,
          #                          prior = priors$kappas),
@@ -182,13 +182,13 @@ prepare_priors <- function(pars) {
   priors$alpha <- function(s) {
     dunif(s, min = 0, max = 100, log = TRUE)
   }
-  priors$gamma_annual <- function(s) {
+  priors$gamma_weekly <- function(s) {
     dlnorm(s, meanlog = -4.788920616, sdlog = 0.467902993, log = TRUE)
   }
-  # priors$gamma_annual <- function(s) {
+  # priors$gamma_weekly <- function(s) {
   #   dunif(s, min = 0, max = 100, log = TRUE)
   # }
-  priors$nu_annual <- function(s) {
+  priors$nu_weekly <- function(s) {
     dunif(s, min = 0, max = 200, log = TRUE)
   }
   priors$kappas <- function(s) {
@@ -306,3 +306,68 @@ diag_aucorr <- function(mcmc2){
     print(coda::acfplot(mcmc2[, name], main = name))
   }
 }
+
+
+################################################################################
+# Particle samples (adapted from Lilith's)
+observe_pois <- function(lambda) {
+  n_par <- nrow(lambda)
+  n_obs <- ncol(lambda)
+  ret <- vapply(seq_len(n_par), function(i) {
+    rpois(n_obs, lambda[i, ])}, numeric(n_obs))
+  t(ret)
+}
+
+observe <- function(pmcmc_samples) {
+  
+  state <- pmcmc_samples$trajectories$state
+  pars <- apply(pmcmc_samples$pars, MARGIN = 1, pmcmc_samples$predict$transform)
+  time <- pmcmc_samples$trajectories$time
+  
+  ## extract model outputs
+  # model_Ne <- state[7, , , drop = TRUE]
+  model_55 <- state[8, , , drop = TRUE]
+  model_12F <- state[10, , , drop = TRUE]
+  
+  observed <- list()
+  # observed$Ne <- observe_pois(model_Ne)
+  observed$count_WGS_GPSC55 <- observe_pois(model_55)
+  observed$count_serotype <- observe_pois(model_12F)
+  
+  abind::abind(c(list(state), observed), along = 1)
+}
+
+# plot_states <- function(state, data) {
+#   col <- grey(0.3, 0.1)
+#   matplot(data$yearWeek, t(state[8, , -1]),
+#           type = "l", lty = 1, col = col,
+#           xlab = "", ylab = "GPSC55 cases")
+#   points(data$yearWeek, data$count_WGS_GPSC55, col = 3, pch = 20)
+#   
+#   matplot(data$yearWeek, t(state[9, , -1]),
+#           type = "l", lty = 1, col = col,
+#           xlab = "", ylab = "Non-GPSC55 cases")
+#   points(data$yearWeek, data$count_WGS_non55, col = 3, pch = 20)
+#   
+#   matplot(data$yearWeek, t(state[10, , -1]),
+#           type = "l", lty = 1, col = col,
+#           xlab = "", ylab = "12F cases")
+#   points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
+#   
+#   matplot(data$yearWeek, t(state[7, , -1]),
+#           type = "l", lty = 1, col = col,
+#           xlab = "", ylab = "Ne")
+#   points(data$yearWeek, data$Ne, col = 3, pch = 20)
+#   
+#   matplot(data$yearWeek, xlab = "", t(state["A", , -1]),
+#           type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6e7), yaxt = "n")
+#   axis(side = 2, at = seq(0, 6e7, length.out = 5),
+#        labels = seq(0, 100, length.out = 5))
+#   
+#   matlines(data$yearWeek, t(state["D", , -1]), lty = 1, col = 3)
+#   # matlines(data$yearWeek, t(state["R", , -1]), lty = 1, col = 4)
+#   legend("right", bty = "n", fill = 2:4, legend = c("A", "D"))
+#   # 
+#   # matplot(data$yearWeek, xlab = "", t(state["I_tot", , -1]),
+#   #         type = "l", lty = 1, col = 3, ylab = "carriers")
+# }

@@ -19,9 +19,9 @@ pars <- list(N_ini = 6.7e7,
              # psi = (0.5),
              hypo_sigma_2 = (1),
              log_delta = (-4.65219600756188), # (-4.65135010884371) #  # 
-             alpha = 10,
-             gamma_annual = 200,
-             nu_annual = 100
+             alpha = 10/7,
+             gamma_weekly = 25,
+             nu_weekly = 14
 )
 
 # time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
@@ -120,13 +120,30 @@ incidence_modelled <-
         value = count_serotype,
         compartment = "data_count_12F"
       )
-    ) %>% 
+  ) %>% 
+  dplyr::bind_rows(
+    data %>% 
+      dplyr::transmute(
+        replicate = 1,
+        weekly = seq_along(replicate),
+        value = count_serotype,
+        compartment = "data_count_WGS_non55"
+      )
+  ) %>% 
+  dplyr::bind_rows(
+    data %>% 
+      dplyr::transmute(
+        replicate = 1,
+        weekly = seq_along(replicate),
+        value = count_serotype,
+        compartment = "data_Ne"
+      )
+  ) %>% 
   dplyr::full_join(
     all_dates
     ,
     by = "weekly"
   ) %>%
-  # dplyr::filter(date %in% data$yearWeek) %>%
   glimpse()
 
 
@@ -173,6 +190,109 @@ transformations <- data.frame(
                 log_A_ini = scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini,
                 A_ini = 10^(log_A_ini)*6.7e7) %>% 
   glimpse()
+
+
+ser12 <- ggplot(incidence_modelled %>% 
+                  dplyr::filter(
+                    compartment %in% c("data_count_WGS_GPSC55", "data_count_12F",
+                                       "cases_12F"),
+                    compartment != "Time"
+                  )
+                ,
+                aes(x = yearWeek, y = value,
+                    group = interaction(compartment,replicate),
+                    colour = compartment)) +
+  geom_line() +
+  # scale_y_continuous(trans = "log1p") +
+  # scale_y_continuous(limits = c(0, 50)) +
+  # scale_x_continuous(limits = c(0, 700)) +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "right",
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+gps55 <- ggplot(incidence_modelled %>% 
+                  dplyr::filter(
+                    compartment %in% c("data_count_WGS_GPSC55", "data_count_12F",
+                                       "cases_55"),
+                    compartment != "Time"
+                  )
+                ,
+                aes(x = yearWeek, y = value,
+                    group = interaction(compartment,replicate),
+                    colour = compartment)) +
+  geom_line() +
+  # scale_y_continuous(trans = "log1p") +
+  # scale_y_continuous(limits = c(0, 50)) +
+  # scale_x_continuous(limits = c(0, 700)) +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "right",
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+non55 <- ggplot(incidence_modelled %>% 
+                  dplyr::filter(
+                    compartment %in% c("data_count_WGS_GPSC55", "data_count_12F",
+                                       "cases_non55"),
+                    compartment != "Time"
+                  )
+                ,
+                aes(x = yearWeek, y = value,
+                    group = interaction(compartment,replicate),
+                    colour = compartment)) +
+  geom_line() +
+  # scale_y_continuous(trans = "log1p") +
+  # scale_y_continuous(limits = c(0, 50)) +
+  # scale_x_continuous(limits = c(0, 700)) +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "right",
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+Ne <- ggplot(incidence_modelled %>% 
+               dplyr::filter(
+                 compartment %in% c("data_count_WGS_GPSC55", "data_count_12F",
+                                    "Ne", "data_Ne"),
+                 compartment != "Time"
+               )
+             ,
+             aes(x = yearWeek, y = value,
+                 group = interaction(compartment,replicate),
+                 colour = compartment)) +
+  geom_line() +
+  # scale_y_continuous(trans = "log1p") +
+  # scale_y_continuous(limits = c(0, 50)) +
+  # scale_x_continuous(limits = c(0, 700)) +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  theme_bw() +
+  theme(legend.position = "right",
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+p <- cowplot::plot_grid(ser12, gps55, non55, Ne,
+                        nrow = 4,
+                        labels = c("A", "B", "C", "D"))
+p
+
 
 # test A_ini
 scaled_A_ini = 0.7484698
