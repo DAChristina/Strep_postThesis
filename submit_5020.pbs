@@ -25,4 +25,8 @@ sleep 2
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/model/sir_stochastic_allAge_2post_pmcmc_picts.R" \
     --n_steps "$steps_folder"
 
+sleep 2
+conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/5_post_pmcmc_samples_pics.R" \
+    --n_steps "$steps_folder"
+
 printenv > "$HOME/Strep_postThesis/myenv.txt"

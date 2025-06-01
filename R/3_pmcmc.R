@@ -105,8 +105,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   }
   
   control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                    rerun_every = 50,
-                                    rerun_random = TRUE,
+                                    # rerun_every = 50,
+                                    # rerun_random = TRUE,
                                     progress = TRUE,
                                     
                                     n_chains = 1,
