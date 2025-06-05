@@ -137,11 +137,11 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
          # mcstate::pmcmc_parameter("hypo_sigma_2", 1, min = 0, max = 10,
          #                          prior = priors$sigma_2),
          
-         mcstate::pmcmc_parameter("alpha", 1.4, min = 0, max = 100,
+         mcstate::pmcmc_parameter("alpha", 0.5, min = 0, max = 1,
                                   prior = priors$alpha),
          mcstate::pmcmc_parameter("gamma_weekly", 28, min = 0,
                                   prior = priors$gamma_weekly),
-         mcstate::pmcmc_parameter("nu_weekly", 14, min = 0, max = 200,
+         mcstate::pmcmc_parameter("nu_weekly", 14, min = 0, max = 100,
                                   prior = priors$nu_weekly)
          
          # mcstate::pmcmc_parameter("kappa_Ne", 1, min = 0, max = 100,
@@ -180,7 +180,7 @@ prepare_priors <- function(pars) {
   # }
   
   priors$alpha <- function(s) {
-    dunif(s, min = 0, max = 100, log = TRUE)
+    dbeta(s, shape1 = 2.5, shape2 = 2.5, log = TRUE)
   }
   priors$gamma_weekly <- function(s) {
     dlnorm(s, meanlog = -4.788920616, sdlog = 0.467902993, log = TRUE)
@@ -189,7 +189,7 @@ prepare_priors <- function(pars) {
   #   dunif(s, min = 0, max = 100, log = TRUE)
   # }
   priors$nu_weekly <- function(s) {
-    dunif(s, min = 0, max = 200, log = TRUE)
+    dunif(s, min = 0, max = 50, log = TRUE)
   }
   priors$kappas <- function(s) {
     dunif(s, min = 0, max = 10, log = TRUE)

@@ -37,6 +37,7 @@ mu_1 <- user(0)
 pi <- user(3.141593) # FIXED
 
 alpha <- user(1, min = 0) # proportionality factor relating Ne to D_tot
+
 gamma_weekly <- user(0.01, min = 0) # annual rate of invasive disease
 gamma <- gamma_weekly/(365/7)
 nu_weekly <- user(83, min = 0)   # annual rate of non-55 cases
@@ -121,7 +122,7 @@ update(R) <- R + n_AR + n_DR - n_RS - n_R_dead
 update(n_AD_weekly) <- if (step %% 7 == 0) n_AD else n_AD_weekly + n_AD
 # update(n_AD_cumul) <- n_AD_cumul + n_AD # no interest in asymptomatic cases that've recovered
 
-update(Ne) <- D * alpha
+update(Ne) <- D * alpha*2 # alpha is rescaled with min = 0, max = 2; scaled*(max-min)+min
 update(cases_55) <- if (step %% 7 == 0) n_cases_55 else cases_55 + n_cases_55
 update(cases_non55) <- if (step %% 7 == 0) n_cases_non55 else cases_non55 + n_cases_non55
 update(cases_12F) <- cases_55 + cases_non55

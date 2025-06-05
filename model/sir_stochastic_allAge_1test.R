@@ -19,9 +19,9 @@ pars <- list(N_ini = 6.7e7,
              # psi = (0.5),
              hypo_sigma_2 = (1),
              log_delta = (-4.65219600756188), # (-4.65135010884371) #  # 
-             alpha = 10/7,
-             gamma_weekly = 25,
-             nu_weekly = 14
+             alpha = 0.5,
+             gamma_weekly = 10,
+             nu_weekly = 7
 )
 
 # time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years

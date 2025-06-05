@@ -8,6 +8,9 @@ source("R/5_post_pmcmc_samples_pics.R")
 # pmcmc_run_plus_tuning(n_pars = 10, n_sts = 2000,
 #                       run1_stochastic = F, run2_stochastic = F, ncpus = 4)
 
+# pmcmc_run2_only(n_pars = 10, n_sts = 5250,
+#                 run2_stochastic = F, ncpus = 4)
+
 post_pmcmc_pics(2000)
 model_vs_data(2000)
 post_particle_pics(2000)
@@ -21,6 +24,10 @@ post_particle_pics(5030)
 
 model_vs_data(5020)
 model_vs_data(5030)
+
+model_vs_data(5250)
+model_vs_data(10250)
+model_vs_data(100250)
 
 
 

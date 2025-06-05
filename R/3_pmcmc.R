@@ -29,7 +29,7 @@ pars <- list(log_A_ini = -4, # S_ini*10^(log10(-5.69897)) = 120 people; change A
              log_delta = (-4.82),
              # hypo_sigma_2 = 1,
              
-             alpha = 1.4,
+             alpha = 0.5,
              gamma_weekly = 28,
              nu_weekly = 14
              
