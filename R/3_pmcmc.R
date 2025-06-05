@@ -143,8 +143,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 2.38^2/8 # 6 = parms number (Roberts et al., 1997)
-  new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
+  # new_proposal_matrix <- new_proposal_matrix * 2.38^2/8 # 6 = parms number (Roberts et al., 1997)
+  # new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
   rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
   colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
   # isSymmetric(new_proposal_matrix)
@@ -340,8 +340,8 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix * 2.38^2/8 # 6 = parms number (Roberts et al., 1997)
-  new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
+  # new_proposal_matrix <- new_proposal_matrix * 2.38^2/8 # 6 = parms number (Roberts et al., 1997)
+  # new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
   rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
   colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "alpha", "gamma_weekly", "nu_weekly")
   # isSymmetric(new_proposal_matrix)
