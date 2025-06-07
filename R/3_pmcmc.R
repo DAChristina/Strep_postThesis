@@ -361,7 +361,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  # new_proposal_matrix <- new_proposal_matrix * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
+  new_proposal_matrix <- new_proposal_matrix/10 # * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
   # new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
   rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta")
   colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta")
@@ -385,20 +385,20 @@ pmcmc_run2_only <- function(n_pars, n_sts,
                                                                  adapt_end = n_sts*0.8,
                                                                  pre_diminish = n_sts*0.1)
   } else {
-    adaptive_proposal_run2 <- FALSE
-    # adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1000,
-    #                                                              # initial_scaling = 1,
-    #                                                              scaling_increment = NULL,
-    #                                                              acceptance_target = 0.234,
-    #                                                              forget_rate = 0.2,
-    #                                                              forget_end = Inf,
-    #                                                              adapt_end = Inf)
+    # adaptive_proposal_run2 <- FALSE
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1,
+                                                                 # initial_scaling = 1,
+                                                                 scaling_increment = NULL,
+                                                                 acceptance_target = 0.234,
+                                                                 forget_rate = 0.2,
+                                                                 forget_end = Inf,
+                                                                 adapt_end = Inf)
   }
   
   if(run2_stochastic){
     tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
                                            # rerun_every = 50,
-                                           # rerun_random = TRUE,
+                                           rerun_random = TRUE,
                                            progress = TRUE,
                                            
                                            n_chains = 4,
@@ -416,7 +416,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
     )
   } else {
     tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                           # rerun_every = 50,
+                                           # rerun_every = 100,
                                            # rerun_random = TRUE,
                                            progress = TRUE,
                                            
