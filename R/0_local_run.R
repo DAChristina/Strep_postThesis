@@ -5,8 +5,8 @@ source("R/3_pmcmc.R")
 source("R/4_post_pmcmc_pics.R")
 source("R/5_post_pmcmc_samples_pics.R")
 
-# pmcmc_run_plus_tuning(n_pars = 10, n_sts = 2000,
-#                       run1_stochastic = F, run2_stochastic = F, ncpus = 4)
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 2000,
+                      run1_stochastic = F, run2_stochastic = F, ncpus = 4)
 
 # pmcmc_run2_only(n_pars = 10, n_sts = 5250,
 #                 run2_stochastic = F, ncpus = 4)
