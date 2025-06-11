@@ -198,7 +198,7 @@ prepare_priors <- function(pars) {
 
 
 pmcmc_further_process <- function(n_steps, pmcmc_result) {
-  processed_chains <- mcstate::pmcmc_thin(pmcmc_result, burnin = round(n_steps*0.1), thin = NULL)
+  processed_chains <- mcstate::pmcmc_thin(pmcmc_result, burnin = round(n_steps*0.5), thin = NULL)
   parameter_mean_hpd <- apply(processed_chains$pars, 2, mean)
   parameter_mean_hpd
   
@@ -237,7 +237,7 @@ pmcmc_trace <- function(mcmc1) {
 ################################################################################
 # Tuning functions
 tuning_pmcmc_further_process <- function(n_steps, tune_pmcmc_result) {
-  processed_chains <- mcstate::pmcmc_thin(tune_pmcmc_result, burnin = round(n_steps*0.1), thin = 2)
+  processed_chains <- mcstate::pmcmc_thin(tune_pmcmc_result, burnin = round(n_steps*0.5), thin = 2)
   parameter_mean_hpd <- apply(processed_chains$pars, 2, mean)
   parameter_mean_hpd
   
