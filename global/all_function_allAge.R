@@ -338,14 +338,15 @@ plot_states <- function(state, data) {
   points(data$yearWeek, data$count_WGS_GPSC55, col = 3, pch = 20)
   
   
-  matplot(data$yearWeek, xlab = "", t(state["A", , -1]),
-          type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6e7), yaxt = "n")
+  matplot(data$yearWeek, xlab = "", t(state["S", , -1]),
+          type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6.7e7), yaxt = "n")
   axis(side = 2, at = seq(0, 6e7, length.out = 5),
        labels = seq(0, 100, length.out = 5))
   
-  matlines(data$yearWeek, t(state["D", , -1]), lty = 1, col = 3)
-  # matlines(data$yearWeek, t(state["R", , -1]), lty = 1, col = 4)
-  legend("right", bty = "n", fill = 2:4, legend = c("A", "D"))
+  matlines(data$yearWeek, t(state["A", , -1]), lty = 1, col = 1)
+  matlines(data$yearWeek, t(state["D", , -1]), lty = 1, col = 4)
+  matlines(data$yearWeek, t(state["R", , -1]), lty = 1, col = 5)
+  legend("right", bty = "n", fill = 2:4, legend = c("S", "A", "D", "R"))
   # 
   # matplot(data$yearWeek, xlab = "", t(state["I_tot", , -1]),
   #         type = "l", lty = 1, col = 3, ylab = "carriers")

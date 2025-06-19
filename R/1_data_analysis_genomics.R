@@ -160,7 +160,7 @@ threshold2
 
 ggplot(interpolated_df, aes(x = yearWeek, y = change_smooth_Ne)) +
   geom_line() +
-  geom_hline(yintercept = threshold1, linetype = "dashed", color = "red") + 
+  geom_hline(yintercept = threshold1, linetype = "dashed", color = "purple") + 
   geom_hline(yintercept = threshold2, linetype = "dashed", color = "red") + # previously 1.130835e-05
   theme_bw()
 

@@ -58,12 +58,13 @@ initial(n_AD_weekly) <- 0 # infections
 # initial(cases_12F)    <- 0
 
 # 3. UPDATES ###################################################################
-beta <- beta_0*(
-  (1+beta_1*cos((2*pi*(time) +(time_shift_1*(365)))/(365))))
-
-
+# Keeling & Rohani's approach
 # beta <- beta_0*(
-#   (1+beta_1*cos(2*pi*((time_shift_1*(365/7))+time)/(363/7)))) # expand the wave to fit weekly data
+#   (1+beta_1*cos((2*pi*(time) +(time_shift_1*(365)))/(365))))
+
+# previously used in serotype 1
+beta <- beta_0*(
+  (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
 # beta <- beta_0*(
 #   (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) +
