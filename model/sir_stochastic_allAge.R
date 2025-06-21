@@ -10,11 +10,11 @@ N <- user(6.7e7) # FIXED England's pop size is roughly 67,000,000
 # scaled_A_ini <- user(0) # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
 D_ini <- user(0) 
 time_shift_1 <- user(0)
-# time_shift_2 <- user(0)
+time_shift_2 <- user(0)
 # log_beta_0 <- user(0)
 beta_0 <- user(0) # 10^(log_beta_0)
 beta_1 <- user(0)
-# beta_2 <- user(0)
+beta_2 <- user(0)
 
 # max_wane <- user(-5) # FIXED, scaled waning immunity
 # min_wane <- user(-10) # FIXED, scaled waning immunity
@@ -63,12 +63,12 @@ initial(n_AD_weekly) <- 0 # infections
 #   (1+beta_1*cos((2*pi*(time) +(time_shift_1*(365)))/(365))))
 
 # previously used in serotype 1
-beta <- beta_0*(
-  (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
-
 # beta <- beta_0*(
-#   (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) +
-#     (1+beta_2*sin(2*pi*((time_shift_2*365)+time)/365)))
+#   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
+
+beta <- beta_0*(
+  (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) +
+    (1+beta_2*sin(2*pi*((time_shift_2*365)+time)/365)))
 
 # lambda <- beta*(A+D)/N
 lambda <- if ((A+D) > 0) beta*(A+D)/N else 0

@@ -72,10 +72,10 @@ index_fun <- function(info){
 parameter_transform <- function(pars) {
   log_A_ini <- pars[["log_A_ini"]]
   time_shift_1 <- pars[["time_shift_1"]]
-  # time_shift_2 <- pars[["time_shift_2"]]
+  time_shift_2 <- pars[["time_shift_2"]]
   beta_0 <- pars[["beta_0"]]
   beta_1 <- pars[["beta_1"]]
-  # beta_2 <- pars[["beta_2"]]
+  beta_2 <- pars[["beta_2"]]
   # scaled_wane <- pars[["scaled_wane"]]
   log_delta <- pars[["log_delta"]]
   # hypo_sigma_2 <- pars[["hypo_sigma_2"]]
@@ -90,10 +90,10 @@ parameter_transform <- function(pars) {
   
   list(log_A_ini = log_A_ini,
        time_shift_1 = time_shift_1,
-       # time_shift_2 = time_shift_2,
+       time_shift_2 = time_shift_2,
        beta_0 = beta_0,
        beta_1 = beta_1,
-       # beta_2 = beta_2,
+       beta_2 = beta_2,
        # scaled_wane = scaled_wane,
        log_delta = log_delta
        # hypo_sigma_2 = hypo_sigma_2,
@@ -120,14 +120,14 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
-         # mcstate::pmcmc_parameter("time_shift_2", 0.3688, min = 0, max = 0.5,
-         #                          prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.031, min = 0, max = 0.8,
+         mcstate::pmcmc_parameter("time_shift_2", 0.3688, min = 0, max = 0.5,
+                                  prior = priors$time_shifts),
+         mcstate::pmcmc_parameter("beta_0", 0.017, min = 0, max = 0.8,
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
-         # mcstate::pmcmc_parameter("beta_2", 0.511849, min = 0, max = 0.7,
-         #                          prior = priors$betas),
+         mcstate::pmcmc_parameter("beta_2", 0.511849, min = 0, max = 0.7,
+                                  prior = priors$betas),
          # mcstate::pmcmc_parameter("scaled_wane", 0.657388, min = 0, max = 1,
          #                          prior = priors$scaled_wane),
          mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,

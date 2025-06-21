@@ -16,7 +16,7 @@ post_particle_pics <- function(n_sts){
   
   png(paste0(dir_name, "figs/particles_posteriors_%02d.png"),
       width = 24, height = 17, unit = "cm", res = 600)
-  par(mfrow = c(2, 3), mar = c(3, 3, 1, 1), mgp = c(1.7, 0.7, 0), bty = "n")
+  par(mfrow = c(3, 3), mar = c(3, 3, 1, 1), mgp = c(1.7, 0.7, 0), bty = "n")
   for (nm in names(initial_pars)) {
     hist(pmcmc_samples$pars[, nm], xlab = nm, main = "", freq = FALSE)
     if (nm %in% names(priors)) {
