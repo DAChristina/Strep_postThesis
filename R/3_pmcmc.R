@@ -147,7 +147,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1000
   new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1000
   new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1000
-  new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1000
+  # new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1000
   new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1000
   new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1000
   # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
@@ -173,7 +173,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     #                                                              adapt_end = n_sts*0.8,
     #                                                              pre_diminish = n_sts*0.1)
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/5)/1000,
+                                                                 initial_scaling = (2.38^2/7)/1000,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.234,
                                                                  forget_rate = 0.1,
@@ -185,7 +185,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     # whatver
     # adaptive_proposal_run2 <- FALSE
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/5)/1000,
+                                                                 initial_scaling = (2.38^2/7)/1000,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.234,
                                                                  forget_rate = 0.1,
