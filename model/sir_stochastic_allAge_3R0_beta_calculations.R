@@ -1,4 +1,4 @@
-dir_name <- paste0("outputs/genomics/trial_", "100250_final_best_vcvmodif_NOreruns_corrected_seasonality", "/")
+dir_name <- paste0("outputs/genomics/trial_", 100250, "/")
 dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
 # run 4_post_pmcmc_pics.R first
 results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv")) %>% 
@@ -15,13 +15,13 @@ pars <- list(N_ini = 6.7e7,
              R_ini = 0,
              time_shift_1 = results[2,2],
              time_shift_2 = results[3,2],
-             beta_0 = results[3,2],
-             beta_1 = results[4,2],
+             beta_0 = results[4,2],
+             beta_1 = results[5,2],
              beta_2 = results[6,2],
              # scaled_wane = results[7,2],
              # psi = (0.5),
              hypo_sigma_2 = (1),
-             log_delta = results[5,2]
+             log_delta = results[7,2]
              # alpha = results[9,2],
              # gamma_annual = results[10,2],
              # nu_annual = results[11,2]
@@ -32,14 +32,14 @@ pars_lo_CI <- list(N_ini = 6.7e7,
                    D_ini = 0,
                    R_ini = 0,
                    time_shift_1 = results[2,3],
-                   time_shift_2 = results[3,2],
-                   beta_0 = results[3,3],
-                   beta_1 = results[4,3],
-                   beta_2 = results[6,2],
+                   time_shift_2 = results[3,3],
+                   beta_0 = results[4,3],
+                   beta_1 = results[5,3],
+                   beta_2 = results[6,3],
                    # scaled_wane = results[7,2],
                    # psi = (0.5),
                    hypo_sigma_2 = (1),
-                   log_delta = results[5,3]
+                   log_delta = results[7,3]
                    # alpha = results[9,2],
                    # gamma_annual = results[10,2],
                    # nu_annual = results[11,2]
@@ -51,14 +51,14 @@ pars_hi_CI <- list(N_ini = 6.7e7,
                    D_ini = 0,
                    R_ini = 0,
                    time_shift_1 = results[2,4],
-                   time_shift_2 = results[3,2],
-                   beta_0 = results[3,4],
-                   beta_1 = results[4,4],
-                   beta_2 = results[6,2],
+                   time_shift_2 = results[3,4],
+                   beta_0 = results[4,4],
+                   beta_1 = results[5,4],
+                   beta_2 = results[6,4],
                    # scaled_wane = results[7,2],
                    # psi = (0.5),
                    hypo_sigma_2 = (1),
-                   log_delta = results[5,4]
+                   log_delta = results[7,4]
                    # alpha = results[9,2],
                    # gamma_annual = results[10,2],
                    # nu_annual = results[11,2]
@@ -89,10 +89,13 @@ model <- array(NA, dim = c(sir_model$info()$len, n_particles, n_times))
 
 # betas & R0 estimation
 time <- seq(0, 365*22, 1)
-beta <- pars$beta_0*((1+pars$beta_1*cos(2*pi*((pars$time_shift_1*365)+time)/365)))
+beta <- pars$beta_0*((1+pars$beta_1*cos(2*pi*((pars$time_shift_1*365)+time)/365)) +
+                       (1+pars$beta_2*sin(2*pi*((pars$time_shift_2*365)+time)/365)))
 
-beta_lo_CI <- pars_lo_CI$beta_0*((1+pars_lo_CI$beta_1*cos(2*pi*((pars_lo_CI$time_shift_1*365)+time)/365)))
-beta_hi_CI <- pars_hi_CI$beta_0*((1+pars_hi_CI$beta_1*cos(2*pi*((pars_hi_CI$time_shift_1*365)+time)/365)))
+beta_lo_CI <- pars_lo_CI$beta_0*((1+pars_lo_CI$beta_1*cos(2*pi*((pars_lo_CI$time_shift_1*365)+time)/365)) +
+                                   (1+pars_lo_CI$beta_2*sin(2*pi*((pars_lo_CI$time_shift_2*365)+time)/365)))
+beta_hi_CI <- pars_hi_CI$beta_0*((1+pars_hi_CI$beta_1*cos(2*pi*((pars_hi_CI$time_shift_1*365)+time)/365)) +
+                                   (1+pars_hi_CI$beta_2*sin(2*pi*((pars_hi_CI$time_shift_2*365)+time)/365)))
 
 print(c(max(beta), min(beta))) # beta simulated with no infant vaccination
 
@@ -111,7 +114,7 @@ beta_R0_df <- data.frame(
   beta = beta,
   beta_hi_CI = beta_hi_CI,
   beta_lo_CI = beta_lo_CI,
-  #
+
   R0_vacc = R0_vacc,
   R0_vacc_hi_CI = R0_vacc_hi_CI,
   R0_vacc_lo_CI = R0_vacc_lo_CI
@@ -121,11 +124,11 @@ beta_R0_df <- data.frame(
     weekly = ceiling(time/7))
 
 # png("pictures/R0_weekly_simulated4745times4.png", width = 24, height = 12, unit = "cm", res = 1200)
-ggplot(beta_R0_df, aes(x = date, y = R0_vacc,
+ggplot(beta_R0_df, aes(x = date, y = beta,
                                                             # group = variable,
                                                             # colour = variable
 )) +
-  geom_ribbon(aes(ymin = R0_vacc_lo_CI, ymax = R0_vacc_hi_CI), fill = "steelblue", alpha = 0.2) +
+  geom_ribbon(aes(ymin = beta_lo_CI, ymax = beta_hi_CI), fill = "steelblue", alpha = 0.2) +
   geom_line() + 
   # geom_vline(data = vaccine_UK, aes(xintercept = as.Date(vaccine_UK$date),
   #                                   colour = vaccine),
@@ -137,12 +140,12 @@ ggplot(beta_R0_df, aes(x = date, y = R0_vacc,
   # ) +
   scale_x_date(date_breaks = "1 month",
                date_labels = "%m",
-               limits = as.Date(c("2010-01-01", "2012-12-31"))) +
+               limits = as.Date(c("2010-01-01", "2011-12-31"))) +
   # xlim(as.Date('1/1/2010'), as.Date('1/1/2012'), format="%m%Y")) +
   ggtitle("Simulation Model for Serotype 1 Cases (Aggregated by Days)") +
-  ggtitle("Serotype 1 Cases (Aggregated by Weeks)") +
-  xlab("Time (in Week)") +
-  ylab("R0") +
+  ggtitle("Serotype 12F Cases") +
+  xlab("Time (in Month)") +
+  ylab("beta") +
   theme_bw()
 # dev.off()
 

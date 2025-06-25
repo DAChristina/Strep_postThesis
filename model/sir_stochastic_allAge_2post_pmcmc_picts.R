@@ -24,13 +24,13 @@ model_vs_data <- function(n_sts){
                R_ini = 0,
                time_shift_1 = results[2,2],
                time_shift_2 = results[3,2],
-               beta_0 = results[3,2],
-               beta_1 = results[4,2],
+               beta_0 = results[4,2],
+               beta_1 = results[5,2],
                beta_2 = results[6,2],
                # scaled_wane = results[7,2],
                # psi = (0.5),
                hypo_sigma_2 = (1),
-               log_delta = results[5,2]
+               log_delta = results[7,2]
                # alpha = results[9,2],
                # gamma_annual = results[10,2],
                # nu_annual = results[11,2]
