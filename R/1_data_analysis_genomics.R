@@ -76,9 +76,9 @@ spline_fit_Ne_lo <- fn_Ne_lo(new_dates)
 spline_fit_Ne_up <- fn_Ne_up(new_dates)
 
 time_diffs_weeks <- as.numeric(diff(new_dates)) / 7
-change_Ne <- abs(diff(spline_fit_Ne)) / time_diffs_weeks
-change_Ne_lo <- abs(diff(spline_fit_Ne_lo)) / time_diffs_weeks
-change_Ne_up <- abs(diff(spline_fit_Ne_up)) / time_diffs_weeks
+# change_Ne <- abs(diff(spline_fit_Ne)) / time_diffs_weeks
+# change_Ne_lo <- abs(diff(spline_fit_Ne_lo)) / time_diffs_weeks
+# change_Ne_up <- abs(diff(spline_fit_Ne_up)) / time_diffs_weeks
 
 interpolated_df <- tidyr::tibble(
   date = new_dates[-1],
@@ -86,9 +86,9 @@ interpolated_df <- tidyr::tibble(
   itr_Ne_lo = spline_fit_Ne_lo[-1],
   itr_Ne_up = spline_fit_Ne_up[-1],
   time_diffs_weeks = time_diffs_weeks,
-  change_Ne = change_Ne,
-  change_Ne_lo = change_Ne_lo,
-  change_Ne_up = change_Ne_up
+  # change_Ne = change_Ne,
+  # change_Ne_lo = change_Ne_lo,
+  # change_Ne_up = change_Ne_up
 ) %>%
   dplyr::mutate(
     iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
@@ -99,13 +99,13 @@ interpolated_df <- tidyr::tibble(
 # write.csv(interpolated_df, "raw_data/GPSC55_mlesky_cleaned_interpolated.csv", row.names = FALSE)
 
 # test smooth Ne
-model_smooth_spline <- mgcv::gam(change_Ne ~ s(as.numeric(yearWeek)),
+model_smooth_spline <- mgcv::gam(itr_Ne ~ s(as.numeric(yearWeek)),
                              data = interpolated_df)
-model_smooth_tensor1 <- mgcv::gam(change_Ne ~ te(as.numeric(yearWeek)),
+model_smooth_tensor1 <- mgcv::gam(itr_Ne ~ te(as.numeric(yearWeek)),
                                  data = interpolated_df)
-model_smooth_tensor2 <- mgcv::gam(change_Ne ~ t2(as.numeric(yearWeek)),
+model_smooth_tensor2 <- mgcv::gam(itr_Ne ~ t2(as.numeric(yearWeek)),
                                   data = interpolated_df)
-model_smooth_tensor_interaction <- mgcv::gam(change_Ne ~ ti(as.numeric(yearWeek)),
+model_smooth_tensor_interaction <- mgcv::gam(itr_Ne ~ ti(as.numeric(yearWeek)),
                                  data = interpolated_df)
 
 interpolated_df$smooth_Ne_spline <- predict(model_smooth_spline)
@@ -117,7 +117,7 @@ interpolated_df$smooth_Ne_tensor_interaction <- predict(model_smooth_tensor_inte
 png("report/picts_smoothed_Nes.png",
     width = 30, height = 10, unit = "cm", res = 300)
 ggplot(interpolated_df, aes(x = yearWeek)) +
-  geom_line(aes(y = change_Ne, colour = "Ne"), size = 1.5) +
+  geom_line(aes(y = itr_Ne, colour = "Ne"), size = 1.5) +
   geom_line(aes(y = smooth_Ne_spline, colour = "Spline"), size = 1.5) +
   geom_line(aes(y = smooth_Ne_tensor1, colour = "Tensor 1"), size = 1.5) +
   geom_line(aes(y = smooth_Ne_tensor2, colour = "Tensor 2"), size = 1.5) +
@@ -146,16 +146,16 @@ interpolated_df <- interpolated_df %>%
   dplyr::arrange(yearWeek) %>% 
   dplyr::mutate(
     change_smooth_Ne = abs(smooth_Ne_spline - lag(smooth_Ne_spline)) / as.numeric(yearWeek - lag(yearWeek)),
-    rate_change_Ne = abs(change_Ne - lag(change_Ne)) / as.numeric(yearWeek - lag(yearWeek)),
-    # stable_period = rate_change_Ne < (threshold)
+    rate_itr_Ne = abs(itr_Ne - lag(itr_Ne)) / as.numeric(yearWeek - lag(yearWeek)),
+    # stable_period = rate_itr_Ne < (threshold)
   )
-threshold1 <- stats::mad(interpolated_df$rate_change_Ne, na.rm = TRUE)*0.5
+threshold1 <- stats::mad(interpolated_df$rate_itr_Ne, na.rm = TRUE)*0.5
 threshold1
 
 # try threshold before the peak of the epidemic failed, tend to choose 2000 onwards instead
 interpolated_df_preEpi <- interpolated_df %>% 
   dplyr::filter(yearWeek >= as.Date("2000-01-01"))
-threshold2 <- stats::mad(interpolated_df_preEpi$rate_change_Ne, na.rm = TRUE)*0.5
+threshold2 <- stats::mad(interpolated_df_preEpi$rate_itr_Ne, na.rm = TRUE)*0.5
 threshold2
 
 ggplot(interpolated_df, aes(x = yearWeek, y = change_smooth_Ne)) +
@@ -164,18 +164,18 @@ ggplot(interpolated_df, aes(x = yearWeek, y = change_smooth_Ne)) +
   geom_hline(yintercept = threshold2, linetype = "dashed", color = "red") + # previously 1.130835e-05
   theme_bw()
 
-plateau_yearWeeks <- interpolated_df$yearWeek[interpolated_df$rate_change_Ne < threshold2]
+plateau_yearWeeks <- interpolated_df$yearWeek[interpolated_df$rate_itr_Ne < threshold2]
 plateau_yearWeeks
 
 interpolated_df <- interpolated_df %>%
   dplyr::mutate(
-    plateau_flag = ifelse(rate_change_Ne < threshold2, 1, 0),
-    baseline_Ne = ifelse(plateau_flag == 1, change_Ne, NA)
+    plateau_flag = ifelse(rate_itr_Ne < threshold2, 1, 0),
+    baseline_Ne = ifelse(plateau_flag == 1, itr_Ne, NA)
   ) %>%
   tidyr::fill(baseline_Ne, .direction = "down") %>% 
   dplyr::mutate(
-    baseline_Ne = coalesce(baseline_Ne, min(change_Ne, na.rm = TRUE)),
-    centred_Ne = pmax(change_Ne - baseline_Ne, 0)
+    baseline_Ne = coalesce(baseline_Ne, min(itr_Ne, na.rm = TRUE)),
+    centred_Ne = pmax(itr_Ne - baseline_Ne, 0)
   ) %>% 
   glimpse()
 
@@ -185,7 +185,7 @@ png("report/picts_final_centred_Ne.png",
     width = 30, height = 10, unit = "cm", res = 300)
 ggplot(interpolated_df, aes(x = yearWeek)) +
   geom_line(aes(y = centred_Ne, color = "Centred Ne")) +
-  geom_line(aes(y = change_Ne, color = "Ne")) +
+  geom_line(aes(y = itr_Ne, color = "Ne")) +
   scale_colour_manual(values = c("Ne" = "gold2",
                                  "Centred Ne" = "maroon")) +
   theme_bw() +
@@ -396,7 +396,7 @@ test <- gen %>%
 ################################################################################
 selected_GPSC55 <- test %>% 
   dplyr::arrange(yearWeek) %>% 
-  dplyr::filter(yearWeek >= as.Date("2000-01-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
+  dplyr::filter(yearWeek >= as.Date("2017-08-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
                 # !is.na(prop_GPSC55), # no 12F data available after 2020-05-11
                 prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
                 ) %>% 
@@ -417,7 +417,7 @@ selected_GPSC55 <- test %>%
 dat_model <- ggplot(selected_GPSC55, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F, colour = "12F")) +
   geom_line(aes(y = count_GPSC55, colour = "GPSC55")) +
-  geom_line(aes(y = change_Ne, colour = "Ne"), size = 1.5) +
+  geom_line(aes(y = itr_Ne, colour = "Ne"), size = 1.5) +
   geom_line(aes(y = centred_Ne, colour = "Ne (centred)"), size = 1.5) +
   geom_vline(xintercept = as.Date("2016-03-01"), color = "steelblue", linetype = "dashed") +
   geom_vline(xintercept = as.Date("2017-12-01"), color = "steelblue", linetype = "dashed") +
@@ -426,6 +426,7 @@ dat_model <- ggplot(selected_GPSC55, aes(x = yearWeek)) +
                                  "Ne" = "gold2",
                                  "Ne (centred)" = "orange")) +
   theme_bw() +
+  scale_y_log10() +
   labs(title = "Data for Model Inference") +
   theme(legend.position = c(0.9, 0.85),
         legend.title = element_blank(),
@@ -542,8 +543,8 @@ combined <- dplyr::bind_rows(
     unnest(cols = count)
   ,
   interpolated_df %>%
-    dplyr::select(yearWeek, change_Ne) %>% 
-    rename(count = change_Ne) %>% 
+    dplyr::select(yearWeek, itr_Ne) %>% 
+    rename(count = itr_Ne) %>% 
     mutate(source = "2. Interpolated Ne")
 ) %>% 
   # weird array conversion

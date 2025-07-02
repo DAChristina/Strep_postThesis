@@ -336,7 +336,7 @@ plot_states <- function(state, data) {
           type = "l", lty = 1, col = col,
           xlab = "", ylab = "GPSC55 cases")
   points(data$yearWeek, data$count_WGS_GPSC55, col = 3, pch = 20)
-  
+  points(data$yearWeek, data$count_serotype, col = 4, type = "l")
   
   matplot(data$yearWeek, xlab = "", t(state["S", , -1]),
           type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6.7e7), yaxt = "n")

@@ -175,8 +175,8 @@ earlier_ne_df <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predicted
 # ne_55 <- read.csv("raw_data/GPSC55_mlesky_cleaned.csv") %>% 
 #   dplyr::filter(date >= min(dat_c$week_date))
 interpolated_ne <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated.csv") %>% 
-  dplyr::select(change_Ne, yearWeek) %>% 
-  dplyr::rename(Ne = change_Ne) %>% 
+  dplyr::select(itr_Ne, yearWeek) %>% 
+  dplyr::rename(Ne = itr_Ne) %>% 
   dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
   glimpse()
 
@@ -273,10 +273,11 @@ allAges_weekly_long <- allAges_weekly %>%
                       values_to = "count") %>% 
   glimpse()
 
+# plot with Ne
 ggplot(allAges_weekly_long
        , aes(x = yearWeek, y = count, colour = group)) +
   geom_line(size = 1) +
-  scale_color_manual(values = c("count_serotype" = "maroon",
+  scale_color_manual(values = c("count_serotype" = "lightcoral",
                                 "count_WGS_GPSC55" = "black",
                                 "count_WGS_non55" = "darkgreen",
                                 "Ne" = "gold2")) +
@@ -288,6 +289,38 @@ ggplot(allAges_weekly_long
   scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2022-06-01")), 
                date_breaks = "1 year",
                date_labels = "%Y") +
+  scale_y_log10() +
+  theme_bw() +
+  labs(
+    title = "GPSC55 Counts Prediction + Real Data",
+    y = "GPSC55 counts (in log10-scaled)"
+  ) +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", colour = "transparent"))
+
+# plot without Ne
+ggplot(allAges_weekly_long %>% 
+         dplyr::filter(group != "Ne")
+       , aes(x = yearWeek, y = count, colour = group)) +
+  geom_line(size = 1) +
+  scale_color_manual(values = c("count_serotype" = "lightcoral",
+                                "count_WGS_GPSC55" = "black",
+                                "count_WGS_non55" = "darkgreen",
+                                "Ne" = "gold2"
+                                )) +
+  scale_size_manual(values = c("count_serotype" = 0.5,
+                               "count_WGS_GPSC55" = 0.5,
+                               "count_WGS_non55" = 0.5,
+                               "Ne" = 1
+                               )) +
+  geom_vline(xintercept = as.Date("2017-08-01"), color = "steelblue", linetype = "dashed") +
+  scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2022-06-01")), 
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  # scale_y_log10() +
   theme_bw() +
   labs(
     title = "GPSC55 Counts Prediction + Real Data",
