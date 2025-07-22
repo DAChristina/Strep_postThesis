@@ -270,53 +270,53 @@ plot_gamma(duration$shape, duration$scale, "Duration of carriage (days)",
 
 
 # tobecontinued Fit invasiveness priors
-data <- read.csv("outputs/invasiveness.csv", row.names = 1) %>% 
-  dplyr::mutate(ave = (child+adult)/2) %>% 
-  glimpse()
-
-fits_gamma <- lapply(data, MASS::fitdistr, "gamma")
-fits_weibull <- lapply(data, MASS::fitdistr, "weibull")
-fits_lnorm <- lapply(data, MASS::fitdistr, "lognormal")
-
-# Lognormal fits are the best (?)
-priors <- sapply(fits_lnorm, "[[", "estimate")
-priors <- rbind(priors,
-                mean = exp(priors["meanlog", ]),
-                q2.5 = qlnorm(0.025, priors["meanlog", ], priors["sdlog", ]),
-                q97.5 = qlnorm(0.975, priors["meanlog", ], priors["sdlog", ]))
-
-# write.csv(priors, "parameters.csv")
-
-par(mfrow = c(3, 2), mgp = c(1.5, 0.5, 0), mar = c(3, 3, 1, 1), bty = "n")
-for (i in c("adult", "child", "ave")) {
-  x <- data[[i]]
-  hist(x, breaks = seq(0, 0.4, 0.001), main = i, xlim = c(0, 0.05), freq = FALSE,
-       xlab = "Adjusted invasiveness")
-  curve(dgamma(x, shape = fits_gamma[[i]]$estimate["shape"],
-               rate = fits_gamma[[i]]$estimate["rate"]), add = TRUE, col = 2)
-  curve(dweibull(x, shape = fits_weibull[[i]]$estimate["shape"],
-                 scale = fits_weibull[[i]]$estimate["scale"]),
-        add = TRUE, col = 3)
-  curve(dlnorm(x, fits_lnorm[[i]]$estimate["meanlog"],
-               fits_lnorm[[i]]$estimate["sdlog"]),
-        add = TRUE, col = 4)
-  
-  p <- seq(0, 1, 0.01)
-  q <- quantile(x, p)
-  plot(p, pgamma(q, shape = fits_gamma[[i]]$estimate["shape"],
-                 rate = fits_gamma[[i]]$estimate["rate"]), pch = 20,
-       xlim = c(0, 1), ylim = c(0, 1), col = 2, ylab = "P(expected)",
-       xlab = "P(observed)")
-  points(p, pweibull(q, shape = fits_weibull[[i]]$estimate["shape"],
-                     scale = fits_weibull[[i]]$estimate["scale"]),
-         col = 3, pch = 20)
-  points(p, plnorm(q, fits_lnorm[[i]]$estimate["meanlog"],
-                   fits_lnorm[[i]]$estimate["sdlog"]), 
-         col = 4, pch = 20)
-  abline(0, 1)
-}
-legend("topleft", fill = 2:4, legend = c("Gamma", "Weibull", "LogNorm"),
-       bty = "n")
+# data <- read.csv("outputs/invasiveness.csv", row.names = 1) %>% 
+#   dplyr::mutate(ave = (child+adult)/2) %>% 
+#   glimpse()
+# 
+# fits_gamma <- lapply(data, MASS::fitdistr, "gamma")
+# fits_weibull <- lapply(data, MASS::fitdistr, "weibull")
+# fits_lnorm <- lapply(data, MASS::fitdistr, "lognormal")
+# 
+# # Lognormal fits are the best (?)
+# priors <- sapply(fits_lnorm, "[[", "estimate")
+# priors <- rbind(priors,
+#                 mean = exp(priors["meanlog", ]),
+#                 q2.5 = qlnorm(0.025, priors["meanlog", ], priors["sdlog", ]),
+#                 q97.5 = qlnorm(0.975, priors["meanlog", ], priors["sdlog", ]))
+# 
+# # write.csv(priors, "parameters.csv")
+# 
+# par(mfrow = c(3, 2), mgp = c(1.5, 0.5, 0), mar = c(3, 3, 1, 1), bty = "n")
+# for (i in c("adult", "child", "ave")) {
+#   x <- data[[i]]
+#   hist(x, breaks = seq(0, 0.4, 0.001), main = i, xlim = c(0, 0.05), freq = FALSE,
+#        xlab = "Adjusted invasiveness")
+#   curve(dgamma(x, shape = fits_gamma[[i]]$estimate["shape"],
+#                rate = fits_gamma[[i]]$estimate["rate"]), add = TRUE, col = 2)
+#   curve(dweibull(x, shape = fits_weibull[[i]]$estimate["shape"],
+#                  scale = fits_weibull[[i]]$estimate["scale"]),
+#         add = TRUE, col = 3)
+#   curve(dlnorm(x, fits_lnorm[[i]]$estimate["meanlog"],
+#                fits_lnorm[[i]]$estimate["sdlog"]),
+#         add = TRUE, col = 4)
+#   
+#   p <- seq(0, 1, 0.01)
+#   q <- quantile(x, p)
+#   plot(p, pgamma(q, shape = fits_gamma[[i]]$estimate["shape"],
+#                  rate = fits_gamma[[i]]$estimate["rate"]), pch = 20,
+#        xlim = c(0, 1), ylim = c(0, 1), col = 2, ylab = "P(expected)",
+#        xlab = "P(observed)")
+#   points(p, pweibull(q, shape = fits_weibull[[i]]$estimate["shape"],
+#                      scale = fits_weibull[[i]]$estimate["scale"]),
+#          col = 3, pch = 20)
+#   points(p, plnorm(q, fits_lnorm[[i]]$estimate["meanlog"],
+#                    fits_lnorm[[i]]$estimate["sdlog"]), 
+#          col = 4, pch = 20)
+#   abline(0, 1)
+# }
+# legend("topleft", fill = 2:4, legend = c("Gamma", "Weibull", "LogNorm"),
+#        bty = "n")
 
 
 # load gen data
@@ -353,17 +353,41 @@ gen <-  read.csv("raw_data/gen_lw/genomic_epi_12F.csv") %>%
 write.csv(gen, "raw_data/genomic_data_cleaned.csv", row.names = FALSE)
 
 
+# I've decided to add data points from GPSC55 sampling period;
+# 4 pre-GPSC55 data points sampling period was randomly selected & shared by NC (3 May 2025)
+# focused only for GPSC55
+rand_ss_counts <- data.frame(
+  date = as.Date(c("2001-04-02", "2008-04-01", "2012-12-10", "2014-12-25")), # random date
+  child_26 = c(0, 0, 0, 4),
+  child_32 = c(1, 3, 5, 1),
+  child_55 = c(0, 0, 5, 24),
+  adult_26 = c(0, 0, 0, 2),
+  adult_32 = c(3, 3, 2, 1),
+  adult_55 = c(0, 0, 0, 10)
+) %>% 
+  dplyr::transmute(
+    iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
+    yearWeek = ISOweek::ISOweek2date(iso_week),
+    count_GPSC55 = child_55 + adult_55,
+    prop_55 = count_GPSC55/(child_26 + child_32 + child_55 + adult_26 + adult_32 + adult_55)
+  ) %>% 
+  glimpse()
+
 # load gen & interpolated_df first, combine with dat_c to calculate GPSC55/12F proportion
 test <- gen %>% 
   dplyr::filter(strain == "GPSC55") %>% 
   dplyr::mutate(week_date = as.Date(week_date),
                 iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
-                yearWeek =ISOweek::ISOweek2date(iso_week)
+                yearWeek = ISOweek::ISOweek2date(iso_week)
   ) %>% 
   dplyr::group_by(yearWeek) %>% 
   dplyr::summarise(count_GPSC55 = n()) %>% 
   dplyr::ungroup() %>% 
   dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
+  dplyr::bind_rows(
+    rand_ss_counts %>% 
+      dplyr::select(yearWeek, count_GPSC55)
+  ) %>% 
   dplyr::full_join(
     interpolated_df %>%
       dplyr::select(yearWeek, contains("Ne")) %>% 
@@ -385,21 +409,28 @@ test <- gen %>%
     by = c("yearWeek")
   ) %>% 
   dplyr::mutate(prop_GPSC55 = count_GPSC55/count_12F,
+                week = week(yearWeek),
                 # prop_GPSC55 = case_when( # test giving prop = 0 for 2001-2010 to catch a grip for the model
-                  # yearWeek >= "2001-01-01" & yearWeek <= "2010-01-01" ~ 0,
-                  # is.na(prop_GPSC55) ~ 0,
-                  # TRUE ~ prop_GPSC55
+                # yearWeek >= "2001-01-01" & yearWeek <= "2010-01-01" ~ 0,
+                # is.na(prop_GPSC55) ~ 0,
+                # TRUE ~ prop_GPSC55
                 # )
   ) %>% 
+  dplyr::arrange(yearWeek) %>% 
   glimpse()
 
 ################################################################################
 selected_GPSC55 <- test %>% 
+  dplyr::mutate(
+    year = year(yearWeek),
+  ) %>% 
   dplyr::arrange(yearWeek) %>% 
-  dplyr::filter(yearWeek >= as.Date("2017-08-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
-                # !is.na(prop_GPSC55), # no 12F data available after 2020-05-11
-                prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
-                ) %>% 
+  dplyr::filter(
+    # year == 2018,
+    yearWeek >= as.Date("2017-09-01") | yearWeek <= as.Date("2016-01-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
+    # !is.na(prop_GPSC55), # no 12F data available after 2020-05-11
+    prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
+  ) %>% 
   # dplyr::mutate(
   #   count_GPSC55 = case_when(
   #     yearWeek <= as.Date("2017-12-01") & yearWeek >= as.Date("2016-01-01") ~ NA,
@@ -411,7 +442,12 @@ selected_GPSC55 <- test %>%
   #   )
   # ) %>% 
   dplyr::mutate(sin_week = sin(2*pi*lubridate::isoweek(yearWeek)/52),
-                cos_week = cos(2*pi*lubridate::isoweek(yearWeek)/52)) %>% 
+                cos_week = cos(2*pi*lubridate::isoweek(yearWeek)/52),
+                
+                week = week(yearWeek),
+                
+                
+  ) %>% 
   glimpse()
 
 dat_model <- ggplot(selected_GPSC55, aes(x = yearWeek)) +
@@ -419,14 +455,15 @@ dat_model <- ggplot(selected_GPSC55, aes(x = yearWeek)) +
   geom_line(aes(y = count_GPSC55, colour = "GPSC55")) +
   geom_line(aes(y = itr_Ne, colour = "Ne"), size = 1.5) +
   geom_line(aes(y = centred_Ne, colour = "Ne (centred)"), size = 1.5) +
-  geom_vline(xintercept = as.Date("2016-03-01"), color = "steelblue", linetype = "dashed") +
-  geom_vline(xintercept = as.Date("2017-12-01"), color = "steelblue", linetype = "dashed") +
+  geom_vline(xintercept = as.Date("2016-01-01"), color = "steelblue", linetype = "dashed") +
+  geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
   scale_colour_manual(values = c("12F" = "steelblue",
                                  "GPSC55" = "maroon",
                                  "Ne" = "gold2",
                                  "Ne (centred)" = "orange")) +
   theme_bw() +
   scale_y_log10() +
+  scale_x_date() +
   labs(title = "Data for Model Inference") +
   theme(legend.position = c(0.9, 0.85),
         legend.title = element_blank(),
@@ -454,6 +491,12 @@ BIC(model_gam_binom_spline, model_gam_binom_tensor, model_glm_binom)
 mgcv::gam.check(model_gam_binom_spline)
 plot(model_gam_binom_spline)
 
+# test plot for the GLM
+par(mfrow = c(2, 2))
+plot(model_glm_binom)
+par(mfrow = c(1, 1))
+
+
 # gam is better than glm
 saveRDS(model_gam_binom_spline, file = "raw_data/model_Ne_gam_binom.rds")
 saveRDS(model_glm_binom, file = "raw_data/model_Ne_glm_binom.rds")
@@ -469,16 +512,19 @@ earlier_ne_df <- interpolated_df %>%
 pred_gam_binom_spline <- predict(model_gam_binom_spline,
                                  newdata = earlier_ne_df,
                                  se.fit = TRUE,
+                                 unconditional = TRUE,
                                  type = "link"
 )
 pred_gam_binom_tensor <- predict(model_gam_binom_tensor,
                                  newdata = earlier_ne_df,
                                  se.fit = TRUE,
+                                 unconditional = TRUE,
                                  type = "link"
 )
 pred_glm_binom <- predict(model_glm_binom,
                           newdata = earlier_ne_df,
                           se.fit = TRUE,
+                          unconditional = TRUE,
                           type = "link"
 )
 
@@ -632,4 +678,47 @@ ggplot(earlier_ne_df
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
 
+
+# test combine all model viz
+reselected_GPSC55 <- test %>% 
+  dplyr::arrange(yearWeek) %>% 
+  dplyr::filter(
+    yearWeek >= as.Date("2000-01-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
+    # !is.na(prop_GPSC55), # no 12F data available after 2020-05-11
+    # prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
+  ) %>% 
+  dplyr::left_join(
+    earlier_ne_df %>% 
+      dplyr::select(yearWeek, predicted_count_GPSC55)
+      # dplyr::filter(source == "3.3. Predicted (GLM)") %>% 
+      # dplyr::rename(count_GPSC55_GLM = count)
+    ,
+    by = "yearWeek",
+    relationship = "many-to-many"
+  ) %>% 
+  glimpse()
+
+ggplot(reselected_GPSC55, aes(x = yearWeek)) +
+  geom_line(aes(y = count_12F, colour = "12F")) +
+  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1.5) +
+  geom_line(aes(y = predicted_count_GPSC55, colour = "GLM prediction")) +
+  # geom_line(aes(y = itr_Ne, colour = "Ne"), size = 1.5) +
+  # geom_line(aes(y = centred_Ne, colour = "Ne (centred)"), size = 1.5) +
+  # geom_vline(xintercept = as.Date("2016-03-01"), color = "steelblue", linetype = "dashed") +
+  geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
+  scale_colour_manual(values = c("12F" = "steelblue",
+                                 "GPSC55" = "maroon",
+                                 "GLM prediction" = "violet",
+                                 "Ne" = "gold2",
+                                 "Ne (centred)" = "orange")) +
+  theme_bw() +
+  # scale_y_log10() +
+  scale_x_date(date_breaks = "1 year",
+               date_labels = "%Y") +
+  labs(title = "Data for Model Inference") +
+  theme(legend.position = c(0.1, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
 

@@ -74,10 +74,13 @@ rand_ss_counts <- dplyr::bind_rows(
       prop_WGS_GPSC55_1 = (child_55*(2/15))/total_55,
       prop_WGS_GPSC55_2 = ((child_55*(13/15)) + (adult_55*(50/71)))/total_55, # 15–85
       prop_WGS_GPSC55_3 = (adult_55*(21/71))/total_55,
+      prop_WGS_GPSC55_all = total_55/(child_total + adult_total),
+      
       # test view counts
       count_WGS_GPSC55_1 = child_55*(2/15),
       count_WGS_GPSC55_2 = (child_55*(13/15)) + (adult_55*(50/71)),
       count_WGS_GPSC55_3 = adult_55*(21/71),
+      count_WGS_GPSC55_all = total_55
       
     )
   ,
@@ -119,28 +122,31 @@ rand_ss_counts <- dplyr::bind_rows(
       dplyr::ungroup()
     ,
     by = "yearWeek"
-  ) %>% 
-    dplyr::transmute(
-      yearWeek = as.Date(yearWeek),
-      prop_WGS_GPSC55_1 = count_WGS_GPSC55_1/count_55,
-      prop_WGS_GPSC55_2 = count_WGS_GPSC55_2/count_55,
-      prop_WGS_GPSC55_3 = count_WGS_GPSC55_3/count_55,
-      
-      # test view counts
-      count_WGS_GPSC55_1 = as.numeric(count_WGS_GPSC55_1),
-      count_WGS_GPSC55_2 = as.numeric(count_WGS_GPSC55_2),
-      count_WGS_GPSC55_3 = as.numeric(count_WGS_GPSC55_3)
-      
-    )
+  ) # %>% 
+    # dplyr::transmute(
+    #   yearWeek = as.Date(yearWeek),
+    #   prop_WGS_GPSC55_1 = count_WGS_GPSC55_1/count_55,
+    #   prop_WGS_GPSC55_2 = count_WGS_GPSC55_2/count_55,
+    #   prop_WGS_GPSC55_3 = count_WGS_GPSC55_3/count_55,
+    #   prop_WGS_GPSC55_all = prop_WGS_GPSC55_all,
+    #   
+    #   # test view counts
+    #   count_WGS_GPSC55_1 = as.numeric(count_WGS_GPSC55_1),
+    #   count_WGS_GPSC55_2 = as.numeric(count_WGS_GPSC55_2),
+    #   count_WGS_GPSC55_3 = as.numeric(count_WGS_GPSC55_3),
+    #   count_WGS_GPSC55_all = count_WGS_GPSC55_all
+    #   
+    # )
 ) %>% 
   glimpse()
 
 # sanity check for proportions
 count <- ggplot(rand_ss_counts
                 , aes(x = yearWeek)) +
-  geom_line(aes(y = count_WGS_GPSC55_1), colour = "maroon") +
-  geom_line(aes(y = count_WGS_GPSC55_2), colour = "orange") +
-  geom_line(aes(y = count_WGS_GPSC55_3), colour = "darkgreen") +
+  # geom_line(aes(y = count_WGS_GPSC55_1), colour = "maroon") +
+  # geom_line(aes(y = count_WGS_GPSC55_2), colour = "orange") +
+  # geom_line(aes(y = count_WGS_GPSC55_3), colour = "darkgreen") +
+  geom_line(aes(y = count_WGS_GPSC55_all), colour = "darkgreen") +
   # geom_line(aes(y = prop_WGS_GPSC55), colour = "black") +
   geom_vline(xintercept = as.Date("2017-08-01"), color = "steelblue", linetype = "dashed") +
   scale_x_date(limits = c(as.Date("2001-01-01"), as.Date("2022-06-01")), 
@@ -148,7 +154,7 @@ count <- ggplot(rand_ss_counts
                date_labels = "%Y") +
   theme_bw() +
   labs(
-    title = "GPSC55 Counts + Real Data (3 age groups)",
+    # title = "GPSC55 Counts + Real Data (3 age groups)",
     y = "GPSC55 counts"
   ) +
   theme(legend.position = c(0.15, 0.85),
@@ -156,7 +162,7 @@ count <- ggplot(rand_ss_counts
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
-
+count
 
 # all recorded dates
 new_dates <- seq(from = as.Date(min(earlier_ne_df$yearWeek)),
@@ -228,12 +234,13 @@ all_GPSC55_ageGroup3 <- dplyr::bind_rows(
 
 
 # test viz GPSC55 stratified by agegroups
-pred <- ggplot(all_GPSC55_ageGroup3
+pred <- ggplot(rand_ss_counts
                , aes(x = yearWeek)) +
-  geom_line(aes(y = count_WGS_GPSC55_1), colour = "maroon") +
-  geom_line(aes(y = count_WGS_GPSC55_2), colour = "orange") +
-  geom_line(aes(y = count_WGS_GPSC55_3), colour = "darkgreen") +
-  geom_line(aes(y = count_WGS_GPSC55), colour = "black") +
+  # geom_line(aes(y = count_WGS_GPSC55_1), colour = "maroon") +
+  # geom_line(aes(y = count_WGS_GPSC55_2), colour = "orange") +
+  # geom_line(aes(y = count_WGS_GPSC55_3), colour = "darkgreen") +
+  # geom_line(aes(y = count_WGS_GPSC55), colour = "black") +
+  geom_line(aes(y = prop_WGS_GPSC55_all), colour = "black") +
   geom_vline(xintercept = as.Date("2017-08-01"), color = "steelblue", linetype = "dashed") +
   scale_x_date(limits = c(as.Date("2012-01-01"), as.Date("2022-06-01")), 
                date_breaks = "1 year",
@@ -248,7 +255,7 @@ pred <- ggplot(all_GPSC55_ageGroup3
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
-
+pred
 
 cowplot::plot_grid(count, pred,
                    ncol = 1,
