@@ -244,7 +244,7 @@ allAges_weekly <- dat_c %>%
   # ) %>% 
   dplyr::arrange(yearWeek) %>% 
   dplyr::filter(
-    yearWeek >= as.Date("2010-01-01") # filter out data not based on initial Ne but the first time GPSC55 was predicted 
+    yearWeek >= as.Date("2010-01-01") # & yearWeek <= as.Date("2020-01-01") # filter out data not based on initial Ne but the first time GPSC55 was predicted 
   ) %>%
   dplyr::mutate(# count_WGS_GPSC55 = round(count_WGS_GPSC55), # rounded cases
                 # count_WGS_GPSC55 = ifelse(count_WGS_GPSC55 == 0, NA_real_, count_WGS_GPSC55),

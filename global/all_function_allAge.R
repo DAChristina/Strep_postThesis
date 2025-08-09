@@ -1,33 +1,10 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
-# ll_nbinom <- function(data, model, kappa, exp_noise) {
-#   if (is.na(data)) {
-#     return(numeric(length(model)))
-#   }
-#   mu <- model + rexp(length(model), rate = exp_noise)
-#   dnbinom(data, kappa, mu = mu, log = TRUE)
-# }
- 
 case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
   n <- ncol(state)
   
-  # incidence based on model's "n_AD_daily" from gen_sir$new(pars = list(), time = 0, n_particles = 1L)$info()
   # sir_model$info()$index$n_AD_weekly
-  # model_Ne <- state[7, , drop = TRUE]
-  model_55 <- state[6, , drop = TRUE] # fit to D (GPSC55) instead of n_AD_weekly
-  # model_12F <- state[10, , drop = TRUE]
-  
-  # incidence based on data
-  # obs_Ne <- observed$Ne
-  # obs_55 <- observed$count_WGS_GPSC55
-  # obs_12F <- observed$count_serotype
-  
-  # if (is.na(observed$Ne)) {
-  #   ll_Ne <- numeric(n)
-  # } else {
-  #   ll_Ne <- ll_nbinom(observed$Ne, model_Ne,
-  #                      pars$kappa_Ne, exp_noise)
-  # }
+  model_55 <- state[6, , drop = TRUE] # fit to D (GPSC55)
   
   if (is.na(observed$count_WGS_GPSC55)) {
     ll_55 <- numeric(n)
@@ -36,23 +13,12 @@ case_compare <- function(state, observed, pars = NULL) {
                    lambda = model_55 + rexp(ncol(state), exp_noise),
                    log = T)
   }
-  
-  # if (is.na(observed$count_serotype)) {
-  #   ll_12F <- numeric(n)
-  # } else {
-  #   ll_12F <- ll_nbinom(observed$count_serotype, model_12F,
-  #                      pars$kappa_12F, exp_noise)
-  # }
-  
-  ll <- ll_55 # ll_Ne + ll_55 + ll_12F
-  
+  ll <- ll_55
   
   if (any(!is.finite(ll))) {
     # return -Inf to force rejection
     ll[!is.finite(ll)] <- -1e10
   }
-  
-  
   return(ll)
 }
 
@@ -72,39 +38,15 @@ index_fun <- function(info){
 parameter_transform <- function(pars) {
   log_A_ini <- pars[["log_A_ini"]]
   time_shift_1 <- pars[["time_shift_1"]]
-  # time_shift_2 <- pars[["time_shift_2"]]
   beta_0 <- pars[["beta_0"]]
   beta_1 <- pars[["beta_1"]]
-  # beta_2 <- pars[["beta_2"]]
-  # scaled_wane <- pars[["scaled_wane"]]
   log_delta <- pars[["log_delta"]]
-  # hypo_sigma_2 <- pars[["hypo_sigma_2"]]
-  
-  # alpha <- pars[["alpha"]]
-  # gamma_annual <- pars[["gamma_annual"]]
-  # nu_annual <- pars[["nu_annual"]]
-  
-  # kappa_Ne <- pars[["kappa_Ne"]]
-  # kappa_55 <- pars[["kappa_55"]]
-  # kappa_12F <- pars[["kappa_12F"]]
   
   list(log_A_ini = log_A_ini,
        time_shift_1 = time_shift_1,
-       # time_shift_2 = time_shift_2,
        beta_0 = beta_0,
        beta_1 = beta_1,
-       # beta_2 = beta_2,
-       # scaled_wane = scaled_wane,
        log_delta = log_delta
-       # hypo_sigma_2 = hypo_sigma_2,
-       
-       # alpha = alpha,
-       # gamma_annual = gamma_annual,
-       # nu_annual = nu_annual,
-       
-       # kappa_Ne = kappa_Ne,
-       # kappa_55 = kappa_55
-       # kappa_12F = kappa_12F
   )
   
 }
@@ -120,34 +62,12 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
-         # mcstate::pmcmc_parameter("time_shift_2", 0.3688, min = 0, max = 0.5,
-         #                          prior = priors$time_shifts),
          mcstate::pmcmc_parameter("beta_0", 0.031, min = 0, max = 0.8,
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
-         # mcstate::pmcmc_parameter("beta_2", 0.511849, min = 0, max = 0.7,
-         #                          prior = priors$betas),
-         # mcstate::pmcmc_parameter("scaled_wane", 0.657388, min = 0, max = 1,
-         #                          prior = priors$scaled_wane),
          mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
                                   prior = priors$log_delta)
-         # mcstate::pmcmc_parameter("hypo_sigma_2", 1, min = 0, max = 10,
-         #                          prior = priors$sigma_2),
-         
-         # mcstate::pmcmc_parameter("alpha", 1, min = 0, max = 100,
-         #                          prior = priors$alpha),
-         # mcstate::pmcmc_parameter("gamma_annual", 0.004, min = 0,
-         #                          prior = priors$gamma_annual),
-         # mcstate::pmcmc_parameter("nu_annual", 1, min = 0, max = 100,
-         #                          prior = priors$nu_annual),
-         
-         # mcstate::pmcmc_parameter("kappa_Ne", 1, min = 0, max = 100,
-         #                          prior = priors$kappas),
-         # mcstate::pmcmc_parameter("kappa_12F", 1, min = 0, max = 100,
-         #                          prior = priors$kappas),
-         # mcstate::pmcmc_parameter("kappa_55", 2, min = 0, max = 10,
-         #                          prior = priors$kappas)
          
     ),
     proposal = proposal,
@@ -167,28 +87,9 @@ prepare_priors <- function(pars) {
   priors$betas <- function(s) {
     dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
-  # priors$scaled_wane <- function(s) {
-  #   dbeta(s, shape1 = 2.5, shape2 = 2.5, log = TRUE)
-  # }
   priors$log_delta <- function(s) {
     dunif(s, min = (-10), max = 0.7, log = TRUE)
   }
-  # priors$hypo_sigma_2 <- function(s) {
-  #   dgamma(s, shape = 1, scale = 1, log = TRUE)
-  # }
-  
-  # priors$alpha <- function(s) {
-  #   dunif(s, min = 0, max = 100, log = TRUE)
-  # }
-  # priors$gamma_annual <- function(s) {
-  #   dlnorm(s, meanlog = -4.788920616, sdlog = 0.467902993, log = TRUE)
-  # }
-  # priors$gamma_annual <- function(s) {
-  #   dunif(s, min = 0, max = 100, log = TRUE)
-  # }
-  # priors$nu_annual <- function(s) {
-  #   dunif(s, min = 0, max = 100, log = TRUE)
-  # }
   priors$kappas <- function(s) {
     dunif(s, min = 0, max = 10, log = TRUE)
   }
@@ -229,19 +130,19 @@ ess_calculation <- function(mcmc1){
 
 pmcmc_trace <- function(mcmc1) {
   plot(mcmc1) # to save the figures into pdf
-  # png("pictures/mcmc1.png", res = 1200)
-  # plot(mcmc1)
-  # dev.off()
 }
 
 ################################################################################
 # Tuning functions
 tuning_pmcmc_further_process <- function(n_steps, tune_pmcmc_result) {
-  processed_chains <- mcstate::pmcmc_thin(tune_pmcmc_result, burnin = round(n_steps*0.5), thin = 2)
+  processed_chains <- mcstate::pmcmc_thin(tune_pmcmc_result,
+                                          burnin = round(n_steps*0.5),
+                                          thin = 2)
   parameter_mean_hpd <- apply(processed_chains$pars, 2, mean)
   parameter_mean_hpd
   
-  tune_pmcmc_result <- coda::as.mcmc(cbind(processed_chains$probabilities, processed_chains$pars))
+  tune_pmcmc_result <- coda::as.mcmc(cbind(processed_chains$probabilities,
+                                           processed_chains$pars))
   tune_pmcmc_result
 }
 
@@ -288,13 +189,12 @@ diag_gelman_rubin <- function(mcmc_chains_list) {
                                    transform = FALSE,
                                    autoburnin=TRUE,
                                    auto.layout = TRUE)
-  # ask, col, lty, xlab, ylab, type, ...)
   
   coda::gelman.diag(mcmc_chains_list,
                     confidence = 0.95,
                     transform=FALSE,
                     autoburnin=TRUE,
-                    multivariate=F) # Change multivariate = F instead of T
+                    multivariate=F)
   
 }
 

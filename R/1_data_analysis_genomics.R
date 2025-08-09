@@ -76,9 +76,6 @@ spline_fit_Ne_lo <- fn_Ne_lo(new_dates)
 spline_fit_Ne_up <- fn_Ne_up(new_dates)
 
 time_diffs_weeks <- as.numeric(diff(new_dates)) / 7
-# change_Ne <- abs(diff(spline_fit_Ne)) / time_diffs_weeks
-# change_Ne_lo <- abs(diff(spline_fit_Ne_lo)) / time_diffs_weeks
-# change_Ne_up <- abs(diff(spline_fit_Ne_up)) / time_diffs_weeks
 
 interpolated_df <- tidyr::tibble(
   date = new_dates[-1],
@@ -86,9 +83,6 @@ interpolated_df <- tidyr::tibble(
   itr_Ne_lo = spline_fit_Ne_lo[-1],
   itr_Ne_up = spline_fit_Ne_up[-1],
   time_diffs_weeks = time_diffs_weeks,
-  # change_Ne = change_Ne,
-  # change_Ne_lo = change_Ne_lo,
-  # change_Ne_up = change_Ne_up
 ) %>%
   dplyr::mutate(
     iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
@@ -97,48 +91,6 @@ interpolated_df <- tidyr::tibble(
   glimpse()
 
 # write.csv(interpolated_df, "raw_data/GPSC55_mlesky_cleaned_interpolated.csv", row.names = FALSE)
-
-# test smooth Ne
-model_smooth_spline <- mgcv::gam(itr_Ne ~ s(as.numeric(yearWeek)),
-                                 data = interpolated_df)
-model_smooth_tensor1 <- mgcv::gam(itr_Ne ~ te(as.numeric(yearWeek)),
-                                  data = interpolated_df)
-model_smooth_tensor2 <- mgcv::gam(itr_Ne ~ t2(as.numeric(yearWeek)),
-                                  data = interpolated_df)
-model_smooth_tensor_interaction <- mgcv::gam(itr_Ne ~ ti(as.numeric(yearWeek)),
-                                             data = interpolated_df)
-
-interpolated_df$smooth_Ne_spline <- predict(model_smooth_spline)
-interpolated_df$smooth_Ne_tensor1 <- predict(model_smooth_tensor1)
-interpolated_df$smooth_Ne_tensor2 <- predict(model_smooth_tensor2)
-interpolated_df$smooth_Ne_tensor_interaction <- predict(model_smooth_tensor_interaction)
-
-# test Ne viz
-png("report/picts_smoothed_Nes.png",
-    width = 30, height = 10, unit = "cm", res = 300)
-ggplot(interpolated_df, aes(x = yearWeek)) +
-  geom_line(aes(y = itr_Ne, colour = "Ne"), size = 1.5) +
-  geom_line(aes(y = smooth_Ne_spline, colour = "Spline"), size = 1.5) +
-  geom_line(aes(y = smooth_Ne_tensor1, colour = "Tensor 1"), size = 1.5) +
-  geom_line(aes(y = smooth_Ne_tensor2, colour = "Tensor 2"), size = 1.5) +
-  geom_line(aes(y = smooth_Ne_tensor_interaction, colour = "Tensor interaction"), size = 1.5) +
-  geom_vline(xintercept = as.Date("2010-01-01"), color = "steelblue", linetype = "dashed") +
-  scale_colour_manual(values = c("Ne" = "gold2",
-                                 "Spline" = "maroon",
-                                 "Tensor 1" = "purple1",
-                                 "Tensor 2" = "purple4",
-                                 "Tensor interaction" = "darkblue")) +
-  theme_bw() +
-  scale_x_date(# limits = c(min(as.Date(dat_c$week_date)), max(as.Date(dat_c$week_date))), # 2009 instead of min(as.Date(dat_c$week_date))
-    date_breaks = "1 year",
-    date_labels = "%Y") +
-  theme(legend.position = c(0.15, 0.85),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.8, "lines"),
-        legend.text = element_text(size = 10),
-        legend.background = element_rect(fill = "transparent", colour = "transparent"))
-dev.off()
-# would rather choose spline or tensor; no difference occurs between tensor-smoothed models
 
 ################################################################################
 # generate centred Ne
@@ -162,6 +114,8 @@ ggplot(interpolated_df, aes(x = yearWeek, y = change_smooth_Ne)) +
   geom_line() +
   geom_hline(yintercept = threshold1, linetype = "dashed", color = "purple") + 
   geom_hline(yintercept = threshold2, linetype = "dashed", color = "red") + # previously 1.130835e-05
+  scale_x_date(breaks = "3 years") +
+  scale_y_log10() +
   theme_bw()
 
 plateau_yearWeeks <- interpolated_df$yearWeek[interpolated_df$rate_itr_Ne < threshold1]
@@ -176,10 +130,6 @@ interpolated_df <- interpolated_df %>%
   dplyr::mutate(
     baseline_Ne = coalesce(baseline_Ne, min(itr_Ne, na.rm = TRUE)),
     centred_Ne = pmax(itr_Ne - baseline_Ne, 0),
-    # centred_Ne = case_when(
-    #   yearWeek >= as.Date("2017-10-09") & centred_Ne <= max(centred_Ne, na.rm = TRUE) ~ itr_Ne,
-    #   T ~ centred_Ne
-    # )
     centred_Ne = ifelse(yearWeek <= as.Date("2010-01-01"), 0, centred_Ne)
   ) %>% 
   glimpse()
@@ -273,57 +223,6 @@ duration <- fit_gamma(28, 14, 56, max_v = 1e3)
 plot_gamma(duration$shape, duration$scale, "Duration of carriage (days)",
            aim = c(28, 14, 56))
 
-
-# tobecontinued Fit invasiveness priors
-# data <- read.csv("outputs/invasiveness.csv", row.names = 1) %>% 
-#   dplyr::mutate(ave = (child+adult)/2) %>% 
-#   glimpse()
-# 
-# fits_gamma <- lapply(data, MASS::fitdistr, "gamma")
-# fits_weibull <- lapply(data, MASS::fitdistr, "weibull")
-# fits_lnorm <- lapply(data, MASS::fitdistr, "lognormal")
-# 
-# # Lognormal fits are the best (?)
-# priors <- sapply(fits_lnorm, "[[", "estimate")
-# priors <- rbind(priors,
-#                 mean = exp(priors["meanlog", ]),
-#                 q2.5 = qlnorm(0.025, priors["meanlog", ], priors["sdlog", ]),
-#                 q97.5 = qlnorm(0.975, priors["meanlog", ], priors["sdlog", ]))
-# 
-# # write.csv(priors, "parameters.csv")
-# 
-# par(mfrow = c(3, 2), mgp = c(1.5, 0.5, 0), mar = c(3, 3, 1, 1), bty = "n")
-# for (i in c("adult", "child", "ave")) {
-#   x <- data[[i]]
-#   hist(x, breaks = seq(0, 0.4, 0.001), main = i, xlim = c(0, 0.05), freq = FALSE,
-#        xlab = "Adjusted invasiveness")
-#   curve(dgamma(x, shape = fits_gamma[[i]]$estimate["shape"],
-#                rate = fits_gamma[[i]]$estimate["rate"]), add = TRUE, col = 2)
-#   curve(dweibull(x, shape = fits_weibull[[i]]$estimate["shape"],
-#                  scale = fits_weibull[[i]]$estimate["scale"]),
-#         add = TRUE, col = 3)
-#   curve(dlnorm(x, fits_lnorm[[i]]$estimate["meanlog"],
-#                fits_lnorm[[i]]$estimate["sdlog"]),
-#         add = TRUE, col = 4)
-#   
-#   p <- seq(0, 1, 0.01)
-#   q <- quantile(x, p)
-#   plot(p, pgamma(q, shape = fits_gamma[[i]]$estimate["shape"],
-#                  rate = fits_gamma[[i]]$estimate["rate"]), pch = 20,
-#        xlim = c(0, 1), ylim = c(0, 1), col = 2, ylab = "P(expected)",
-#        xlab = "P(observed)")
-#   points(p, pweibull(q, shape = fits_weibull[[i]]$estimate["shape"],
-#                      scale = fits_weibull[[i]]$estimate["scale"]),
-#          col = 3, pch = 20)
-#   points(p, plnorm(q, fits_lnorm[[i]]$estimate["meanlog"],
-#                    fits_lnorm[[i]]$estimate["sdlog"]), 
-#          col = 4, pch = 20)
-#   abline(0, 1)
-# }
-# legend("topleft", fill = 2:4, legend = c("Gamma", "Weibull", "LogNorm"),
-#        bty = "n")
-
-
 # load gen data
 gen <-  read.csv("raw_data/gen_lw/genomic_epi_12F.csv") %>% 
   dplyr::mutate(strain = if_else(GPSC == 55, "GPSC55", "non55"),
@@ -344,15 +243,12 @@ gen <-  read.csv("raw_data/gen_lw/genomic_epi_12F.csv") %>%
                 ),
                 collection_date = lubridate::dmy(collection_date),
                 month = lubridate::month(collection_date),
-                # year = if_else(month < 7, YEAR + 0.5, YEAR + 1.5), # this is epi year
                 year = lubridate::year(collection_date),
                 month = lubridate::month(collection_date),
                 yearMonth = as.Date(paste0(format(collection_date, "%Y-%m"), "-01")), # year-month as date
                 week_date = lubridate::floor_date(collection_date, "week")
   ) %>% 
   dplyr::select(-ngsid, -Age, -YEAR) %>% 
-  # dplyr::filter(!is.na(strain), year > 2018) %>% 
-  # view() %>% 
   glimpse()
 
 write.csv(gen, "raw_data/genomic_data_cleaned.csv", row.names = FALSE)
@@ -416,11 +312,6 @@ test <- gen %>%
   ) %>% 
   dplyr::mutate(prop_GPSC55 = count_GPSC55/count_12F,
                 week = week(yearWeek),
-                # prop_GPSC55 = case_when( # test giving prop = 0 for 2001-2010 to catch a grip for the model
-                # yearWeek >= "2001-01-01" & yearWeek <= "2010-01-01" ~ 0,
-                # is.na(prop_GPSC55) ~ 0,
-                # TRUE ~ prop_GPSC55
-                # )
   ) %>% 
   dplyr::arrange(yearWeek) %>% 
   glimpse()
@@ -432,30 +323,34 @@ selected_GPSC55 <- test %>%
   ) %>% 
   dplyr::arrange(yearWeek) %>% 
   dplyr::filter(
-    # year == 2018,
     yearWeek >= as.Date("2017-09-01") | yearWeek <= as.Date("2016-01-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
-    # yearWeek <= as.Date("2018-09-01"),
-    # !is.na(prop_GPSC55), # no 12F data available after 2020-05-11
     prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
   ) %>% 
-  # dplyr::mutate(
-  #   count_GPSC55 = case_when(
-  #     yearWeek <= as.Date("2017-12-01") & yearWeek >= as.Date("2016-01-01") ~ NA,
-  #     TRUE ~ count_GPSC55
-  #     ),
-  #   count_12F = case_when(
-  #     yearWeek <= as.Date("2017-12-01") & yearWeek >= as.Date("2016-03-01") ~ NA,
-  #     TRUE ~ count_12F
-  #   )
-  # ) %>% 
-  dplyr::mutate(sin_week = sin(2*pi*lubridate::isoweek(yearWeek)/52),
-                cos_week = cos(2*pi*lubridate::isoweek(yearWeek)/52),
-                
-                week = week(yearWeek),
-                
+  dplyr::mutate(week = week(yearWeek),
+                weekAll = as.numeric((as.Date(yearWeek) - as.Date("2001-01-01"))/7),
+                sin_week = sin((2*pi*week + 39)/52),
+                cos_week = cos((2*pi*week + 39)/52),
                 
   ) %>% 
   glimpse()
+
+# quick sinusoidal plot check
+ggplot(selected_GPSC55, aes(x = yearWeek)) +
+  geom_line(aes(y = sin_week)) +
+  geom_line(aes(y = cos_week)) +
+  theme_bw() +
+  # scale_y_log10() +
+  scale_x_date(limits = c(as.Date("2017-09-01"), as.Date("2020-01-01")),
+               date_breaks = "1 month",
+               date_labels = "%m/%Y") +
+  labs(title = "Data for Model Inference") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        legend.position = c(0.2, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
 
 dat_model <- ggplot(selected_GPSC55, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F, colour = "12F")) +
@@ -481,15 +376,15 @@ dat_model <- ggplot(selected_GPSC55, aes(x = yearWeek)) +
 dat_model
 
 # test new model based on GPSC55/12F proportion
-model_gam_binom_spline <- mgcv::gam(prop_GPSC55 ~ sin_week + cos_week + s(centred_Ne) + as.numeric(yearWeek),
+model_gam_binom_spline <- mgcv::gam(prop_GPSC55 ~ sin_week + cos_week + s(centred_Ne) + as.numeric(weekAll),
                                     data = selected_GPSC55,
                                     family = binomial("logit"),
                                     weights = count_12F)
-model_gam_binom_tensor <- mgcv::gam(prop_GPSC55 ~ sin_week + cos_week + te(centred_Ne) + as.numeric(yearWeek),
+model_gam_binom_tensor <- mgcv::gam(prop_GPSC55 ~ sin_week + cos_week + te(centred_Ne) + as.numeric(weekAll),
                                     data = selected_GPSC55,
                                     family = binomial("logit"),
                                     weights = count_12F)
-model_glm_binom <- stats::glm(prop_GPSC55 ~ sin_week + cos_week + centred_Ne + as.numeric(yearWeek),
+model_glm_binom <- stats::glm(prop_GPSC55 ~ sin_week + cos_week + centred_Ne + as.numeric(weekAll),
                               data = selected_GPSC55,
                               family = binomial("logit"),
                               weights = count_12F)
@@ -504,16 +399,53 @@ par(mfrow = c(2, 2))
 plot(model_glm_binom)
 par(mfrow = c(1, 1))
 
-
 # gam is better than glm
 saveRDS(model_gam_binom_spline, file = "raw_data/model_Ne_gam_binom.rds")
 saveRDS(model_glm_binom, file = "raw_data/model_Ne_glm_binom.rds")
 
 
+# seasonal effect check
+sin_coef <- coef(model_gam_binom_spline)["sin_week"]
+cos_coef <- coef(model_gam_binom_spline)["cos_week"]
+
+tibble(
+  yearWeek = seq(from = as.Date("2000-01-01"),
+                 to = as.Date("2023-01-01"),
+                 by = "week")
+) %>% 
+  dplyr::mutate(
+    week = week(yearWeek),
+    sin_week = sin((2*pi*week + 39*3)/52), # not sure why time shift should be *3
+    cos_week = cos((2*pi*week + 39*3)/52), # not sure why time shift should be *3
+    
+    seasonal_effect = sin_coef * sin_week + cos_coef * cos_week
+    
+  ) %>% 
+  dplyr::filter(yearWeek >= as.Date("2020-01-01")) %>% 
+  ggplot(aes(x = yearWeek, y = seasonal_effect)) +
+  geom_line(color = "steelblue", size = 1) +
+  labs(
+    title = "Estimated Seasonal Wave from the GAM",
+    x = "Week",
+    y = "Seasonal Effect (sin_coef*sin_week + cos_coef*cos_week)"
+  ) +
+  scale_x_date(date_breaks = "2 months",
+               date_labels = "%m/%Y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        legend.position = c(0.2, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+
 earlier_ne_df <- interpolated_df %>%
   dplyr::filter(yearWeek >= as.Date("2010-01-01") & yearWeek <= as.Date("2017-08-01")) %>% # midpoint; they started intensively sequenced GPSC55 ("2017-08-01")
-  dplyr::mutate(sin_week = sin(2*pi*lubridate::isoweek(yearWeek)/52),
-                cos_week = cos(2*pi*lubridate::isoweek(yearWeek)/52)) %>%
+  dplyr::mutate(week = week(yearWeek),
+                weekAll = as.numeric((as.Date(yearWeek) - as.Date("2001-01-01"))/7),
+                sin_week = sin((2*pi*week + 39*3)/52),
+                cos_week = cos((2*pi*week + 39*3)/52)) %>%
   glimpse()
 
 # new model version; se extraction failed to load within dplyr::mutate command
@@ -610,7 +542,6 @@ combined <- dplyr::bind_rows(
                 source != "2. Interpolated Ne") %>% # omit Ne
   glimpse()
 
-
 dat_fit <- ggplot(combined %>% 
                     dplyr::filter(source != "1. Data GPSC55/12F")
                   , aes(x = yearWeek, y = count, color = source)) +
@@ -636,23 +567,23 @@ dat_fit <- ggplot(combined %>%
               inherit.aes = FALSE,
               fill = "steelblue", alpha = 0.2
   ) +
-  # geom_point(size = 0.5, alpha = 0.6) +
-  scale_x_date(# limits = c(min(as.Date(dat_c$week_date)), max(as.Date(dat_c$week_date))), # 2009 instead of min(as.Date(dat_c$week_date))
+  scale_x_date(
+    # limits = c(min(as.Date(dat_c$week_date)), max(as.Date(dat_c$week_date))), # 2009 instead of min(as.Date(dat_c$week_date))
     date_breaks = "1 year",
-    date_labels = "%Y") +
+    date_labels = "%m/%Y") +
   theme_bw() +
   labs(
     title = "Proportion Result",
     colour = "source",
     y = "proportion (GPSC55/12F)"
   ) +
-  theme(legend.position = c(0.15, 0.85),
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        legend.position = c(0.15, 0.85),
         legend.title = element_blank(),
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
 dat_fit
-
 
 png("report/picts_proportion_centredNe_allWGS.png",
     width = 24, height = 24, unit = "cm", res = 300)
@@ -693,14 +624,10 @@ reselected_GPSC55 <- test %>%
   dplyr::arrange(yearWeek) %>% 
   dplyr::filter(
     yearWeek >= as.Date("2010-01-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
-    # !is.na(prop_GPSC55), # no 12F data available after 2020-05-11
-    # prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
   ) %>% 
   dplyr::left_join(
     earlier_ne_df %>% 
       dplyr::select(yearWeek, predicted_count_GPSC55)
-    # dplyr::filter(source == "3.3. Predicted (GLM)") %>% 
-    # dplyr::rename(count_GPSC55_GLM = count)
     ,
     by = "yearWeek",
     relationship = "many-to-many"
@@ -709,11 +636,8 @@ reselected_GPSC55 <- test %>%
 
 ggplot(reselected_GPSC55, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F, colour = "12F")) +
-  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1.5) +
+  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
   geom_line(aes(y = predicted_count_GPSC55, colour = "GAM prediction")) +
-  # geom_line(aes(y = itr_Ne, colour = "Ne"), size = 1.5) +
-  # geom_line(aes(y = centred_Ne, colour = "Ne (centred)"), size = 1.5) +
-  # geom_vline(xintercept = as.Date("2016-03-01"), color = "steelblue", linetype = "dashed") +
   geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
   scale_colour_manual(values = c("12F" = "steelblue",
                                  "GPSC55" = "maroon",
