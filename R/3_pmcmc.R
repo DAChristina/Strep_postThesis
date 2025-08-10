@@ -17,7 +17,7 @@ rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the parti
 gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
 
 # This is part of sir odin model:
-pars <- list(log_A_ini = -4, # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
+pars <- list(log_A_ini = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
              time_shift_1 = 0.07,
              # time_shift_2 = 0.23,
              beta_0 = 0.04,

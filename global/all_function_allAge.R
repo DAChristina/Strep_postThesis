@@ -58,7 +58,7 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (-3.77), min = (-10), max = 0,
+    list(mcstate::pmcmc_parameter("log_A_ini", (0.6), min = (0), max = 1,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
@@ -79,7 +79,7 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dunif(s, min = (-10), max = 0, log = TRUE)
+    dbeta(s, shape1 = 2.5, shape2 = 0.5, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)

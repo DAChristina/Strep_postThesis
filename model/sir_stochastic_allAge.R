@@ -43,8 +43,17 @@ pi <- user(3.141593) # FIXED
 # nu <- nu_annual/365
 
 # 2. INITIAL VALUES ############################################################
-log_A_ini <- user(0) # scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini # scaled_A_ini*(max_A_ini−min_A_ini)+min_A_ini; rescaled using (A_ini-A_ini_min)/(A_ini_max-A_ini_min)
-A_ini <- 10^(log_A_ini)*N
+max_A_ini <- 0
+min_A_ini <- -10
+# scaled_A_ini <- user(0)
+# log_A_ini <- scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini # scaled_A_ini*(max_A_ini−min_A_ini)+min_A_ini; rescaled using (A_ini-A_ini_min)/(A_ini_max-A_ini_min)
+
+# directly test log_A_ini as scaled
+log_A_ini <- user(0)
+rescaled_log_A_ini <- log_A_ini*(max_A_ini-min_A_ini)+min_A_ini
+
+A_ini <- 10^(rescaled_log_A_ini)*N
+
 initial(A) <- A_ini
 initial(D) <- D_ini
 initial(S) <- N - A_ini - D_ini

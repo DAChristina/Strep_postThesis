@@ -9,7 +9,7 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
 
 # Running the SIR model with dust
 pars <- list(N_ini = 6.7e7,
-             log_A_ini = -4.0763973707201,
+             log_A_ini = 0.6,
              time_shift_1 = 0.0639227346367733, #0.302114578070083, # 0.100043419341372, # 
              # time_shift_2 = 0.3766235,
              beta_0 = 0.0365789436634438, # 0.0381562615720545, #  # 
@@ -163,13 +163,10 @@ transformations <- data.frame(
   glimpse()
 
 # test A_ini
-scaled_A_ini = 0.7484698
-# scaled to log
-(scaled_A_ini*(0-(-15)+(-15))) # scaled_x * (max - min) + min
 
 log_A_ini = -3.77295312521097
 # log to scaled
-(log_A_ini-(-15)) / (0-(-15)) # (x - min) / (max - min)
+(log_A_ini-(-10)) / (0-(-10)) # (x - min) / (max - min)
 
 
 
