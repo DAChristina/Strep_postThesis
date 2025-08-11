@@ -79,7 +79,7 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dbeta(s, shape1 = 2.5, shape2 = 0.5, log = TRUE)
+    dbeta(s, shape1 = 3.5, shape2 = 3.5, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
