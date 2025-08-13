@@ -1,4 +1,12 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
+ll_nbinom <- function(data, model, kappa, exp_noise) {
+  if (is.na(data)) {
+    return(numeric(length(model)))
+  }
+  mu <- model + rexp(length(model), rate = exp_noise)
+  dnbinom(data, kappa, mu = mu, log = TRUE)
+}
+
 case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
   n <- ncol(state)
@@ -9,9 +17,10 @@ case_compare <- function(state, observed, pars = NULL) {
   if (is.na(observed$count_WGS_GPSC55)) {
     ll_55 <- numeric(n)
   } else {
-    ll_55 <- dpois(x = observed$count_WGS_GPSC55,
-                   lambda = model_55 + rexp(ncol(state), exp_noise),
-                   log = T)
+    ll_55 <- ll_nbinom(data = observed$count_WGS_GPSC55,
+                       model = model_55,
+                       kappa = pars$kappa_55,
+                       exp_noise = exp_noise)
   }
   ll <- ll_55
   
@@ -41,12 +50,14 @@ parameter_transform <- function(pars) {
   beta_0 <- pars[["beta_0"]]
   beta_1 <- pars[["beta_1"]]
   log_delta <- pars[["log_delta"]]
+  kappa_55 <- pars[["kappa_55"]]
   
   list(log_A_ini = log_A_ini,
        time_shift_1 = time_shift_1,
        beta_0 = beta_0,
        beta_1 = beta_1,
-       log_delta = log_delta
+       log_delta = log_delta,
+       kappa_55 = kappa_55
   )
   
 }
@@ -67,8 +78,9 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
-                                  prior = priors$log_delta)
-         
+                                  prior = priors$log_delta),
+         mcstate::pmcmc_parameter("kappa_55", 1, min = 0,
+                                  prior = function(p) log(1e-10))
     ),
     proposal = proposal,
     transform = transform
@@ -91,7 +103,7 @@ prepare_priors <- function(pars) {
     dunif(s, min = (-10), max = 0.7, log = TRUE)
   }
   priors$kappas <- function(s) {
-    dunif(s, min = 0, max = 10, log = TRUE)
+    dunif(s, min = 0, log = TRUE)
   }
   
   priors
