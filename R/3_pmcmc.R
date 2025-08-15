@@ -27,7 +27,7 @@ pars <- list(log_A_ini = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change 
              # min_wane = (-4),
              # scaled_wane = (0.5),
              log_delta = (-4.82),
-             kappa_55 = 2
+             kappa_55 = 6
              # hypo_sigma_2 = 1,
              
              # alpha = 1,
@@ -145,6 +145,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
+  # vcv positive definite error if matrix/1000
   new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1000
   new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1000
   new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1000
@@ -173,7 +174,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     #                                                              adapt_end = n_sts*0.8,
     #                                                              pre_diminish = n_sts*0.1)
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/5)/1000,
+                                                                 initial_scaling = (2.38^2/6)/1000,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.234,
                                                                  forget_rate = 0.1,
@@ -185,7 +186,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     # whatver
     # adaptive_proposal_run2 <- FALSE
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/5)/1000,
+                                                                 initial_scaling = (2.38^2/6)/1000,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.234,
                                                                  forget_rate = 0.1,

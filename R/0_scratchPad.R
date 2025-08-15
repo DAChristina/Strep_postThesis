@@ -236,19 +236,6 @@ cat("Cycle length:", cycle_length, "\nPhase (radians):", phase)
 phase_shift_in_weeks <- (phase / (2 * pi)) * cycle_length
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 n <- length(data$weekly_annual_proportion_55)
 shift_weeks <- 26
 prop_shifted <- dplyr::lead(data$weekly_annual_proportion_55, shift_weeks)
@@ -277,9 +264,73 @@ fft_df_max5 <- fft_df %>%
     cycle_length = 1/frequency,
   ) %>% 
   glimpse()
-  
-  
 
+
+################################################################################
+# test dispersion (sort of IQR & variance) for weekly, monthy, season and annual data
+data %>% 
+  # dplyr::filter(year <= 2019) %>% # omit pandemic era
+  dplyr::mutate(week_count = isoweek(yearWeek),
+                month = month(yearWeek)
+  ) %>% 
+  dplyr::group_by(year, week_count) %>% 
+  dplyr::summarise(
+    count = sum(count_WGS_GPSC55, na.rm = TRUE), .groups = "drop",
+    # median = median(count_WGS_GPSC55, na.rm = TRUE),
+    # mean = mean(count_WGS_GPSC55, na.rm = TRUE),
+    # q1 = quantile(count_WGS_GPSC55, 0.25, na.rm = TRUE),
+    # q3 = quantile(count_WGS_GPSC55, 0.75, na.rm = TRUE),
+    # variance = var(count_WGS_GPSC55, na.rm = TRUE),
+    # VMR = variance/mean
+  ) %>% 
+  ggplot(.,
+         aes(x = factor(week_count), y = count)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_bw()
+
+data %>% 
+  dplyr::mutate(week_count = isoweek(yearWeek),
+                month = month(yearWeek)
+  ) %>% 
+  dplyr::group_by(year, month) %>% 
+  dplyr::summarise(
+    count = sum(count_WGS_GPSC55, na.rm = TRUE), .groups = "drop",
+  ) %>% 
+  ggplot(.,
+         aes(x = factor(month), y = count)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_bw()
+
+data %>% 
+  dplyr::mutate(week_count = isoweek(yearWeek),
+                month = month(yearWeek),
+                season = case_when(
+                  week_count >= 9  & week_count <= 21 ~ "spring",
+                  week_count >= 22 & week_count <= 34 ~ "summer",
+                  week_count >= 35 & week_count <= 47 ~ "autumn",
+                  week_count >= 48 | week_count <= 8  ~ "winter"
+                )
+  ) %>% 
+  dplyr::group_by(year, season) %>% 
+  dplyr::summarise(
+    count = sum(count_WGS_GPSC55, na.rm = TRUE), .groups = "drop",
+  ) %>% 
+  ggplot(.,
+         aes(x = factor(season,
+                        levels = c("spring", "summer", "autumn", "winter")),
+             y = count)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_bw()
+
+data %>% 
+  dplyr::group_by(year) %>% 
+  dplyr::summarise(
+    count = sum(count_WGS_GPSC55, na.rm = TRUE), .groups = "drop",
+  ) %>% 
+  ggplot(.,
+         aes(x = factor(year), y = count)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_bw()
 
 
 

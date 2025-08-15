@@ -41,6 +41,8 @@ model_vs_data(5250)
 model_vs_data(10250)
 model_vs_data(100250)
 
+post_particle_pics(10250)
+
 
 
 dir_name <- paste0("outputs/genomics/trial_", 600, "/")

@@ -79,7 +79,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("kappa_55", 1, min = 0,
+         mcstate::pmcmc_parameter("kappa_55", 6, min = 0,
                                   prior = function(p) log(1e-10))
     ),
     proposal = proposal,
