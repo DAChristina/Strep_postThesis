@@ -80,7 +80,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
          mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("kappa_55", 6, min = 0,
-                                  prior = function(p) log(1e-10))
+                                  prior = priors$kappas) #function(p) log(1e-10))
     ),
     proposal = proposal,
     transform = transform
@@ -103,7 +103,8 @@ prepare_priors <- function(pars) {
     dunif(s, min = (-10), max = 0.7, log = TRUE)
   }
   priors$kappas <- function(s) {
-    dunif(s, min = 0, log = TRUE)
+    # dunif(s, min = 0, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 1, delta = 5, log = TRUE)
   }
   
   priors
