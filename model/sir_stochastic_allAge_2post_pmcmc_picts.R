@@ -69,7 +69,7 @@ model_vs_data <- function(n_sts){
   # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
-  data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
+  data <- readRDS("inputs/pmcmc_data_week_allAge_ser1.rds") %>% 
     glimpse()
   
   sir_data <- data %>% 
@@ -77,8 +77,8 @@ model_vs_data <- function(n_sts){
       replicate = 1,
       # steps = time_start+1,
       weekly = seq_along(replicate),
-      value = count_WGS_GPSC55,
-      compartment = "data_count_WGS_GPSC55"
+      value = count_serotype,
+      compartment = "data_count_serotype"
     ) %>%
     glimpse()
   
@@ -144,10 +144,10 @@ model_vs_data <- function(n_sts){
   p <- ggplot(incidence_modelled %>% 
                 dplyr::filter(
                   # grepl("cases|D|data", compartment),
-                  # compartment %in% c("D", "model_n_AD_weekly", "data_count_WGS_GPSC55"), # redesign the model, would rather fit to D
-                  # compartment %in% c("model_n_AD_weekly", "data_count_WGS_GPSC55"),
+                  # compartment %in% c("D", "model_n_AD_weekly", "data_count_serotype"), # redesign the model, would rather fit to D
+                  # compartment %in% c("model_n_AD_weekly", "data_count_serotype"),
                   # compartment %in% c("D", "n_AD_weekly"),
-                  compartment %in% c("D", "data_count_WGS_GPSC55"),
+                  compartment %in% c("D", "data_count_serotype"),
                   # compartment %in% c("D"),
                   compartment != "Time",
                   # compartment %in% c("S")

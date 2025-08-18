@@ -14,12 +14,12 @@ case_compare <- function(state, observed, pars = NULL) {
   # sir_model$info()$index$n_AD_weekly
   model_55 <- state[6, , drop = TRUE] # fit to D (GPSC55)
   
-  if (is.na(observed$count_WGS_GPSC55)) {
+  if (is.na(observed$count_serotype)) {
     ll_55 <- numeric(n)
   } else {
-    ll_55 <- ll_nbinom(data = observed$count_WGS_GPSC55,
+    ll_55 <- ll_nbinom(data = observed$count_serotype,
                        model = model_55,
-                       kappa = pars$kappa_55,
+                       kappa = pars$kappa_1,
                        exp_noise = exp_noise)
   }
   ll <- ll_55
@@ -50,14 +50,14 @@ parameter_transform <- function(pars) {
   beta_0 <- pars[["beta_0"]]
   beta_1 <- pars[["beta_1"]]
   log_delta <- pars[["log_delta"]]
-  kappa_55 <- pars[["kappa_55"]]
+  kappa_1 <- pars[["kappa_1"]]
   
   list(log_A_ini = log_A_ini,
        time_shift_1 = time_shift_1,
        beta_0 = beta_0,
        beta_1 = beta_1,
        log_delta = log_delta,
-       kappa_55 = kappa_55
+       kappa_1 = kappa_1
   )
   
 }
@@ -79,7 +79,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("kappa_55", 6, min = 0,
+         mcstate::pmcmc_parameter("kappa_1", 6, min = 0,
                                   prior = priors$kappas) #function(p) log(1e-10))
     ),
     proposal = proposal,
@@ -248,7 +248,7 @@ plot_states <- function(state, data) {
   matplot(data$yearWeek, t(state[6, , -1]),
           type = "l", lty = 1, col = col,
           xlab = "", ylab = "GPSC55 cases")
-  points(data$yearWeek, data$count_WGS_GPSC55, col = 3, pch = 20)
+  points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
   points(data$yearWeek, data$count_serotype, col = 4, type = "l")
   
   matplot(data$yearWeek, xlab = "", t(state["S", , -1]),
