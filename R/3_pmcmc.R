@@ -63,7 +63,7 @@ pars <- list(log_A_ini = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change 
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(500, 6) # previously 300
+proposal_matrix <- diag(300, 6) # previously 500 in 55
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
 rownames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_1")
