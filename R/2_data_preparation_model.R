@@ -8,18 +8,38 @@ if (!dir.exists("inputs")) {
 # Data preparation for serotype 1
 # mcstate data preparation #####################################################
 # non-heterogeneity (allAges), weekly
-allAges_weekly_ser1 <- read.csv("raw_data/serotype1_UKHSA_imperial_date_age_region_MOLIS_sequenced_postThesis_cleaned.csv") %>% 
-  dplyr::mutate(Earliest.specimen.date = as.Date(Earliest.specimen.date),
-                iso_week = paste0(year(Earliest.specimen.date), "-W", sprintf("%02d", week(Earliest.specimen.date)), "-1"),
+serotype1_data <- read.csv("raw_data/serotype1_UKHSA_imperial_date_age_region_MOLIS_sequenced_postThesis_cleaned.csv") %>% 
+  glimpse()
+
+all_week <- data.frame(week_date = seq.Date(from = min(as.Date(serotype1_data$Earliest.specimen.date)),
+                                            to = max(as.Date(serotype1_data$Earliest.specimen.date)), 
+                                            by = 1)) %>% 
+  dplyr::mutate(week_step = 1:nrow(.),
+                iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
                 yearWeek =ISOweek::ISOweek2date(iso_week)
-  ) %>% 
-  dplyr::group_by(yearWeek) %>% 
-  dplyr::summarise(count_serotype = n()) %>% 
-  dplyr::ungroup() %>% 
-  dplyr::mutate(
-    count_serotype = as.numeric(count_serotype),
-  ) %>% 
-  dplyr::arrange(yearWeek) %>% 
+                ) %>% 
+  distinct(yearWeek) %>% 
+  glimpse()
+
+
+allAges_weekly_ser1 <- dplyr::left_join(
+  all_week
+  ,
+  serotype1_data %>% 
+    dplyr::mutate(Earliest.specimen.date = as.Date(Earliest.specimen.date),
+                  iso_week = paste0(year(Earliest.specimen.date), "-W", sprintf("%02d", week(Earliest.specimen.date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week)
+    ) %>% 
+    dplyr::group_by(yearWeek) %>% 
+    dplyr::summarise(count_serotype = n()) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::mutate(
+      count_serotype = as.numeric(count_serotype),
+    ) %>% 
+    dplyr::arrange(yearWeek)
+  ,
+  by = "yearWeek"
+) %>% 
   dplyr::mutate(
     yearWeek = as.Date(yearWeek),
     day = as.numeric(round((yearWeek - (as.Date("2003-01-01")-2)))), # min(dat_g$Earliest.specimen.date)-2 to make it 7

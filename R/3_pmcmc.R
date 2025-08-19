@@ -146,7 +146,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   # vcv positive definite error if matrix/1000
-  new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1000
+  new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*100
   new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1000
   new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1000
   new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1000
