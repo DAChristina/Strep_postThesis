@@ -18,7 +18,9 @@ pars <- list(N_ini = 6.7e7,
              # scaled_wane = 0.0682579543,
              # psi = (0.5),
              hypo_sigma_2 = (1),
-             log_delta = (-4.65219600756188) # (-4.65135010884371) #  # 
+             log_delta = (-4.65219600756188), # (-4.65135010884371) #  # 
+             age_factor1 = 0.5,
+             age_factor2 = 1.2
              # alpha = 0.01,
              # gamma_annual = 0.01,
              # nu_annual = 0.01
@@ -56,17 +58,37 @@ for (t in seq_len(n_times)) {
 }
 # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
 # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
-data <- readRDS("inputs/pmcmc_data_week_allAge.rds") %>% 
+data <- readRDS("inputs/pmcmc_data_week_ageGroup12F.rds") %>% 
   glimpse()
 
-sir_data <- data %>% 
-  dplyr::transmute(
-    replicate = 1,
-    # steps = time_start+1,
-    weekly = seq_along(replicate),
-    value = count_WGS_GPSC55,
-    compartment = "data_count_WGS_GPSC55"
-  ) %>%
+sir_data <- dplyr::bind_rows(
+  data %>% 
+    dplyr::transmute(
+      replicate = 1,
+      # steps = time_start+1,
+      weekly = seq_along(replicate),
+      value = count_55_all,
+      compartment = "data_count_55_all"
+    )
+  ,
+  data %>% 
+    dplyr::transmute(
+      replicate = 1,
+      # steps = time_start+1,
+      weekly = seq_along(replicate),
+      value = count_55_1,
+      compartment = "data_count_55_1"
+    )
+  ,
+  data %>% 
+    dplyr::transmute(
+      replicate = 1,
+      # steps = time_start+1,
+      weekly = seq_along(replicate),
+      value = count_55_2,
+      compartment = "data_count_55_2"
+    )
+) %>%
   glimpse()
 
 # all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>%
@@ -81,7 +103,7 @@ all_dates <- data %>%
   ) %>%
   glimpse()
 
-# focused on n_AD_weekly (already in weeks)
+# focused on n_AD_weekly (already in weeks) # sir_model$info()$index$n_AD_weekly
 incidence_modelled <- 
   reshape2::melt(model) %>% 
   dplyr::rename(index = Var1,     # Var1 = dimension that stored SADR values
@@ -96,8 +118,8 @@ incidence_modelled <-
                                    index == 4 ~ "S",
                                    index == 5 ~ "R",
                                    index == 6 ~ "model_n_AD_weekly",
-                                   index == 7 ~ "Ne",
-                                   index == 8 ~ "cases_55",
+                                   index == 7 ~ "model_n_AD1_weekly",
+                                   index == 8 ~ "model_n_AD2_weekly",
                                    index == 9 ~ "cases_non55",
                                    index == 10 ~ "cases_12F"
                   )) %>% 
@@ -120,14 +142,10 @@ incidence_modelled <-
 
 ggplot(incidence_modelled %>% 
          dplyr::filter(
-           # grepl("cases|D|data", compartment),
-           # compartment %in% c("D", "model_n_AD_weekly", "data_count_WGS_GPSC55"), # redesign the model, would rather fit to D
-           # compartment %in% c("model_n_AD_weekly", "data_count_WGS_GPSC55"),
-           # compartment %in% c("D", "n_AD_weekly"),
-           compartment %in% c("D", "data_count_WGS_GPSC55"),
-           # compartment %in% c("D"),
-           compartment != "Time",
-           # compartment %in% c("S")
+           # compartment %in% c("D", "model_n_AD_weekly", "data_count_55_all"),
+           # compartment %in% c("model_n_AD1_weekly", "model_n_AD2_weekly", "data_count_55_all"),
+           # compartment %in% c("model_n_AD1_weekly", "data_count_55_1"),
+           compartment %in% c("model_n_AD2_weekly", "data_count_55_2"),
          )
        ,
        aes(x = yearWeek, y = value,

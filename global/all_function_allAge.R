@@ -12,17 +12,38 @@ case_compare <- function(state, observed, pars = NULL) {
   n <- ncol(state)
   
   # sir_model$info()$index$n_AD_weekly
-  model_55 <- state[6, , drop = TRUE] # fit to D (GPSC55)
+  model_55_all <- state[6, , drop = TRUE]
+  model_55_1 <- state[7, , drop = TRUE]
+  model_55_2 <- state[8, , drop = TRUE]
   
-  if (is.na(observed$count_WGS_GPSC55)) {
-    ll_55 <- numeric(n)
+  if (is.na(observed$count_55_all)) {
+    ll_55_all <- numeric(n)
   } else {
-    ll_55 <- ll_nbinom(data = observed$count_WGS_GPSC55,
-                       model = model_55,
-                       kappa = pars$kappa_55,
-                       exp_noise = exp_noise)
+    ll_55_all <- ll_nbinom(data = observed$count_55_all,
+                           model = model_55_all,
+                           kappa = pars$kappa_55,
+                           exp_noise = exp_noise)
   }
-  ll <- ll_55
+  
+  if (is.na(observed$count_55_1)) {
+    ll_55_1 <- numeric(n)
+  } else {
+    ll_55_1 <- ll_nbinom(data = observed$count_55_1,
+                         model = model_55_1,
+                         kappa = pars$kappa_55,
+                         exp_noise = exp_noise)
+  }
+  
+  if (is.na(observed$count_55_2)) {
+    ll_55_2 <- numeric(n)
+  } else {
+    ll_55_2 <- ll_nbinom(data = observed$count_55_2,
+                         model = model_55_2,
+                         kappa = pars$kappa_55,
+                         exp_noise = exp_noise)
+  }
+  
+  ll <- ll_55_all + ll_55_1 + ll_55_2
   
   if (any(!is.finite(ll))) {
     # return -Inf to force rejection
@@ -50,6 +71,8 @@ parameter_transform <- function(pars) {
   beta_0 <- pars[["beta_0"]]
   beta_1 <- pars[["beta_1"]]
   log_delta <- pars[["log_delta"]]
+  age_factor1 <- pars[["age_factor1"]]
+  age_factor2 <- pars[["age_factor2"]]
   kappa_55 <- pars[["kappa_55"]]
   
   list(log_A_ini = log_A_ini,
@@ -57,6 +80,8 @@ parameter_transform <- function(pars) {
        beta_0 = beta_0,
        beta_1 = beta_1,
        log_delta = log_delta,
+       age_factor1 = age_factor1,
+       age_factor2 = age_factor2,
        kappa_55 = kappa_55
   )
   
@@ -79,6 +104,10 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
+         mcstate::pmcmc_parameter("age_factor1", (0.5), min = (0),
+                                  prior = priors$age_factors),
+         mcstate::pmcmc_parameter("age_factor2", (1.5), min = (0),
+                                  prior = priors$age_factors),
          mcstate::pmcmc_parameter("kappa_55", 6, min = 0,
                                   prior = priors$kappas) #function(p) log(1e-10))
     ),
@@ -101,6 +130,9 @@ prepare_priors <- function(pars) {
   }
   priors$log_delta <- function(s) {
     dunif(s, min = (-10), max = 0.7, log = TRUE)
+  }
+  priors$age_factors <- function(s) {
+    dunif(s, min = (0), max = 10, log = TRUE)
   }
   priors$kappas <- function(s) {
     # dunif(s, min = 0, log = TRUE)
@@ -248,8 +280,8 @@ plot_states <- function(state, data) {
   matplot(data$yearWeek, t(state[6, , -1]),
           type = "l", lty = 1, col = col,
           xlab = "", ylab = "GPSC55 cases")
-  points(data$yearWeek, data$count_WGS_GPSC55, col = 3, pch = 20)
-  points(data$yearWeek, data$count_serotype, col = 4, type = "l")
+  points(data$yearWeek, data$count_55_all, col = 3, pch = 20)
+  points(data$yearWeek, data$count_12F_all, col = 4, type = "l")
   
   matplot(data$yearWeek, xlab = "", t(state["S", , -1]),
           type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6.7e7), yaxt = "n")

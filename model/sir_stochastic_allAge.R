@@ -28,6 +28,9 @@ beta_1 <- user(0)
 UK_calibration <- user(0.8066608) # FIXED (Lochen et al., 2022)
 
 log_delta <- user(0) # required in mcState
+age_factor1 <- user(0) # calibration factor for delta based on age groups
+age_factor2 <- user(0)
+
 hypo_sigma1_day <- user(28) # 28 days
 sigma_1 <- 1/(hypo_sigma1_day)
 hypo_sigma2_day <- user(1) # 1 day
@@ -59,6 +62,9 @@ initial(D) <- D_ini
 initial(S) <- N - A_ini - D_ini
 initial(R) <- 0
 initial(n_AD_weekly) <- 0 # infections
+initial(n_AD1_weekly) <- 0
+initial(n_AD2_weekly) <- 0
+
 # initial(n_AD_cumul) <- 0
 
 # initial(Ne) <- D_ini*alpha
@@ -82,6 +88,8 @@ beta <- beta_0*(
 # lambda <- beta*(A+D)/N
 lambda <- if ((A+D) > 0) beta*(A+D)/N else 0
 delta <- (10^(log_delta))*UK_calibration
+delta1 <- delta*age_factor1
+delta2 <- delta*age_factor2
 
 # log_wane <- scaled_wane*(max_wane-min_wane)+min_wane # scaled_wane*(max_wane−min_wane)+min_wane; rescaled using (wane-wane_min)/(wane_max-wane_min)
 # wane <- 10^(log_wane)
@@ -102,6 +110,10 @@ n_S_dead <- n_Suscep - n_SA
 # Leaving A
 n_Asym <- rbinom(A, p_Asym) # n_Asym <- n_AD + n_AR cause cyclic dependency error
 n_AD <- rbinom(n_Asym, delta/(delta+mu_0+sigma_1))
+
+n_AD1 <- rbinom((0.6*n_AD), delta1/(delta1+delta2)) # 60% younger people (0-44)
+n_AD2 <- rbinom((n_AD - n_AD1), delta2/(delta1+delta2))
+
 n_AR <- rbinom((n_Asym - n_AD), sigma_1/(mu_0+sigma_1))
 n_A_dead <- n_Asym - n_AD - n_AR
 
@@ -120,6 +132,10 @@ n_R_dead <- n_Resist - n_RS
 # n_cases_55 <- rbinom(D, 1-exp(-gamma*dt)) # observed cases
 # n_cases_non55 <- rpois(nu)
 
+# 12F age stratification for disease compartment
+
+
+
 # Closed system: births = deaths; all born susceptible
 n_S_born <- n_S_dead + n_Dd + n_D_dead + n_A_dead + n_R_dead
 
@@ -132,6 +148,10 @@ update(R) <- R + n_AR + n_DR - n_RS - n_R_dead
 # that "little trick" previously explained in https://github.com/mrc-ide/dust/blob/master/src/sir.cpp for cumulative incidence:
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
 update(n_AD_weekly) <- if (step %% 7 == 0) n_AD else n_AD_weekly + n_AD
+update(n_AD1_weekly) <- if (step %% 7 == 0) n_AD1 else n_AD1_weekly + n_AD1
+update(n_AD2_weekly) <- if (step %% 7 == 0) n_AD2 else n_AD2_weekly + n_AD2
+
+
 # update(n_AD_cumul) <- n_AD_cumul + n_AD # no interest in asymptomatic cases that've recovered
 
 # update(Ne) <- D * alpha

@@ -269,6 +269,8 @@ ageGroup12F_weekly <- dat_c %>%
     count_12F_2 = as.numeric(count_12F_2),
     count_55_1 = as.numeric(count_55_1),
     count_55_2 = as.numeric(count_55_2),
+    count_55_all = as.numeric(count_55_1 + count_55_2),
+    count_12F_all = as.numeric(count_12F_1 + count_12F_2),
     Ne = as.numeric(Ne)
   ) %>% 
   dplyr::arrange(yearWeek) %>% 
