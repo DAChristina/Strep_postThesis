@@ -129,7 +129,8 @@ prepare_priors <- function(pars) {
     dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
   priors$log_delta <- function(s) {
-    dunif(s, min = (-10), max = 0.7, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.2, delta = -4.5, log = TRUE)
+    # dunif(s, min = (-10), max = 0.7, log = TRUE)
   }
   priors$age_factors <- function(s) {
     dunif(s, min = (0), max = 10, log = TRUE)

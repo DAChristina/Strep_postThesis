@@ -142,7 +142,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # Figures! (still failed, margin error)
   # # fig <- pmcmc_trace(mcmc1)
   
-  Sys.sleep(1)
+  Sys.sleep(10)
   
   # New proposal matrix
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
