@@ -153,8 +153,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1000
   new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1000
   new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1000
-  new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1000
-  new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1000
+  new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*100
+  new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*100
   # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
   rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "age_factor1", "age_factor2", "kappa_55")
