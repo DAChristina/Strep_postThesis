@@ -18,9 +18,8 @@ pars <- list(N_ini = 6.7e7,
              # scaled_wane = 0.0682579543,
              # psi = (0.5),
              hypo_sigma_2 = (1),
-             log_delta = (-4.65219600756188), # (-4.65135010884371) #  # 
-             age_factor1 = 0.5,
-             age_factor2 = 1.2
+             log_delta1 = (-5.5),
+             log_delta2 = (-5)
              # alpha = 0.01,
              # gamma_annual = 0.01,
              # nu_annual = 0.01
@@ -114,13 +113,13 @@ incidence_modelled <-
   dplyr::mutate(compartment = 
                   dplyr::case_when(index == 1 ~ "Time",
                                    index == 2 ~ "A",
-                                   index == 3 ~ "D",
-                                   index == 4 ~ "S",
-                                   index == 5 ~ "R",
-                                   index == 6 ~ "model_n_AD_weekly",
-                                   index == 7 ~ "model_n_AD1_weekly",
-                                   index == 8 ~ "model_n_AD2_weekly",
-                                   index == 9 ~ "cases_non55",
+                                   index == 3 ~ "model_D1",
+                                   index == 4 ~ "model_D2",
+                                   index == 5 ~ "model_D",
+                                   index == 6 ~ "S",
+                                   index == 7 ~ "R",
+                                   index == 8 ~ "model_n_AD1_weekly",
+                                   index == 9 ~ "model_n_AD2_weekly",
                                    index == 10 ~ "cases_12F"
                   )) %>% 
   dplyr::select(-index) %>%
@@ -144,8 +143,8 @@ ggplot(incidence_modelled %>%
          dplyr::filter(
            # compartment %in% c("D", "model_n_AD_weekly", "data_count_55_all"),
            # compartment %in% c("model_n_AD1_weekly", "model_n_AD2_weekly", "data_count_55_all"),
-           # compartment %in% c("model_n_AD1_weekly", "data_count_55_1"),
-           compartment %in% c("model_n_AD2_weekly", "data_count_55_2"),
+           compartment %in% c("D", "data_count_55_all"),
+           # compartment %in% c("model_n_AD2_weekly", "data_count_55_2"),
          )
        ,
        aes(x = yearWeek, y = value,
@@ -168,29 +167,56 @@ ggplot(incidence_modelled %>%
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
 
+age1 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(
+                   compartment %in% c("model_n_AD1_weekly", "data_count_55_1"),
+                 )
+               ,
+               aes(x = yearWeek, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
+  geom_line() +
+  # scale_y_continuous(trans = "log1p") +
+  # scale_y_continuous(limits = c(0, 50)) +
+  # scale_x_continuous(limits = c(0, 700)) +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  ggtitle("Cases for 0-44 (Aggregated by Week)") +
+  xlab("Time") +
+  ylab("Number of People") +
+  theme_bw() +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
 
-transformations <- data.frame(
-  log_beta_0 = seq(-5, 0, 0.5)
-) %>% 
-  dplyr::mutate(beta_0 = as.numeric(10^log_beta_0),
-                scaled_A_ini = seq(0, 1, 0.1),
-                max_A_ini = 0,
-                min_A_ini = -20,
-                log_A_ini = scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini,
-                A_ini = 10^(log_A_ini)*6.7e7) %>% 
-  glimpse()
+age2 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(
+                   compartment %in% c("model_n_AD2_weekly", "data_count_55_2"),
+                 )
+               ,
+               aes(x = yearWeek, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
+  geom_line() +
+  # scale_y_continuous(trans = "log1p") +
+  # scale_y_continuous(limits = c(0, 50)) +
+  # scale_x_continuous(limits = c(0, 700)) +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  ggtitle("Cases for 45+ (Aggregated by Week)") +
+  xlab("Time") +
+  ylab("Number of People") +
+  theme_bw() +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
 
-# test A_ini
-
-log_A_ini = -3.77295312521097
-# log to scaled
-(log_A_ini-(-10)) / (0-(-10)) # (x - min) / (max - min)
-
-
-
-
-
-
-
-
-
+cowplot::plot_grid(age1, age2,
+                   nrow = 2,
+                   labels = c("A", "B"))

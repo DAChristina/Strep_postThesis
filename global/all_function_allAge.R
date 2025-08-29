@@ -12,18 +12,18 @@ case_compare <- function(state, observed, pars = NULL) {
   n <- ncol(state)
   
   # sir_model$info()$index$n_AD_weekly
-  model_55_all <- state[6, , drop = TRUE]
-  model_55_1 <- state[7, , drop = TRUE]
-  model_55_2 <- state[8, , drop = TRUE]
+  # model_55_all <- state[6, , drop = TRUE]
+  model_55_1 <- state[8, , drop = TRUE]
+  model_55_2 <- state[9, , drop = TRUE]
   
-  if (is.na(observed$count_55_all)) {
-    ll_55_all <- numeric(n)
-  } else {
-    ll_55_all <- ll_nbinom(data = observed$count_55_all,
-                           model = model_55_all,
-                           kappa = pars$kappa_55,
-                           exp_noise = exp_noise)
-  }
+  # if (is.na(observed$count_55_all)) {
+  #   ll_55_all <- numeric(n)
+  # } else {
+  #   ll_55_all <- ll_nbinom(data = observed$count_55_all,
+  #                          model = model_55_all,
+  #                          kappa = pars$kappa_55,
+  #                          exp_noise = exp_noise)
+  # }
   
   if (is.na(observed$count_55_1)) {
     ll_55_1 <- numeric(n)
@@ -43,7 +43,7 @@ case_compare <- function(state, observed, pars = NULL) {
                          exp_noise = exp_noise)
   }
   
-  ll <- ll_55_all + ll_55_1 + ll_55_2
+  ll <- ll_55_1 + ll_55_2
   
   if (any(!is.finite(ll))) {
     # return -Inf to force rejection
@@ -70,18 +70,18 @@ parameter_transform <- function(pars) {
   time_shift_1 <- pars[["time_shift_1"]]
   beta_0 <- pars[["beta_0"]]
   beta_1 <- pars[["beta_1"]]
-  log_delta <- pars[["log_delta"]]
-  age_factor1 <- pars[["age_factor1"]]
-  age_factor2 <- pars[["age_factor2"]]
+  # log_delta <- pars[["log_delta"]]
+  log_delta1 <- pars[["log_delta1"]]
+  log_delta2 <- pars[["log_delta2"]]
   kappa_55 <- pars[["kappa_55"]]
   
   list(log_A_ini = log_A_ini,
        time_shift_1 = time_shift_1,
        beta_0 = beta_0,
        beta_1 = beta_1,
-       log_delta = log_delta,
-       age_factor1 = age_factor1,
-       age_factor2 = age_factor2,
+       # log_delta = log_delta,
+       log_delta1 = log_delta1,
+       log_delta2 = log_delta2,
        kappa_55 = kappa_55
   )
   
@@ -102,12 +102,12 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
+         # mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
+         #                          prior = priors$log_delta),
+         mcstate::pmcmc_parameter("log_delta1", (-4.55), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("age_factor1", (6), min = (0),
-                                  prior = function(p) log(1e-10)),
-         mcstate::pmcmc_parameter("age_factor2", (8), min = (0),
-                                  prior = function(p) log(1e-10)),
+         mcstate::pmcmc_parameter("log_delta2", (-4.55), min = (-10), max = 0.7,
+                                  prior = priors$log_delta),
          mcstate::pmcmc_parameter("kappa_55", 6, min = 0,
                                   prior = priors$kappas) #function(p) log(1e-10))
     ),
@@ -129,10 +129,10 @@ prepare_priors <- function(pars) {
     dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
   priors$log_delta <- function(s) {
-    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.2, delta = -4.5, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.6, delta = -4.5, log = TRUE)
     # dunif(s, min = (-10), max = 0.7, log = TRUE)
   }
-  priors$age_factors <- function(s) {
+  priors$deltas <- function(s) {
     dunif(s, min = (0), max = 10, log = TRUE)
   }
   priors$kappas <- function(s) {
@@ -268,7 +268,7 @@ observe <- function(pmcmc_samples) {
   time <- pmcmc_samples$trajectories$time
   
   ## extract model outputs
-  model_55 <- state[6, , , drop = TRUE]
+  model_55 <- state[5, , , drop = TRUE]
   
   observed <- list()
   observed$cases_child_GPSC55 <- observe_pois(model_55)
@@ -278,7 +278,7 @@ observe <- function(pmcmc_samples) {
 
 plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
-  matplot(data$yearWeek, t(state[6, , -1]),
+  matplot(data$yearWeek, t(state[5, , -1]),
           type = "l", lty = 1, col = col,
           xlab = "", ylab = "GPSC55 cases")
   points(data$yearWeek, data$count_55_all, col = 3, pch = 20)

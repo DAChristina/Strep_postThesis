@@ -30,9 +30,9 @@ model_vs_data <- function(n_sts){
                # scaled_wane = results[7,2],
                # psi = (0.5),
                hypo_sigma_2 = (1),
-               log_delta = results[5,2],
-               age_factor1 = results[6,2],
-               age_factor2 = results[7,2]
+               # log_delta = results[5,2],
+               log_delta1 = results[5,2],
+               log_delta2 = results[6,2]
                # alpha = results[9,2],
                # gamma_annual = results[10,2],
                # nu_annual = results[11,2]
@@ -122,13 +122,13 @@ model_vs_data <- function(n_sts){
     dplyr::mutate(compartment = 
                     dplyr::case_when(index == 1 ~ "Time",
                                      index == 2 ~ "A",
-                                     index == 3 ~ "model_D",
-                                     index == 4 ~ "S",
-                                     index == 5 ~ "R",
-                                     index == 6 ~ "model_n_AD_weekly",
-                                     index == 7 ~ "model_n_AD1_weekly",
-                                     index == 8 ~ "model_n_AD2_weekly",
-                                     index == 9 ~ "cases_non55",
+                                     index == 3 ~ "model_D1",
+                                     index == 4 ~ "model_D2",
+                                     index == 5 ~ "model_D",
+                                     index == 6 ~ "S",
+                                     index == 7 ~ "R",
+                                     index == 8 ~ "model_n_AD1_weekly",
+                                     index == 9 ~ "model_n_AD2_weekly",
                                      index == 10 ~ "cases_12F"
                     )) %>% 
     dplyr::select(-index) %>%
@@ -206,7 +206,7 @@ model_vs_data <- function(n_sts){
       width = 24, height = 17, unit = "cm", res = 600)
   p <- ggplot(incidence_modelled %>% 
                 dplyr::filter(
-                  compartment %in% c("model_n_AD_weekly", "data_count_55_all", "data_count_12F_all"),
+                  compartment %in% c("model_D1", "data_count_55_all", "data_count_12F_all"),
                   compartment != "Time",
                 )
               ,
@@ -235,7 +235,7 @@ model_vs_data <- function(n_sts){
       width = 24, height = 34, unit = "cm", res = 600)
   p1 <- ggplot(incidence_modelled %>% 
                  dplyr::filter(
-                   compartment %in% c("model_n_AD1_weekly", "data_count_55_1", "data_count_12F_1"),
+                   compartment %in% c("model_D1", "data_count_55_1", "data_count_12F_1"),
                    compartment != "Time",
                  )
                ,
@@ -258,7 +258,7 @@ model_vs_data <- function(n_sts){
   
   p2 <- ggplot(incidence_modelled %>% 
                  dplyr::filter(
-                   compartment %in% c("model_n_AD2_weekly", "data_count_55_2", "data_count_12F_2"),
+                   compartment %in% c("model_D2", "data_count_55_2", "data_count_12F_2"),
                    compartment != "Time",
                  )
                ,
