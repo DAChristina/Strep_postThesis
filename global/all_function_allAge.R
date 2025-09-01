@@ -94,7 +94,7 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (0.6), min = (0), max = 1,
+    list(mcstate::pmcmc_parameter("log_A_ini", (0.55), min = (0), max = 1,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
@@ -104,9 +104,9 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          # mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
          #                          prior = priors$log_delta),
-         mcstate::pmcmc_parameter("log_delta1", (-4.55), min = (-10), max = 0.7,
+         mcstate::pmcmc_parameter("log_delta1", (-4.8), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("log_delta2", (-4.55), min = (-10), max = 0.7,
+         mcstate::pmcmc_parameter("log_delta2", (-4.8), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("kappa_55", 6, min = 0,
                                   prior = priors$kappas) #function(p) log(1e-10))
@@ -129,7 +129,7 @@ prepare_priors <- function(pars) {
     dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
   priors$log_delta <- function(s) {
-    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.6, delta = -4.5, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.8, delta = -4.8, log = TRUE)
     # dunif(s, min = (-10), max = 0.7, log = TRUE)
   }
   priors$deltas <- function(s) {
