@@ -98,7 +98,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.03, min = 0, max = 0.8,
+         mcstate::pmcmc_parameter("beta_0", 0.04, min = 0, max = 0.8,
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
