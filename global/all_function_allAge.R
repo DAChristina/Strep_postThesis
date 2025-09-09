@@ -13,8 +13,9 @@ case_compare <- function(state, observed, pars = NULL) {
   
   # sir_model$info()$index$n_AD_weekly
   # model_55_all <- state[6, , drop = TRUE]
-  model_55_1 <- state[8, , drop = TRUE]
-  model_55_2 <- state[9, , drop = TRUE]
+  model_55_1 <- state[9, , drop = TRUE]
+  model_55_2 <- state[10, , drop = TRUE]
+  model_55_3 <- state[11, , drop = TRUE]
   
   # if (is.na(observed$count_55_all)) {
   #   ll_55_all <- numeric(n)
@@ -43,7 +44,16 @@ case_compare <- function(state, observed, pars = NULL) {
                          exp_noise = exp_noise)
   }
   
-  ll <- ll_55_1 + ll_55_2
+  if (is.na(observed$count_55_3)) {
+    ll_55_3 <- numeric(n)
+  } else {
+    ll_55_3 <- ll_nbinom(data = observed$count_55_3,
+                         model = model_55_3,
+                         kappa = pars$kappa_55,
+                         exp_noise = exp_noise)
+  }
+  
+  ll <- ll_55_1 + ll_55_2 + ll_55_3
   
   if (any(!is.finite(ll))) {
     # return -Inf to force rejection
@@ -73,6 +83,7 @@ parameter_transform <- function(pars) {
   # log_delta <- pars[["log_delta"]]
   log_delta1 <- pars[["log_delta1"]]
   log_delta2 <- pars[["log_delta2"]]
+  log_delta3 <- pars[["log_delta3"]]
   kappa_55 <- pars[["kappa_55"]]
   
   list(log_A_ini = log_A_ini,
@@ -82,6 +93,7 @@ parameter_transform <- function(pars) {
        # log_delta = log_delta,
        log_delta1 = log_delta1,
        log_delta2 = log_delta2,
+       log_delta3 = log_delta3,
        kappa_55 = kappa_55
   )
   
@@ -104,9 +116,11 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          # mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
          #                          prior = priors$log_delta),
-         mcstate::pmcmc_parameter("log_delta1", (-4.8), min = (-10), max = 0.7,
+         mcstate::pmcmc_parameter("log_delta1", (-5), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("log_delta2", (-4.8), min = (-10), max = 0.7,
+                                  prior = priors$log_delta),
+         mcstate::pmcmc_parameter("log_delta3", (-4.8), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("kappa_55", 6, min = 0,
                                   prior = priors$kappas) #function(p) log(1e-10))
@@ -278,7 +292,7 @@ observe <- function(pmcmc_samples) {
 
 plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
-  matplot(data$yearWeek, t(state[5, , -1]),
+  matplot(data$yearWeek, t(state["D", , -1]),
           type = "l", lty = 1, col = col,
           xlab = "", ylab = "GPSC55 cases")
   points(data$yearWeek, data$count_55_all, col = 3, pch = 20)

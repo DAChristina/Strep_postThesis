@@ -18,8 +18,9 @@ pars <- list(N_ini = 6.7e7,
              # scaled_wane = 0.0682579543,
              # psi = (0.5),
              hypo_sigma_2 = (1),
-             log_delta1 = (-5.5),
-             log_delta2 = (-5)
+             log_delta1 = (-4),
+             log_delta2 = (-3),
+             log_delta3 = (-3)
              # alpha = 0.01,
              # gamma_annual = 0.01,
              # nu_annual = 0.01
@@ -87,6 +88,15 @@ sir_data <- dplyr::bind_rows(
       value = count_55_2,
       compartment = "data_count_55_2"
     )
+  ,
+  data %>% 
+    dplyr::transmute(
+      replicate = 1,
+      # steps = time_start+1,
+      weekly = seq_along(replicate),
+      value = count_55_3,
+      compartment = "data_count_55_3"
+    )
 ) %>%
   glimpse()
 
@@ -115,12 +125,13 @@ incidence_modelled <-
                                    index == 2 ~ "A",
                                    index == 3 ~ "model_D1",
                                    index == 4 ~ "model_D2",
-                                   index == 5 ~ "model_D",
-                                   index == 6 ~ "S",
-                                   index == 7 ~ "R",
-                                   index == 8 ~ "model_n_AD1_weekly",
-                                   index == 9 ~ "model_n_AD2_weekly",
-                                   index == 10 ~ "cases_12F"
+                                   index == 5 ~ "model_D3",
+                                   index == 6 ~ "model_D",
+                                   index == 7 ~ "S",
+                                   index == 8 ~ "R",
+                                   index == 9 ~ "model_n_AD1_weekly",
+                                   index == 10 ~ "model_n_AD2_weekly",
+                                   index == 11 ~ "model_n_AD3_weekly"
                   )) %>% 
   dplyr::select(-index) %>%
   dplyr::mutate(weekly = ceiling(steps/7)) %>% 
@@ -169,7 +180,7 @@ ggplot(incidence_modelled %>%
 
 age1 <- ggplot(incidence_modelled %>% 
                  dplyr::filter(
-                   compartment %in% c("model_n_AD1_weekly", "data_count_55_1"),
+                   compartment %in% c("model_D1", "data_count_55_1"),
                  )
                ,
                aes(x = yearWeek, y = value,
@@ -194,7 +205,7 @@ age1 <- ggplot(incidence_modelled %>%
 
 age2 <- ggplot(incidence_modelled %>% 
                  dplyr::filter(
-                   compartment %in% c("model_n_AD2_weekly", "data_count_55_2"),
+                   compartment %in% c("model_D2", "data_count_55_2"),
                  )
                ,
                aes(x = yearWeek, y = value,
@@ -207,7 +218,7 @@ age2 <- ggplot(incidence_modelled %>%
   scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                date_breaks = "year",
                date_labels = "%Y") +
-  ggtitle("Cases for 45+ (Aggregated by Week)") +
+  ggtitle("Cases for 45-64 (Aggregated by Week)") +
   xlab("Time") +
   ylab("Number of People") +
   theme_bw() +
@@ -217,6 +228,31 @@ age2 <- ggplot(incidence_modelled %>%
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
 
-cowplot::plot_grid(age1, age2,
-                   nrow = 2,
-                   labels = c("A", "B"))
+age3 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(
+                   compartment %in% c("model_D3", "data_count_55_3"),
+                 )
+               ,
+               aes(x = yearWeek, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
+  geom_line() +
+  # scale_y_continuous(trans = "log1p") +
+  # scale_y_continuous(limits = c(0, 50)) +
+  # scale_x_continuous(limits = c(0, 700)) +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  ggtitle("Cases for 65+ (Aggregated by Week)") +
+  xlab("Time") +
+  ylab("Number of People") +
+  theme_bw() +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+cowplot::plot_grid(age1, age2, age3,
+                   nrow = 3,
+                   labels = c("A", "B", "C"))

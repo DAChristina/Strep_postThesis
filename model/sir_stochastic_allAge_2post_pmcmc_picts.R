@@ -32,7 +32,8 @@ model_vs_data <- function(n_sts){
                hypo_sigma_2 = (1),
                # log_delta = results[5,2],
                log_delta1 = results[5,2],
-               log_delta2 = results[6,2]
+               log_delta2 = results[6,2],
+               log_delta3 = results[7,2]
                # alpha = results[9,2],
                # gamma_annual = results[10,2],
                # nu_annual = results[11,2]
@@ -101,6 +102,15 @@ model_vs_data <- function(n_sts){
         value = count_55_2,
         compartment = "data_count_55_2"
       )
+    ,
+    data %>% 
+      dplyr::transmute(
+        replicate = 1,
+        # steps = time_start+1,
+        weekly = seq_along(replicate),
+        value = count_55_3,
+        compartment = "data_count_55_3"
+      )
   ) %>%
     glimpse()
   
@@ -124,12 +134,13 @@ model_vs_data <- function(n_sts){
                                      index == 2 ~ "A",
                                      index == 3 ~ "model_D1",
                                      index == 4 ~ "model_D2",
-                                     index == 5 ~ "model_D",
-                                     index == 6 ~ "S",
-                                     index == 7 ~ "R",
-                                     index == 8 ~ "model_n_AD1_weekly",
-                                     index == 9 ~ "model_n_AD2_weekly",
-                                     index == 10 ~ "cases_12F"
+                                     index == 5 ~ "model_D3",
+                                     index == 6 ~ "model_D",
+                                     index == 7 ~ "S",
+                                     index == 8 ~ "R",
+                                     index == 9 ~ "model_n_AD1_weekly",
+                                     index == 10 ~ "model_n_AD2_weekly",
+                                     index == 11 ~ "model_n_AD3_weekly"
                     )) %>% 
     dplyr::select(-index) %>%
     dplyr::mutate(weekly = ceiling(steps/7)) %>% 
@@ -145,7 +156,7 @@ model_vs_data <- function(n_sts){
         dplyr::transmute(
           replicate = 1,
           weekly = seq_along(replicate),
-          value = count_12F_1 + count_12F_2,
+          value = count_12F_1 + count_12F_2 + count_12F_3,
           compartment = "data_count_12F_all"
         )
     ) %>% 
@@ -165,6 +176,15 @@ model_vs_data <- function(n_sts){
           weekly = seq_along(replicate),
           value = count_12F_2,
           compartment = "data_count_12F_2"
+        )
+    ) %>% 
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = seq_along(replicate),
+          value = count_12F_3,
+          compartment = "data_count_12F_3"
         )
     ) %>% 
     dplyr::full_join(
@@ -202,37 +222,8 @@ model_vs_data <- function(n_sts){
   print(p)
   dev.off()
   
-  png(paste0(dir_name, "figs/model_vs_data_using_weekly_cumulative.png"),
-      width = 24, height = 17, unit = "cm", res = 600)
-  p <- ggplot(incidence_modelled %>% 
-                dplyr::filter(
-                  compartment %in% c("model_D1", "data_count_55_all", "data_count_12F_all"),
-                  compartment != "Time",
-                )
-              ,
-              aes(x = yearWeek, y = value,
-                  group = interaction(compartment,replicate),
-                  colour = compartment)) +
-    geom_line() +
-    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
-                 date_breaks = "year",
-                 date_labels = "%Y") +
-    ggtitle("Cases (Aggregated by Week)") +
-    xlab("Time") +
-    ylab("Number of People") +
-    theme_bw() +
-    theme(legend.position = c(0.15, 0.85),
-          legend.title = element_blank(),
-          legend.key.size = unit(0.8, "lines"),
-          legend.text = element_text(size = 10),
-          legend.background = element_rect(fill = "transparent", color = "transparent"))
-  
-  print(p)
-  dev.off()
-  
-  
   png(paste0(dir_name, "figs/model_vs_data_ageGroup12F.png"),
-      width = 24, height = 34, unit = "cm", res = 600)
+      width = 24, height = 52, unit = "cm", res = 600)
   p1 <- ggplot(incidence_modelled %>% 
                  dplyr::filter(
                    compartment %in% c("model_D1", "data_count_55_1", "data_count_12F_1"),
@@ -269,7 +260,30 @@ model_vs_data <- function(n_sts){
     scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                  date_breaks = "year",
                  date_labels = "%Y") +
-    ggtitle("Cases (Aggregated by Week) for age 45+") +
+    ggtitle("Cases (Aggregated by Week) for age 45-64") +
+    xlab("Time") +
+    ylab("Number of People") +
+    theme_bw() +
+    theme(legend.position = c(0.15, 0.85),
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  p3 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(
+                   compartment %in% c("model_D3", "data_count_55_3", "data_count_12F_3"),
+                   compartment != "Time",
+                 )
+               ,
+               aes(x = yearWeek, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
+    geom_line() +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    ggtitle("Cases (Aggregated by Week) for age 65+") +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +
@@ -280,9 +294,9 @@ model_vs_data <- function(n_sts){
           legend.background = element_rect(fill = "transparent", color = "transparent"))
   
   
-  p_combined <- cowplot::plot_grid(p1, p2,
-                                   nrow =2,
-                                   labels = c("A", "B"))
+  p_combined <- cowplot::plot_grid(p1, p2, p3,
+                                   nrow =3,
+                                   labels = c("A", "B", "C"))
   
   
   print(p_combined)
