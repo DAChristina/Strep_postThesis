@@ -7,7 +7,7 @@ post_pmcmc_pics <- function(n_sts){
   mcmc1 <- read.csv(paste0(dir_name, "mcmc1.csv"))
   mcmc2 <- read.csv(paste0(dir_name, "mcmc2.csv"))
   mcmc2_burnedin <- read.csv(paste0(dir_name, "mcmc2_burnedin.csv"))
-  tune_pmcmc_result <- readRDS(paste0(dir_name, "tune_pmcmc_result.rds"))
+  # tune_pmcmc_result <- readRDS(paste0(dir_name, "tune_pmcmc_result.rds"))
   
   # mcmc1
   # fig <- pmcmc_trace(coda::as.mcmc(mcmc1))
@@ -31,27 +31,25 @@ post_pmcmc_pics <- function(n_sts){
   dev.off()
   
   # final parameters with CI
-  tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
-  mcmc_lo_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.025))
-  mcmc_hi_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.975))
-  
-  binds_tune_initial <- rbind(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]), mcmc_lo_CI, mcmc_hi_CI)
-  t_tune_initial <- t(binds_tune_initial)
-  colnames(t_tune_initial) <- c("values", "low_CI", "high_CI")
-  
-  write.csv(t_tune_initial,
-            paste0(dir_name, "tune_initial_with_CI.csv"), row.names = T)
+  # tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
+  # mcmc_lo_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.025))
+  # mcmc_hi_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.975))
+  # 
+  # binds_tune_initial <- rbind(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]), mcmc_lo_CI, mcmc_hi_CI)
+  # t_tune_initial <- t(binds_tune_initial)
+  # colnames(t_tune_initial) <- c("values", "low_CI", "high_CI")
+  # 
+  # write.csv(t_tune_initial,
+  #           paste0(dir_name, "tune_initial_with_CI.csv"), row.names = T)
   
   # MCMC diagnostics
   # 1. Gelman-Rubin
-  figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
-  # fig <- diag_cov_mtx(figs_gelman_init)
-  # fig <- diag_gelman_rubin(figs_gelman_init)
+  # figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
   
-  png(paste0(dir_name, "figs/mcmc2_diag_gelmanRubin_%02d.png"),
-      width = 17, height = 17, unit = "cm", res = 600)
-  diag_gelman_rubin(figs_gelman_init)
-  dev.off()
+  # png(paste0(dir_name, "figs/mcmc2_diag_gelmanRubin_%02d.png"),
+  #     width = 17, height = 17, unit = "cm", res = 600)
+  # diag_gelman_rubin(figs_gelman_init)
+  # dev.off()
   
   # 2. Autocorrelation
   png(paste0(dir_name, "figs/mcmc2_diag_auCorr_%02d.png"),
@@ -60,11 +58,11 @@ post_pmcmc_pics <- function(n_sts){
   dev.off()
   
   # 3. ggpairs
-  png(paste0(dir_name, "figs/mcmc2_diag_ggPairs_%02d.png"),
-      width = 17, height = 17, unit = "cm", res = 600)
-  p <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
-  print(p)
-  dev.off()
+  # png(paste0(dir_name, "figs/mcmc2_diag_ggPairs_%02d.png"),
+  #     width = 17, height = 17, unit = "cm", res = 600)
+  # p <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
+  # print(p)
+  # dev.off()
 }
 
 # a slight modification for college's HPC

@@ -1,15 +1,15 @@
 #!/bin/bash
 
-#PBS -N Det1_100250
+#PBS -N Det1_100000
 #PBS -l walltime=24:00:00
-#PBS -l select=1:ncpus=16:mem=124gb
+#PBS -l select=1:ncpus=8:mem=124gb
 
 # https://icl-rcs-user-guide.readthedocs.io/en/latest/hpc/pilot/cx3-phase2/#job-sizing-guidance
 
 source ~/anaconda3/etc/profile.d/conda.sh
 
 cd $PBS_O_WORKDIR
-steps_folder=100250 # no space
+steps_folder=100000 # no space
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" \
     --mode run_all \
     --n_particles 500 --n_steps "$steps_folder" \
