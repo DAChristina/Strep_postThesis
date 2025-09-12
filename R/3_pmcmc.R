@@ -95,6 +95,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # dir_name <- paste0("outputs/genomics/trial_", ifelse(run_stochastic, "stochastic", "deterministic"), "_", n_sts, "/")
   dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
   dir.create(dir_name, FALSE, TRUE)
+  dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
   
   if(run1_stochastic){
     filter <- mcstate::particle_filter$new(data = sir_data,
