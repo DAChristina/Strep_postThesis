@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #PBS -N Det1_200000
-#PBS -l walltime=24:00:00
-#PBS -l select=1:ncpus=16:mem=124gb
+#PBS -l walltime=72:00:00
+#PBS -l select=1:ncpus=16:mem=240gb
 
 # https://icl-rcs-user-guide.readthedocs.io/en/latest/hpc/pilot/cx3-phase2/#job-sizing-guidance
 
