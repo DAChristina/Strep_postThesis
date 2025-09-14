@@ -29,7 +29,7 @@ age_proportion <- dplyr::left_join(
   ) %>% 
   dplyr::mutate(
     ageGroup12F = factor(ageGroup12F,
-                       levels = c("0-44", "45-65", "65+")),
+                       levels = c("0-44", "45-64", "65+")),
     PopProp = round(PopSize12F/PopSize_year, 1)
   ) %>% 
   # view() %>% 
@@ -109,7 +109,43 @@ incidence_modelled <- dplyr::bind_rows(
       by = "year",
       relationship = "many-to-many"
     ) %>% 
-    dplyr::filter(ageGroup6 %in% c("45-64", "65+")) %>% # D2 (45+)
+    dplyr::filter(ageGroup6 %in% c("45-64")) %>% # D2 (45-64)
+    dplyr::mutate(case_modelled = round(value*PopProp, 1)) %>% 
+    dplyr::filter(!is.na(ageGroup6)) %>% 
+    dplyr::arrange(yearWeek)
+  ,
+  read.csv("raw_data/incidence_modelled_GPSC55.csv") %>% 
+    dplyr::filter(compartment == "model_D3") %>% 
+    dplyr::mutate(yearWeek = as.Date(yearWeek),
+                  year = year(yearWeek)) %>% 
+    dplyr::left_join(
+      # age proportion in England
+      dplyr::left_join(
+        read.csv("raw_data/nomis_population_long.csv") %>% 
+          # region stratification is not needed
+          dplyr::group_by(year) %>% 
+          dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
+          dplyr::ungroup()
+        ,
+        read.csv("raw_data/nomis_population_long.csv") %>% 
+          # region stratification is not needed
+          dplyr::group_by(ageGroup6, year) %>% 
+          dplyr::summarise(PopSize6 = sum(PopSize)) %>% 
+          dplyr::ungroup()
+        ,
+        by = "year"
+      ) %>% 
+        dplyr::mutate(
+          ageGroup6 = factor(ageGroup6,
+                             levels = c("<2", "2-4", "5-14", "15-44", "45-64", "65+")),
+          PopProp = round(PopSize6/PopSize_year, 1)
+        ) %>% 
+        glimpse()
+      ,
+      by = "year",
+      relationship = "many-to-many"
+    ) %>% 
+    dplyr::filter(ageGroup6 %in% c("65+")) %>% # D3 (65+)
     dplyr::mutate(case_modelled = round(value*PopProp, 1)) %>% 
     dplyr::filter(!is.na(ageGroup6)) %>% 
     dplyr::arrange(yearWeek)
@@ -213,7 +249,7 @@ ggplot(GPSC55_data_ageGroup6,
   theme_bw()
 
 # combine df
-png("outputs/genomics/trials_GPSC55/trial_100250/figs/model_vs_data.png",
+png("outputs/genomics/trials_GPSC55/trial_25+05/figs/model_vs_data.png",
     width = 24, height = 17, unit = "cm", res = 600)
 dplyr::bind_rows(
   incidence_modelled %>% 

@@ -677,7 +677,7 @@ reselected_GPSC55_1 <- test %>%
   ) %>% 
   glimpse()
 
-ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
+countAge1 <- ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F_1, colour = "12F")) +
   geom_line(aes(y = count_55_1, colour = "GPSC55"), size = 1) +
   geom_line(aes(y = predicted_count_55_1, colour = "GAM prediction")) +
@@ -697,6 +697,7 @@ ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
+countAge1
 
 
 ################################################################################
@@ -1018,7 +1019,7 @@ reselected_GPSC55_2 <- test %>%
   ) %>% 
   glimpse()
 
-ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
+countAge2 <- ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F_2, colour = "12F")) +
   geom_line(aes(y = count_55_2, colour = "GPSC55"), size = 1) +
   geom_line(aes(y = predicted_count_55_2, colour = "GAM prediction")) +
@@ -1038,6 +1039,7 @@ ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
+countAge2
 
 
 ################################################################################
@@ -1359,7 +1361,7 @@ reselected_GPSC55_3 <- test %>%
   ) %>% 
   glimpse()
 
-ggplot(reselected_GPSC55_3, aes(x = yearWeek)) +
+countAge3 <- ggplot(reselected_GPSC55_3, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F_3, colour = "12F")) +
   geom_line(aes(y = count_55_3, colour = "GPSC55"), size = 1) +
   geom_line(aes(y = predicted_count_55_3, colour = "GAM prediction")) +
@@ -1379,3 +1381,16 @@ ggplot(reselected_GPSC55_3, aes(x = yearWeek)) +
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
+countAge3
+
+
+# save compiled picts
+png("report/picts_count_ageGroups.png",
+    width = 24, height = 52, unit = "cm", res = 600)
+countAge_combined <- cowplot::plot_grid(countAge1, countAge2, countAge3,
+                                 nrow =3,
+                                 labels = c("A", "B", "C"))
+
+
+print(countAge_combined)
+dev.off()

@@ -106,13 +106,22 @@ n_S_dead <- n_Suscep - n_SA
 
 # Leaving A
 n_Asym <- rbinom(A, p_Asym) # n_Asym <- n_AD + n_AR cause cyclic dependency error
-n_AR <- rbinom(n_Asym, sigma_1/(delta1+delta2+delta3+mu_0+sigma_1))
-n_AD1 <- rbinom((n_Asym - n_AR),
+
+popProp1 <- 0.4*n_Asym
+popProp2 <- 0.2*n_Asym
+popProp3 <- 0.2*n_Asym
+
+
+n_AD1 <- rbinom(popProp1,
                 delta1/(delta1+delta2+delta3+mu_0+sigma_1)) # 60% younger (0-44)
-n_AD2 <- rbinom((n_Asym - n_AR - n_AD1),
+n_AD2 <- rbinom(popProp2,
                 delta2/(delta1+delta2+delta3+mu_0+sigma_1))
-n_AD3 <- rbinom((n_Asym - n_AR - n_AD1 - n_AD2),
+n_AD3 <- rbinom(popProp3,
                 delta3/(delta1+delta2+delta3+mu_0+sigma_1))
+
+n_AR <- rbinom((n_Asym - (n_AD1 + n_AD2 + n_AD3)),
+               sigma_1/(delta1+delta2+delta3+mu_0+sigma_1))
+
 n_A_dead <- n_Asym - (n_AD1 + n_AD2 + n_AD3 + n_AR)
 
 # Leaving D1
