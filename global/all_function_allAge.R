@@ -282,7 +282,8 @@ observe <- function(pmcmc_samples) {
   time <- pmcmc_samples$trajectories$time
   
   ## extract model outputs
-  model_55 <- state[6, , , drop = TRUE]
+  # model state refers to n_AD_weekly (not the D compartment)
+  model_55 <- (state[9, , , drop = TRUE]+state[10, , , drop = TRUE]+state[11, , , drop = TRUE])
   
   observed <- list()
   observed$cases_child_GPSC55 <- observe_pois(model_55)
@@ -292,7 +293,8 @@ observe <- function(pmcmc_samples) {
 
 plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
-  matplot(data$yearWeek, t(state["D", , -1]),
+  # model state refers to n_AD_weekly (not the D compartment)
+  matplot(data$yearWeek, t((state["n_AD1_weekly", , -1]+state["n_AD2_weekly", , -1]+state["n_AD3_weekly", , -1])),
           type = "l", lty = 1, col = col,
           xlab = "", ylab = "GPSC55 cases")
   points(data$yearWeek, data$count_55_all, col = 3, pch = 20)
