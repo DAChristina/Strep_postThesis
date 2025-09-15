@@ -282,7 +282,7 @@ observe <- function(pmcmc_samples) {
   time <- pmcmc_samples$trajectories$time
   
   ## extract model outputs
-  model_55 <- state[5, , , drop = TRUE]
+  model_55 <- state[6, , , drop = TRUE]
   
   observed <- list()
   observed$cases_child_GPSC55 <- observe_pois(model_55)

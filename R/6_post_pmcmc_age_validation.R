@@ -109,8 +109,8 @@ incidence_modelled <- dplyr::bind_rows(
       by = "year",
       relationship = "many-to-many"
     ) %>% 
-    dplyr::filter(ageGroup6 %in% c("45-64")) %>% # D2 (45-64)
-    dplyr::mutate(case_modelled = round(value*PopProp, 1)) %>% 
+    dplyr::filter(ageGroup6 %in% c("45-64")) %>% # D2 (45-64) # already in 1 age group
+    dplyr::mutate(case_modelled = round(value, 1)) %>%  # no need to calculate proportion
     dplyr::filter(!is.na(ageGroup6)) %>% 
     dplyr::arrange(yearWeek)
   ,
@@ -145,8 +145,8 @@ incidence_modelled <- dplyr::bind_rows(
       by = "year",
       relationship = "many-to-many"
     ) %>% 
-    dplyr::filter(ageGroup6 %in% c("65+")) %>% # D3 (65+)
-    dplyr::mutate(case_modelled = round(value*PopProp, 1)) %>% 
+    dplyr::filter(ageGroup6 %in% c("65+")) %>% # D3 (65+) # already in 1 age group
+    dplyr::mutate(case_modelled = round(value, 1)) %>% # no need to calculate proportion
     dplyr::filter(!is.na(ageGroup6)) %>% 
     dplyr::arrange(yearWeek)
 )
@@ -249,7 +249,7 @@ ggplot(GPSC55_data_ageGroup6,
   theme_bw()
 
 # combine df
-png("outputs/genomics/trials_GPSC55/trial_25+05/figs/model_vs_data.png",
+png("outputs/genomics/trial_2e+05/figs/model_vs_data.png",
     width = 24, height = 17, unit = "cm", res = 600)
 dplyr::bind_rows(
   incidence_modelled %>% 
