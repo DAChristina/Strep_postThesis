@@ -163,8 +163,7 @@ dat_c <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>%
   dplyr::filter(ageGroup3 != "Unknown") %>% 
   dplyr::mutate(
     ageGroup12F = case_when(
-      ageGroup6 == "45-64" ~ "45-64",
-      ageGroup6 == "65+" ~ "65+",
+      ageGroup6 == "45-64" | ageGroup6 == "65+" ~ "45+",
       TRUE ~ "0-44"
     )
   ) %>% 
@@ -180,9 +179,6 @@ earlier_ne_df_1 <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predict
   glimpse()
 
 earlier_ne_df_2 <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_2.csv") %>% 
-  glimpse()
-
-earlier_ne_df_3 <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_3.csv") %>% 
   glimpse()
 
 # load ne
@@ -211,8 +207,7 @@ ageGroup12F_weekly <- dat_c %>%
   ) %>% 
   dplyr::rename(
     count_12F_1 = "count_0-44",
-    count_12F_2 = "count_45-64",
-    count_12F_3 = "count_65+"
+    count_12F_2 = "count_45+"
   ) %>% 
   dplyr::mutate(yearWeek = as.Date(yearWeek)
   ) %>% 
@@ -235,36 +230,22 @@ ageGroup12F_weekly <- dat_c %>%
         ) %>% 
         dplyr::rename(
           count_55_1 = "count_0-44",
-          count_55_2 = "count_45-64",
-          count_55_3 = "count_65+"
+          count_55_2 = "count_45+"
         ) %>% 
         dplyr::mutate(yearWeek = as.Date(yearWeek))
       ,
       dplyr::full_join(
-        dplyr::full_join(
-          earlier_ne_df_1 %>% 
-            dplyr::transmute(
-              yearWeek = as.Date(yearWeek),
-              count_55_1 = predicted_count_55_1
-            ) %>% 
-            dplyr::filter(yearWeek <= as.Date("2017-08-01"))
-          ,
-          earlier_ne_df_2 %>% 
-            dplyr::transmute(
-              yearWeek = as.Date(yearWeek),
-              count_55_2 = predicted_count_55_2
-            ) %>% 
-            dplyr::filter(yearWeek <= as.Date("2017-08-01"))
-          ,
-          by = "yearWeek"
-          ,
-          relationship = "many-to-many"
-        )
-        ,
-        earlier_ne_df_3 %>% 
+        earlier_ne_df_1 %>% 
           dplyr::transmute(
             yearWeek = as.Date(yearWeek),
-            count_55_3 = predicted_count_55_3
+            count_55_1 = predicted_count_55_1
+          ) %>% 
+          dplyr::filter(yearWeek <= as.Date("2017-08-01"))
+        ,
+        earlier_ne_df_2 %>% 
+          dplyr::transmute(
+            yearWeek = as.Date(yearWeek),
+            count_55_2 = predicted_count_55_2
           ) %>% 
           dplyr::filter(yearWeek <= as.Date("2017-08-01"))
         ,
@@ -286,12 +267,10 @@ ageGroup12F_weekly <- dat_c %>%
   dplyr::mutate(
     count_12F_1 = as.numeric(count_12F_1),
     count_12F_2 = as.numeric(count_12F_2),
-    count_12F_3 = as.numeric(count_12F_3),
     count_55_1 = as.numeric(count_55_1),
     count_55_2 = as.numeric(count_55_2),
-    count_55_3 = as.numeric(count_55_3),
-    count_55_all = as.numeric(count_55_1 + count_55_2 + count_55_3),
-    count_12F_all = as.numeric(count_12F_1 + count_12F_2 + count_12F_3),
+    count_55_all = as.numeric(count_55_1 + count_55_2),
+    count_12F_all = as.numeric(count_12F_1 + count_12F_2),
     Ne = as.numeric(Ne)
   ) %>% 
   dplyr::arrange(yearWeek) %>% 
@@ -318,10 +297,8 @@ saveRDS(ageGroup12F_weekly, "inputs/pmcmc_data_week_ageGroup12F.rds")
 ageGroup12F_weekly_long <- ageGroup12F_weekly %>% 
   tidyr::pivot_longer(cols = c(count_12F_1,
                                count_12F_2,
-                               count_12F_3,
                                count_55_1,
                                count_55_2,
-                               count_55_3,
                                Ne),
                       names_to = "group",
                       values_to = "count") %>% 
@@ -333,10 +310,8 @@ ggplot(ageGroup12F_weekly_long
   geom_line(size = 1) +
   scale_color_manual(values = c("count_12F_1" = "lightcoral",
                                 "count_12F_2" = "maroon",
-                                "count_12F_3" = "darkred",
-                                "count_55_1" = "grey80",
-                                "count_55_2" = "grey30",
-                                "count_55_3" = "grey10",
+                                "count_55_1" = "grey40",
+                                "count_55_2" = "grey10",
                                 "Ne" = "gold2")) +
   geom_vline(xintercept = as.Date("2017-08-01"), color = "steelblue", linetype = "dashed") +
   scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2022-06-01")), 
@@ -361,10 +336,8 @@ ggplot(ageGroup12F_weekly_long %>%
   geom_line(size = 1) +
   scale_color_manual(values = c("count_12F_1" = "lightcoral",
                                 "count_12F_2" = "maroon",
-                                "count_12F_3" = "darkred",
-                                "count_55_1" = "grey80",
-                                "count_55_2" = "grey30",
-                                "count_55_3" = "grey10",
+                                "count_55_1" = "grey40",
+                                "count_55_2" = "grey10",
                                 "Ne" = "gold2")) +
   geom_vline(xintercept = as.Date("2017-08-01"), color = "steelblue", linetype = "dashed") +
   scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2022-06-01")), 
