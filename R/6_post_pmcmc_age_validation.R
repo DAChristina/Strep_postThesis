@@ -17,8 +17,7 @@ age_proportion <- dplyr::left_join(
     Age = as.numeric(Age),
     ageGroup12F = case_when(
       Age <= 44 ~ "0-44",
-      Age > 44 & Age < 65 ~ "45-64",
-      Age >= 65 ~ "65+"
+      Age > 44 ~ "45+"
     )
   ) %>% 
   dplyr::group_by(ageGroup12F, year) %>% 
@@ -29,14 +28,13 @@ age_proportion <- dplyr::left_join(
   ) %>% 
   dplyr::mutate(
     ageGroup12F = factor(ageGroup12F,
-                       levels = c("0-44", "45-64", "65+")),
-    PopProp = round(PopSize12F/PopSize_year, 1)
+                       levels = c("0-44", "45+")),
+    PopProp = round(PopSize12F/PopSize_year, 2)
   ) %>% 
   # view() %>% 
   glimpse()
 
 # younger people (0-44) was consistently 60% of the total population
-# while the others were 20% and 20%.
 
 
 # load model result
@@ -109,44 +107,8 @@ incidence_modelled <- dplyr::bind_rows(
       by = "year",
       relationship = "many-to-many"
     ) %>% 
-    dplyr::filter(ageGroup6 %in% c("45-64")) %>% # D2 (45-64) # already in 1 age group
-    dplyr::mutate(case_modelled = round(value, 1)) %>%  # no need to calculate proportion
-    dplyr::filter(!is.na(ageGroup6)) %>% 
-    dplyr::arrange(yearWeek)
-  ,
-  read.csv("raw_data/incidence_modelled_GPSC55.csv") %>% 
-    dplyr::filter(compartment == "model_D3") %>% 
-    dplyr::mutate(yearWeek = as.Date(yearWeek),
-                  year = year(yearWeek)) %>% 
-    dplyr::left_join(
-      # age proportion in England
-      dplyr::left_join(
-        read.csv("raw_data/nomis_population_long.csv") %>% 
-          # region stratification is not needed
-          dplyr::group_by(year) %>% 
-          dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
-          dplyr::ungroup()
-        ,
-        read.csv("raw_data/nomis_population_long.csv") %>% 
-          # region stratification is not needed
-          dplyr::group_by(ageGroup6, year) %>% 
-          dplyr::summarise(PopSize6 = sum(PopSize)) %>% 
-          dplyr::ungroup()
-        ,
-        by = "year"
-      ) %>% 
-        dplyr::mutate(
-          ageGroup6 = factor(ageGroup6,
-                             levels = c("<2", "2-4", "5-14", "15-44", "45-64", "65+")),
-          PopProp = round(PopSize6/PopSize_year, 1)
-        ) %>% 
-        glimpse()
-      ,
-      by = "year",
-      relationship = "many-to-many"
-    ) %>% 
-    dplyr::filter(ageGroup6 %in% c("65+")) %>% # D3 (65+) # already in 1 age group
-    dplyr::mutate(case_modelled = round(value, 1)) %>% # no need to calculate proportion
+    dplyr::filter(ageGroup6 %in% c("45-64", "65+")) %>% # D2 (45-64 & 65+) was 50-50 in proportion
+    dplyr::mutate(case_modelled = round(value/2, 1)) %>%  # no need to calculate proportion
     dplyr::filter(!is.na(ageGroup6)) %>% 
     dplyr::arrange(yearWeek)
 )
@@ -249,7 +211,7 @@ ggplot(GPSC55_data_ageGroup6,
   theme_bw()
 
 # combine df
-png("outputs/genomics/trial_2e+05/figs/model_vs_data.png",
+png("outputs/genomics/trials_GPSC55/trial_100250/figs/model_vs_data.png",
     width = 24, height = 17, unit = "cm", res = 600)
 dplyr::bind_rows(
   incidence_modelled %>% 
