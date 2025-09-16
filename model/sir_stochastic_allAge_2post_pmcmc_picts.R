@@ -144,7 +144,7 @@ model_vs_data <- function(n_sts){
         dplyr::transmute(
           replicate = 1,
           weekly = seq_along(replicate),
-          value = count_12F_1 + count_12F_2 + count_12F_3,
+          value = count_12F_1 + count_12F_2,
           compartment = "data_count_12F_all"
         )
     ) %>% 
