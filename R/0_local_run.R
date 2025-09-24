@@ -4,18 +4,21 @@ source("model/sir_stochastic_allAge_2post_pmcmc_picts.R")
 source("R/3_pmcmc.R")
 source("R/4_post_pmcmc_pics.R")
 source("R/5_post_pmcmc_samples_pics.R")
+source("R/6_post_pmcmc_age_validation.R")
 
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 600,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 4)
 post_pmcmc_pics(600)
 model_vs_data(600)
 post_particle_pics(600)
+age_validation(600)
 
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 2000,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 4)
 post_pmcmc_pics(2000)
 model_vs_data(2000)
 post_particle_pics(2000)
+age_validation(2000)
 
 
 
