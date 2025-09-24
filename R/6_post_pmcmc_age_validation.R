@@ -269,5 +269,5 @@ age_validation <- function(n_sts){
 args <- commandArgs(trailingOnly = T)
 n_sts <- as.numeric(args[which(args == "--n_steps") + 1])
 
-age_proportion(n_sts)
+age_validation(n_sts)
 
