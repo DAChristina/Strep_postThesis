@@ -121,7 +121,7 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dgamma(s, shape = 1, scale = 0.3, log = TRUE)
+    dgamma(s, shape = 3, scale = 0.05, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
