@@ -121,13 +121,13 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dgamma(s, shape = 3, scale = 0.05, log = TRUE)
+    dgamma(s, shape = 1, scale = 0.5, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$betas <- function(s) {
-    dgamma(s, shape = 1, scale = 0.1, log = TRUE)
+    dgamma(s, shape = 1.5, scale = 0.05, log = TRUE)
   }
   priors$log_delta <- function(s) {
     stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.8, delta = -4.8, log = TRUE)
