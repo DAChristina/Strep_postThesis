@@ -95,7 +95,8 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (0.55), min = (0), max = 1,
+    # A_ini 1 to 1m people (see 2/10/2025 notes)
+    list(mcstate::pmcmc_parameter("log_A_ini", (0.55), min = 0.218, max = 0.8,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
@@ -121,7 +122,7 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dgamma(s, shape = 1, scale = 0.5, log = TRUE)
+    dgamma(s, shape = 1, scale = 0.1, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
