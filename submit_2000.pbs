@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -N All_5000
+#PBS -N Det1_2000
 #PBS -l walltime=20:00:00
 #PBS -l select=1:ncpus=16:mem=10gb
 
@@ -9,7 +9,7 @@
 source ~/anaconda3/etc/profile.d/conda.sh
 
 cd $PBS_O_WORKDIR
-steps_folder=5000 # no space
+steps_folder=2000 # no space
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" \
     --mode run_all \
     --n_particles 500 --n_steps "$steps_folder" \
@@ -17,16 +17,16 @@ conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/3_pmcmc.R" \
     --ncpus 16 \
     > "$HOME/Strep_postThesis/myresult.txt"
 
-sleep 2
+sleep 1
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/4_post_pmcmc_pics.R" \
     --n_steps "$steps_folder"
 
-sleep 2
+sleep 1
 conda run -n R_envConda Rscript "$HOME/Strep_postThesis/model/sir_stochastic_allAge_2post_pmcmc_picts.R" \
     --n_steps "$steps_folder"
     
-sleep 2
-conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/5_post_pmcmc_samples_pics.R" \
+sleep 1
+conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/6_post_pmcmc_age_validation.R" \
     --n_steps "$steps_folder"
 
 printenv > "$HOME/Strep_postThesis/myenv.txt"

@@ -69,9 +69,9 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (0.3), min = (0), max = 1,
+    list(mcstate::pmcmc_parameter("log_A_ini", (0.6), min = 0.218, max = 0.8,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("time_shift_1", 0.3, min = 0, max = 1,
+         mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
          mcstate::pmcmc_parameter("beta_0", 0.031, min = 0, max = 0.8,
                                   prior = priors$betas),
@@ -91,16 +91,17 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dbeta(s, shape1 = 3.5, shape2 = 3.5, log = TRUE)
+    dgamma(s, shape = 2, scale = 0.05, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$betas <- function(s) {
-    dgamma(s, shape = 1, scale = 0.1, log = TRUE)
+    dgamma(s, shape = 25, scale = 0.01, log = TRUE) # previously 6.5; 0.05
   }
   priors$log_delta <- function(s) {
-    dunif(s, min = (-10), max = 0.7, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.8, delta = -4.8, log = TRUE)
+    # dunif(s, min = (-10), max = 0.7, log = TRUE)
   }
   priors$kappas <- function(s) {
     # dunif(s, min = 0, log = TRUE)
@@ -264,7 +265,3 @@ plot_states <- function(state, data) {
   # matplot(data$yearWeek, xlab = "", t(state["I_tot", , -1]),
   #         type = "l", lty = 1, col = 3, ylab = "carriers")
 }
-
-
-
-

@@ -139,19 +139,17 @@ model_vs_data <- function(n_sts){
     ) %>%
     glimpse()
   
-  png(paste0(dir_name, "figs/model_vs_data.png"),
+  write.csv(incidence_modelled,
+            paste0(dir_name, "incidence_modelled_serotype1.csv"),
+            row.names = FALSE)
+  
+  png(paste0(dir_name, "figs/model_vs_data_all.png"),
       width = 24, height = 17, unit = "cm", res = 600)
   p <- ggplot(incidence_modelled %>% 
                 dplyr::filter(
-                  # grepl("cases|D|data", compartment),
-                  # compartment %in% c("D", "model_n_AD_weekly", "data_count_serotype"), # redesign the model, would rather fit to D
-                  # compartment %in% c("model_n_AD_weekly", "data_count_serotype"),
-                  # compartment %in% c("D", "n_AD_weekly"),
                   compartment %in% c("D", "data_count_serotype"),
-                  # compartment %in% c("D"),
-                  compartment != "Time",
-                  # compartment %in% c("S")
-                )
+                  compartment != "Time"
+                  )
               ,
               aes(x = yearWeek, y = value,
                   group = interaction(compartment,replicate),
