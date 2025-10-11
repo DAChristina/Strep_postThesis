@@ -69,7 +69,7 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (0.4), min = 0.218, max = 0.8,
+    list(mcstate::pmcmc_parameter("log_A_ini", (0.6), min = 0.218, max = 0.8,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
@@ -247,9 +247,9 @@ observe <- function(pmcmc_samples) {
 plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
   matplot(data$yearWeek, t(state[6, , -1]),
-          type = "l", lty = 1, col = col,
-          xlab = "", ylab = "GPSC55 cases")
-  points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
+          type = "l", lty = 1, col = col, ylim = c(0, 41),
+          xlab = "", ylab = "Serotype 1 cases")
+  # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
   points(data$yearWeek, data$count_serotype, col = 4, type = "l")
   
   matplot(data$yearWeek, xlab = "", t(state["S", , -1]),
