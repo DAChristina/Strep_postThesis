@@ -76,6 +76,9 @@ age_validation <- function(n_sts){
       dplyr::group_by(yearWeek, ageGroup6) %>% 
       dplyr::summarise(case_data = n()) %>% 
       dplyr::ungroup() %>% 
+      tidyr::complete(yearWeek, ageGroup6,
+                      fill = list(case_data = 0)) %>% 
+      
       dplyr::mutate(
         case_data = as.numeric(case_data),
         ageGroup6 = case_when(
@@ -126,7 +129,8 @@ age_validation <- function(n_sts){
     facet_wrap(~ ageGroup6, 
                # scales = "free_y"
     ) +
-    theme_bw()
+    theme_bw()+
+    theme(legend.position = "bottom")
   
   print(p)
   dev.off()
