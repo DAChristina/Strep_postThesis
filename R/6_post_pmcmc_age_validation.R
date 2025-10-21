@@ -158,6 +158,8 @@ age_validation <- function(n_sts){
       dplyr::group_by(yearWeek, ageGroup6) %>% 
       dplyr::summarise(case_data_12F = sum(counts)) %>% 
       dplyr::ungroup() %>% 
+      tidyr::complete(yearWeek, ageGroup6,
+                      fill = list(case_data_12F = 0)) %>% 
       dplyr::mutate(
         case_data_12F = as.numeric(case_data_12F),
         ageGroup6 = case_when(
@@ -192,6 +194,8 @@ age_validation <- function(n_sts){
       dplyr::group_by(yearWeek, ageGroup6) %>% 
       dplyr::summarise(case_data_GPSC55 = n()) %>% 
       dplyr::ungroup() %>% 
+      tidyr::complete(yearWeek, ageGroup6,
+                      fill = list(case_data_GPSC55 = 0)) %>% 
       dplyr::mutate(
         case_data_GPSC55 = as.numeric(case_data_GPSC55),
         ageGroup6 = case_when(
@@ -258,7 +262,8 @@ age_validation <- function(n_sts){
     facet_wrap(~ ageGroup6, 
                # scales = "free_y"
     ) +
-    theme_bw()
+    theme_bw() +
+    theme(legend.position = "bottom")
   
   print(p)
   dev.off()

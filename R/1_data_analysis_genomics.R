@@ -317,7 +317,7 @@ test <- gen %>%
     by = c("yearWeek")
   ) %>% 
   dplyr::full_join(
-    read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+    read.csv("inputs/12F_Jan_2025_combined_cleaned.csv") %>% 
       dplyr::mutate(week_date = as.Date(week_date),
                     iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
                     yearWeek =ISOweek::ISOweek2date(iso_week),
@@ -519,7 +519,7 @@ earlier_ne_df <- earlier_ne_df %>%
     predicted_prop_GPSC55_1_glm_binom_upper = plogis(pred_glm_binom$fit-1.96*pred_glm_binom$se.fit),
   ) %>% 
   dplyr::left_join(
-    read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+    read.csv("inputs/12F_Jan_2025_combined_cleaned.csv") %>% 
       dplyr::mutate(week_date = as.Date(week_date),
                     iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
                     yearWeek =ISOweek::ISOweek2date(iso_week)
@@ -621,16 +621,19 @@ dat_fit <- ggplot(combined %>%
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
 dat_fit
 
+save_plot1 <- cowplot::plot_grid(dat_model_1, dat_fit,
+                                 ncol = 1,
+                                 labels = c("A", "B"))
+save_plot1
+
 png("report/picts_proportion_centredNe_allWGS_1.png",
     width = 24, height = 24, unit = "cm", res = 300)
-cowplot::plot_grid(dat_model_1, dat_fit,
-                   ncol = 1,
-                   labels = c("A", "B"))
+print(save_plot1)
 dev.off()
 
 # test GPSC55 case counts prediction
-ggplot(earlier_ne_df
-       , aes(x = yearWeek, y = predicted_count_55_1)) +
+pred_ribbon1 <- ggplot(earlier_ne_df
+                       , aes(x = yearWeek, y = predicted_count_55_1)) +
   geom_line(size = 0.5) +
   geom_ribbon(data = earlier_ne_df,
               aes(x = yearWeek,
@@ -640,12 +643,12 @@ ggplot(earlier_ne_df
               fill = "blue", alpha = 0.2
   ) +
   # geom_point(size = 0.5, alpha = 0.6) +
-  scale_x_date(limits = c(as.Date("2001-01-01"), as.Date("2018-01-01")), 
+  scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2017-11-01")), 
                date_breaks = "1 year",
                date_labels = "%Y") +
   theme_bw() +
   labs(
-    title = "GPSC55 Counts Prediction Result",
+    title = "GPSC55 Counts Prediction Result (age 0-44)",
     y = "GPSC55 counts prediction"
   ) +
   theme(legend.position = c(0.15, 0.85),
@@ -653,6 +656,7 @@ ggplot(earlier_ne_df
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
+pred_ribbon1
 
 
 # test combine all model viz
@@ -670,7 +674,7 @@ reselected_GPSC55_1 <- test %>%
   ) %>% 
   glimpse()
 
-ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
+reselected_1 <- ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F_1, colour = "12F")) +
   geom_line(aes(y = count_55_1, colour = "GPSC55"), size = 1) +
   geom_line(aes(y = predicted_count_55_1, colour = "GAM prediction")) +
@@ -690,7 +694,20 @@ ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
+reselected_1
 
+ribbon_picts1 <- cowplot::plot_grid(pred_ribbon1, reselected_1,
+                                    nrow = 2,
+                                    labels = c("C", "D")
+)
+
+png("report/picts_proportion_centredNe_allWGS_combined_1.png",
+    width = 40, height = 20, unit = "cm", res = 300)
+cowplot::plot_grid(save_plot1, ribbon_picts1,
+                   ncol = 2,
+                   labels = c("", "")
+)
+dev.off()
 
 ################################################################################
 # ageGroup 45+
@@ -860,7 +877,7 @@ earlier_ne_df <- earlier_ne_df %>%
     predicted_prop_GPSC55_2_glm_binom_upper = plogis(pred_glm_binom$fit-1.96*pred_glm_binom$se.fit),
   ) %>% 
   dplyr::left_join(
-    read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+    read.csv("inputs/12F_Jan_2025_combined_cleaned.csv") %>% 
       dplyr::mutate(week_date = as.Date(week_date),
                     iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
                     yearWeek =ISOweek::ISOweek2date(iso_week)
@@ -962,16 +979,18 @@ dat_fit <- ggplot(combined %>%
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
 dat_fit
 
+save_plot2 <- cowplot::plot_grid(dat_model_2, dat_fit,
+                                 ncol = 1,
+                                 labels = c("A", "B"))
+save_plot2
 png("report/picts_proportion_centredNe_allWGS_2.png",
     width = 24, height = 24, unit = "cm", res = 300)
-cowplot::plot_grid(dat_model_2, dat_fit,
-                   ncol = 1,
-                   labels = c("A", "B"))
+print(save_plot2)
 dev.off()
 
 # test GPSC55 case counts prediction
-ggplot(earlier_ne_df
-       , aes(x = yearWeek, y = predicted_count_55_2)) +
+pred_ribbon2 <- ggplot(earlier_ne_df
+                       , aes(x = yearWeek, y = predicted_count_55_2)) +
   geom_line(size = 0.5) +
   geom_ribbon(data = earlier_ne_df,
               aes(x = yearWeek,
@@ -981,12 +1000,12 @@ ggplot(earlier_ne_df
               fill = "blue", alpha = 0.2
   ) +
   # geom_point(size = 0.5, alpha = 0.6) +
-  scale_x_date(limits = c(as.Date("2001-01-01"), as.Date("2018-01-01")), 
+  scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2017-09-01")), 
                date_breaks = "1 year",
                date_labels = "%Y") +
   theme_bw() +
   labs(
-    title = "GPSC55 Counts Prediction Result",
+    title = "GPSC55 Counts Prediction Result (age 45+)",
     y = "GPSC55 counts prediction"
   ) +
   theme(legend.position = c(0.15, 0.85),
@@ -994,6 +1013,7 @@ ggplot(earlier_ne_df
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
+pred_ribbon2
 
 
 # test combine all model viz
@@ -1011,7 +1031,7 @@ reselected_GPSC55_2 <- test %>%
   ) %>% 
   glimpse()
 
-ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
+reselected_2 <- ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F_2, colour = "12F")) +
   geom_line(aes(y = count_55_2, colour = "GPSC55"), size = 1) +
   geom_line(aes(y = predicted_count_55_2, colour = "GAM prediction")) +
@@ -1031,5 +1051,19 @@ ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
+reselected_2
 
+ribbon_picts2 <- cowplot::plot_grid(pred_ribbon2, reselected_2,
+                                    nrow = 2,
+                                    labels = c("C", "D")
+)
+ribbon_picts2
+
+png("report/picts_proportion_centredNe_allWGS_combined_2.png",
+    width = 40, height = 20, unit = "cm", res = 300)
+cowplot::plot_grid(save_plot2, ribbon_picts2,
+                   ncol = 2,
+                   labels = c("", "")
+)
+dev.off()
 

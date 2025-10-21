@@ -1,4 +1,6 @@
-dir_name <- paste0("outputs/genomics/trial_", "100250_final_best_vcvmodif_NOreruns_corrected_seasonality", "/")
+dir_1 <- paste0("outputs/genomics/trial_5e+05_serotype1_FINAL/")
+dir_name <- paste0("outputs/genomics/trial_5e+05_4with_mcmc_limitations_adjusted_beta0_25_0.01_FINAL/")
+
 dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
 # run 4_post_pmcmc_pics.R first
 results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv")) %>% 
@@ -21,7 +23,8 @@ pars <- list(N_ini = 6.7e7,
              # scaled_wane = results[7,2],
              # psi = (0.5),
              hypo_sigma_2 = (1),
-             log_delta = results[5,2]
+             log_delta1 = results[5,2],
+             log_delta2 = results[6,2]
              # alpha = results[9,2],
              # gamma_annual = results[10,2],
              # nu_annual = results[11,2]
@@ -39,7 +42,8 @@ pars_lo_CI <- list(N_ini = 6.7e7,
                    # scaled_wane = results[7,2],
                    # psi = (0.5),
                    hypo_sigma_2 = (1),
-                   log_delta = results[5,3]
+                   log_delta1 = results[5,3],
+                   log_delta2 = results[6,3]
                    # alpha = results[9,2],
                    # gamma_annual = results[10,2],
                    # nu_annual = results[11,2]
@@ -58,7 +62,8 @@ pars_hi_CI <- list(N_ini = 6.7e7,
                    # scaled_wane = results[7,2],
                    # psi = (0.5),
                    hypo_sigma_2 = (1),
-                   log_delta = results[5,4]
+                   log_delta1 = results[5,4],
+                   log_delta2 = results[6,4]
                    # alpha = results[9,2],
                    # gamma_annual = results[10,2],
                    # nu_annual = results[11,2]
@@ -94,16 +99,25 @@ beta <- pars$beta_0*((1+pars$beta_1*cos(2*pi*((pars$time_shift_1*365)+time)/365)
 beta_lo_CI <- pars_lo_CI$beta_0*((1+pars_lo_CI$beta_1*cos(2*pi*((pars_lo_CI$time_shift_1*365)+time)/365)))
 beta_hi_CI <- pars_hi_CI$beta_0*((1+pars_hi_CI$beta_1*cos(2*pi*((pars_hi_CI$time_shift_1*365)+time)/365)))
 
-print(c(max(beta), min(beta))) # beta simulated with no infant vaccination
+print(c(max(beta), min(beta))) # beta simulated
+((max(beta)-min(beta))/2)+min(beta) # average beta
 
 # R0 estimation (R0 changes due to seasonality)
 mu_0 <- 1/(80.70*365)
 mu_1 <- 0
 pars$sigma_1 <- 1/28
 pars$sigma_2 <- 1/1
-R0_vacc <- beta/((mu_0+(10^(pars$log_delta))+pars$sigma_1)*((pars$sigma_2)+(mu_0+mu_1)))
-R0_vacc_lo_CI <- beta_lo_CI/((mu_0+(10^(pars_lo_CI$log_delta))+pars$sigma_1)*((pars$sigma_2)+(mu_0+mu_1)))
-R0_vacc_hi_CI <- beta_hi_CI/((mu_0+(10^(pars_hi_CI$log_delta))+pars$sigma_1)*((pars$sigma_2)+(mu_0+mu_1)))
+R0_vacc <- beta/((mu_0+(10^(pars$log_delta1)+10^(pars$log_delta2))+pars$sigma_1)*((pars$sigma_2)+(mu_0+mu_1)))
+R0_vacc_lo_CI <- beta_lo_CI/((mu_0+(10^(pars_lo_CI$log_delta1)+10^(pars_lo_CI$log_delta2))+pars$sigma_1)*((pars$sigma_2)+(mu_0+mu_1)))
+R0_vacc_hi_CI <- beta_hi_CI/((mu_0+(10^(pars_hi_CI$log_delta1)+10^(pars_hi_CI$log_delta2))+pars$sigma_1)*((pars$sigma_2)+(mu_0+mu_1)))
+
+print(c(max(R0_vacc), min(R0_vacc))) # R0 simulated
+((max(R0_vacc)-min(R0_vacc))/2)+min(R0_vacc) # average R0
+
+# if we want to specify R0 through age groups
+
+
+
 
 # save beta & R0 simulation
 beta_R0_df <- data.frame(
@@ -139,8 +153,8 @@ ggplot(beta_R0_df, aes(x = date, y = R0_vacc,
                date_labels = "%m",
                limits = as.Date(c("2010-01-01", "2012-12-31"))) +
   # xlim(as.Date('1/1/2010'), as.Date('1/1/2012'), format="%m%Y")) +
-  ggtitle("Simulation Model for Serotype 1 Cases (Aggregated by Days)") +
-  ggtitle("Serotype 1 Cases (Aggregated by Weeks)") +
+  ggtitle("Simulation Model for GPSC55 Cases (Aggregated by Days)") +
+  ggtitle("GPSC55 Cases (Aggregated by Weeks)") +
   xlab("Time (in Week)") +
   ylab("R0") +
   theme_bw()
