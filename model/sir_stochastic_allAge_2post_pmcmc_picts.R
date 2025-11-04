@@ -122,16 +122,6 @@ model_vs_data <- function(n_sts){
                      .groups = "drop") %>% 
     dplyr::ungroup() %>% 
     dplyr::bind_rows(sir_data) %>%
-    # add 12F data for comparison
-    dplyr::bind_rows(
-      data %>% 
-        dplyr::transmute(
-          replicate = 1,
-          weekly = seq_along(replicate),
-          value = count_serotype,
-          compartment = "data_count_12F"
-        )
-    ) %>% 
     dplyr::full_join(
       all_dates
       ,
