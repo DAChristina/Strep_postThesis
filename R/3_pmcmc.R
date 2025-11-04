@@ -250,8 +250,16 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   mcmc_lo_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.025))
   mcmc_hi_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.975))
   
-  binds_tune_initial <- rbind(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]), mcmc_lo_CI, mcmc_hi_CI)
-  t_tune_initial <- t(binds_tune_initial)
+  binds_tune_initial <- rbind(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]),
+                              mcmc_lo_CI, mcmc_hi_CI)
+  binds_tune_initial2 <- cbind(binds_tune_initial,
+                               log_prior = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                           "log_prior"],
+                               log_likelihood = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                                "log_likelihood"],
+                               log_posterior = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                               "log_posterior"])
+  t_tune_initial <- t(binds_tune_initial2)
   colnames(t_tune_initial) <- c("values", "low_CI", "high_CI")
   
   write.csv(t_tune_initial,
