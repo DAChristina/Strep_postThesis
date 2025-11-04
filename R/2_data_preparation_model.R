@@ -159,7 +159,7 @@ write.csv(dat_week_12F_6ageG, "inputs/incidence_week_12F_6ageG_all.csv", row.nam
 
 # mcstate data preparation #####################################################
 # load epidata
-dat_c <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
+dat_c <- read.csv("inputs/12F_Jan_2025_combined_cleaned.csv") %>% 
   dplyr::filter(ageGroup3 != "Unknown") %>% 
   dplyr::mutate(
     ageGroup12F = case_when(
@@ -267,8 +267,8 @@ ageGroup12F_weekly <- dat_c %>%
   dplyr::mutate(
     count_12F_1 = as.numeric(count_12F_1),
     count_12F_2 = as.numeric(count_12F_2),
-    count_55_1 = as.numeric(count_55_1),
-    count_55_2 = as.numeric(count_55_2),
+    count_55_1 = as.numeric(round(count_55_1), 0),
+    count_55_2 = as.numeric(round(count_55_2), 0),
     count_55_all = as.numeric(count_55_1 + count_55_2),
     count_12F_all = as.numeric(count_12F_1 + count_12F_2),
     Ne = as.numeric(Ne)
