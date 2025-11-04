@@ -212,17 +212,17 @@ write.csv(pdat,
 # separate into 2 plots
 # separate into 2 plots
 p1 <- ggplot(pdat, aes(x = yearWeek)) +
+  geom_ribbon(aes(ymin = model_D_low,
+                  ymax = model_D_high), 
+              fill = "skyblue", alpha = 0.6) +
   geom_line(aes(y = model_D, colour = "model_D"), 
-            size = 0.3) +
+            size = 0.4) +
   geom_line(aes(y = data_count_serotype, colour = "data_count_serotype"), 
-            size = 0.3) +
+            size = 0.4) +
   
   # 10 particle lines
   # geom_line(aes(y = particle_value, group = particle, colour = "particles"),
   #           alpha = 0.4, size = 0.2) +
-  geom_ribbon(aes(ymin = model_D_low,
-                  ymax = model_D_high), 
-              fill = "skyblue", alpha = 0.5) +
   scale_x_date(
     date_breaks = "1 year", date_labels = "%Y") +
   labs(
