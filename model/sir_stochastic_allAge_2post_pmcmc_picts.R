@@ -166,6 +166,9 @@ model_vs_data <- function(n_sts){
           compartment = "data_count_12F_2"
         )
     ) %>% 
+    tidyr::complete(weekly,
+                    fill = list(value = 0)
+                    ) %>% 
     dplyr::full_join(
       all_dates
       ,
