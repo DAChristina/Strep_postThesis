@@ -122,6 +122,9 @@ model_vs_data <- function(n_sts){
                      .groups = "drop") %>% 
     dplyr::ungroup() %>% 
     dplyr::bind_rows(sir_data) %>%
+    tidyr::complete(weekly,
+                    fill = list(value = 0)
+    ) %>%
     dplyr::full_join(
       all_dates
       ,
