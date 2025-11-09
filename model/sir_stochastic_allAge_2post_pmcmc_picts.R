@@ -105,7 +105,7 @@ model_vs_data <- function(n_sts){
     dplyr::mutate(compartment = 
                     dplyr::case_when(index == 1 ~ "Time",
                                      index == 2 ~ "A",
-                                     index == 3 ~ "D",
+                                     index == 3 ~ "model_D",
                                      index == 4 ~ "S",
                                      index == 5 ~ "R",
                                      index == 6 ~ "model_n_AD_weekly",
@@ -140,7 +140,7 @@ model_vs_data <- function(n_sts){
       width = 24, height = 17, unit = "cm", res = 600)
   p <- ggplot(incidence_modelled %>% 
                 dplyr::filter(
-                  compartment %in% c("D", "data_count_serotype"),
+                  compartment %in% c("model_D", "data_count_serotype"),
                   compartment != "Time"
                   )
               ,
@@ -148,6 +148,9 @@ model_vs_data <- function(n_sts){
                   group = interaction(compartment,replicate),
                   colour = compartment)) +
     geom_line() +
+    geom_vline(aes(xintercept = as.Date("2010-04-01"),
+                   colour = "PCV13 (April 2010)"),
+               linetype = "dashed") +
     # scale_y_continuous(trans = "log1p") +
     # scale_y_continuous(limits = c(0, 50)) +
     # scale_x_continuous(limits = c(0, 700)) +

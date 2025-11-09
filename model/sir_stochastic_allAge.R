@@ -20,7 +20,15 @@ beta_1 <- user(0)
 # min_wane <- user(-10) # FIXED, scaled waning immunity
 # scaled_wane <- user(0)
 
-# No vaccination effect for 12F
+# Vaccination:
+# https://webarchive.nationalarchives.gov.uk/ukgwa/20211105111851mp_/https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/540290/hpr2416_ppv.pdf
+# https://fingertips.phe.org.uk/search/PPV#page/4/gid/1/pat/159/par/K02000001/ati/15/are/E92000001/iid/30313/age/27/sex/4/cat/-1/ctp/-1/yrr/1/cid/4/tbm/1
+# vacc_elderly <- 0.7*0.57 # FIXED PPV23 vaccination coverage * efficacy
+# ratio of vaccinated elderly for >64 y.o. people, averaged 69.7243% ~ 70%
+vacc <- 0.9*0.862*0.02 # FIXED PCV13 vaccination coverage * efficacy * proportion of kids below 2 y.o.
+# ratio of vaccinated kids, averaged 90%
+# vacc <- (vacc_elderly + vacc_kids)/2 # FIXED, average
+
 # Country calibration:
 # Children: 1.07638532472038 (it is called delta in the spreadsheet)
 # Adults: 0.536936186788821 (basically gamma in the spreadsheet)
@@ -71,9 +79,10 @@ initial(n_AD_weekly) <- 0 # infections
 # beta <- beta_0*(
 #   (1+beta_1*cos((2*pi*(time) +(time_shift_1*(365)))/(365))))
 
-# previously used in serotype 1
-beta <- beta_0*(
+beta_temporary <- beta_0*(
   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
+# Infant vaccination coverage occurs when PCV13 introduced in April 2010 (day 2648 from 01.01.2003)
+beta <- if (time >= 2648) beta_temporary*(1-vacc) else beta_temporary
 
 # beta <- beta_0*(
 #   (1+beta_1*cos(2*pi*((time_shift_1*365)+time)/365)) +
