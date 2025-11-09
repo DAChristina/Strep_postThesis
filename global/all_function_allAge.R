@@ -11,19 +11,9 @@ case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
   n <- ncol(state)
   
-  # sir_model$info()$index$n_AD_weekly
-  # model_55_all <- state[6, , drop = TRUE]
+  # sir_model$info()$index
   model_55_1 <- state[8, , drop = TRUE]
   model_55_2 <- state[9, , drop = TRUE]
-  
-  # if (is.na(observed$count_55_all)) {
-  #   ll_55_all <- numeric(n)
-  # } else {
-  #   ll_55_all <- ll_nbinom(data = observed$count_55_all,
-  #                          model = model_55_all,
-  #                          kappa = pars$kappa_55,
-  #                          exp_noise = exp_noise)
-  # }
   
   if (is.na(observed$count_55_1)) {
     ll_55_1 <- numeric(n)
@@ -48,7 +38,7 @@ case_compare <- function(state, observed, pars = NULL) {
   
   if (any(!is.finite(ll))) {
     # return -Inf to force rejection
-    ll[!is.finite(ll)] <- -1e10
+    ll[!is.finite(ll)] <- 1e-10
   }
   return(ll)
 }
@@ -95,7 +85,7 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    # A_ini 1 to 1m people (see 2/10/2025 notes)
+    # A_ini 1 to 1m people (1% see 2/10/2025 notes)
     list(mcstate::pmcmc_parameter("log_A_ini", (0.55), min = 0.218, max = 0.8,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
@@ -104,8 +94,6 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
-         # mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
-         #                          prior = priors$log_delta),
          mcstate::pmcmc_parameter("log_delta1", (-5), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("log_delta2", (-4.8), min = (-10), max = 0.7,
@@ -128,18 +116,15 @@ prepare_priors <- function(pars) {
     dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$betas <- function(s) {
-    dgamma(s, shape = 25, scale = 0.01, log = TRUE) # previously 6.5; 0.05
+    dgamma(s, shape = 25, scale = 0.01, log = TRUE)
   }
   priors$log_delta <- function(s) {
-    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.8, delta = -4.8, log = TRUE)
-    # dunif(s, min = (-10), max = 0.7, log = TRUE)
-  }
-  priors$deltas <- function(s) {
-    dunif(s, min = (0), max = 10, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.8, delta = -4.8,
+                        log = TRUE)
   }
   priors$kappas <- function(s) {
-    # dunif(s, min = 0, log = TRUE)
-    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 1, delta = 5, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 1, delta = 5,
+                        log = TRUE)
   }
   
   priors
@@ -147,7 +132,9 @@ prepare_priors <- function(pars) {
 
 
 pmcmc_further_process <- function(n_steps, pmcmc_result) {
-  processed_chains <- mcstate::pmcmc_thin(pmcmc_result, burnin = round(n_steps*0.5), thin = NULL)
+  processed_chains <- mcstate::pmcmc_thin(pmcmc_result,
+                                          burnin = round(n_steps*0.5),
+                                          thin = NULL)
   parameter_mean_hpd <- apply(processed_chains$pars, 2, mean)
   parameter_mean_hpd
   
