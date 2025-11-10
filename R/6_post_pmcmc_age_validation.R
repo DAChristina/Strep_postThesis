@@ -12,7 +12,7 @@ age_validation <- function(n_sts){
   # (based on sir_stochastic_allAge_2post_pmcmc_picts.R, saved in outputs)
   incidence_modelled <-
     read.csv(paste0(dir_name, "incidence_modelled_serotype1.csv")) %>% 
-    dplyr::filter(compartment == "D") %>% 
+    dplyr::filter(compartment == "model_D") %>% 
     dplyr::mutate(yearWeek = as.Date(yearWeek),
                   year = year(yearWeek)) %>% 
     dplyr::left_join(
@@ -60,7 +60,7 @@ age_validation <- function(n_sts){
     ) %>% 
     distinct(yearWeek) %>% 
     glimpse()
-    
+  
   serotype1_data_ageGroup6 <- dplyr::left_join(
     all_week
     ,
@@ -123,6 +123,9 @@ age_validation <- function(n_sts){
     ggplot(aes(x = yearWeek, y = counts,
                color = version, group = version)) +
     geom_line() +
+    geom_vline(aes(xintercept = as.Date("2010-04-01"),
+                   colour = "PCV13 (April 2010)"),
+               linetype = "dashed") +
     labs(
       title = "Serotype 1: model vs data"
     ) +
