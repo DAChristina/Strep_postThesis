@@ -255,7 +255,8 @@ age_validation <- function(n_sts){
     ggplot(aes(x = yearWeek, y = counts,
                color = version, group = version)) +
     geom_line() +
-    geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
+    # geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue",
+    #            linetype = "dashed") +
     labs(
       title = "Serotype 12F & GPSC55: model vs data"
     ) +
