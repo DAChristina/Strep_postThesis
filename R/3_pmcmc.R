@@ -7,7 +7,7 @@ library(GGally)
 # library(socialmixr)
 
 source("global/all_function_allAge.R")
-sir_data <- readRDS("inputs/pmcmc_data_week_allAge_ser1.rds")
+sir_data <- readRDS("inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
 rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the particle filter to use
 
 ## 2a. Model Load ##############################################################
@@ -17,7 +17,8 @@ rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the parti
 gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
 
 # This is part of sir odin model:
-pars <- list(log_A_ini = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
+pars <- list(log_A_ini1 = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
+             log_A_ini2 = 0.6,
              time_shift_1 = 0.07,
              # time_shift_2 = 0.23,
              beta_0 = 0.04,
@@ -26,7 +27,8 @@ pars <- list(log_A_ini = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change 
              # max_wane = (-0.5),
              # min_wane = (-4),
              # scaled_wane = (0.5),
-             log_delta = (-4.82),
+             log_delta1 = (-4.82),
+             log_delta2 = (-4.82),
              kappa_1 = 6
              # hypo_sigma_2 = 1,
              
@@ -63,11 +65,11 @@ pars <- list(log_A_ini = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change 
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(300, 6) # previously 500 in 55
+proposal_matrix <- diag(300, 8) # previously 500 in 55
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
-rownames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_1")
-colnames(proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_1")
+rownames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+colnames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -147,14 +149,16 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   # vcv positive definite error if matrix/1000
   new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*100
-  new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1000
-  new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1000
+  new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*100
+  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1000
   new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1000
   new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1000
+  new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1000
+  new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1000
   # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
-  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_1")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_1")
+  rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+  colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -375,8 +379,8 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   new_proposal_matrix <- new_proposal_matrix/10 # * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
   # new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_1")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "time_shift_1", "beta_0", "beta_1", "log_delta", "kappa_1")
+  rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+  colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,

@@ -3,6 +3,40 @@
 
 library(tidyverse)
 
+# compartment separation for 1 #################################################
+age_proportion <- dplyr::left_join(
+  read.csv("inputs/nomis_population_long.csv") %>% 
+    # region stratification is not needed
+    dplyr::group_by(year) %>% 
+    dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
+    dplyr::ungroup()
+  ,
+  read.csv("inputs/nomis_population_long.csv") %>% 
+    # region stratification is not needed
+    dplyr::mutate(
+      Age = as.numeric(Age),
+      ageGroup_s1 = case_when(
+        Age < 10 ~ "0-9",
+        Age >= 10 ~ "10+"
+      )
+    ) %>% 
+    dplyr::group_by(ageGroup_s1, year) %>% 
+    dplyr::summarise(PopSize_s1 = sum(PopSize)) %>% 
+    dplyr::ungroup()
+  ,
+  by = "year"
+) %>% 
+  dplyr::mutate(
+    ageGroup_s1 = factor(ageGroup_s1,
+                         levels = c("0-9", "10+")),
+    PopProp = round(PopSize_s1/PopSize_year, 2)
+  ) %>% 
+  # view() %>% 
+  glimpse()
+
+# younger people (0-9) was consistently 12% of the total population
+
+
 # function for HPC run #########################################################
 age_validation <- function(n_sts){
   dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")

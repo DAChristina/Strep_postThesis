@@ -9,7 +9,8 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
 
 # Running the SIR model with dust
 pars <- list(N_ini = 6.7e7,
-             log_A_ini = 0.6,
+             log_A_ini1 = 0.7094744,
+             log_A_ini2 = 0.7229443,
              time_shift_1 = 0.0639227346367733, #0.302114578070083, # 0.100043419341372, # 
              # time_shift_2 = 0.3766235,
              beta_0 = 0.0365789436634438, # 0.0381562615720545, #  # 
@@ -18,7 +19,8 @@ pars <- list(N_ini = 6.7e7,
              # scaled_wane = 0.0682579543,
              # psi = (0.5),
              hypo_sigma_2 = (1),
-             log_delta = (-4.65219600756188) # (-4.65135010884371) #  # 
+             log_delta1 = (-4.65219600756188)*1.8,
+             log_delta2 = (-4.65219600756188)*1.2
              # alpha = 0.01,
              # gamma_annual = 0.01,
              # nu_annual = 0.01
@@ -47,26 +49,35 @@ sir_model <- gen_sir$new(pars = pars,
 #   dplyr::mutate(day = week*7) 
 model <- array(NA, dim = c(sir_model$info()$len, n_pars, n_times))
 
-# R0 estimation
-R0 <- pars$beta_0/pars$sigma_2
-R0
-
 for (t in seq_len(n_times)) {
   model[ , , t] <- sir_model$run(t)
 }
 # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
 # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
-data <- readRDS("inputs/pmcmc_data_week_allAge_ser1.rds") %>% 
+data <- readRDS("inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds") %>% 
   glimpse()
 
-sir_data <- data %>% 
-  dplyr::transmute(
-    replicate = 1,
-    # steps = time_start+1,
-    weekly = seq_along(replicate),
-    value = count_serotype,
-    compartment = "data_count_serotype"
-  ) %>%
+sir_data <- dplyr::bind_rows(
+  data %>% 
+    dplyr::transmute(
+      replicate = 1,
+      # steps = time_start+1,
+      weekly = seq_along(replicate),
+      value = count_s1_1,
+      compartment = "data_count_s1_1"
+    )
+  ,
+  data %>% 
+    dplyr::transmute(
+      replicate = 1,
+      # steps = time_start+1,
+      weekly = seq_along(replicate),
+      value = count_s1_2,
+      compartment = "data_count_s1_2"
+    )
+) %>%
+  tidyr::complete(weekly, compartment,
+                  fill = list(value = 0)) %>% 
   glimpse()
 
 # all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>%
@@ -91,15 +102,14 @@ incidence_modelled <-
   # dplyr::filter(index < 5) %>%
   dplyr::mutate(compartment = 
                   dplyr::case_when(index == 1 ~ "Time",
-                                   index == 2 ~ "A",
-                                   index == 3 ~ "D",
-                                   index == 4 ~ "S",
-                                   index == 5 ~ "R",
-                                   index == 6 ~ "model_n_AD_weekly",
-                                   index == 7 ~ "Ne",
-                                   index == 8 ~ "cases_55",
-                                   index == 9 ~ "cases_non55",
-                                   index == 10 ~ "cases_12F"
+                                   index == 2 ~ "A1",
+                                   index == 3 ~ "A2",
+                                   index == 4 ~ "model_D1",
+                                   index == 5 ~ "model_D2",
+                                   index == 6 ~ "S",
+                                   index == 7 ~ "R",
+                                   index == 8 ~ "n_AD1_weekly",
+                                   index == 9 ~ "n_AD2_weekly"
                   )) %>% 
   dplyr::select(-index) %>%
   dplyr::mutate(weekly = ceiling(steps/7)) %>% 
@@ -121,11 +131,12 @@ incidence_modelled <-
 ggplot(incidence_modelled %>% 
          dplyr::filter(
            # grepl("cases|D|data", compartment),
-           # compartment %in% c("D", "model_n_AD_weekly", "data_count_serotype"), # redesign the model, would rather fit to D
-           # compartment %in% c("model_n_AD_weekly", "data_count_serotype"),
-           # compartment %in% c("D", "n_AD_weekly"),
-           compartment %in% c("D", "data_count_serotype"),
-           # compartment %in% c("D"),
+           # compartment %in% c("S",
+           #                    "A1", "A2",
+           #                    "model_D1", "model_D2",
+           #                    "R"),
+           compartment %in% c("model_D1", "model_D2",
+                              "data_count_s1_1", "data_count_s1_2"),
            compartment != "Time",
            # compartment %in% c("S")
          )
@@ -134,7 +145,7 @@ ggplot(incidence_modelled %>%
            group = interaction(compartment,replicate),
            colour = compartment)) +
   geom_line() +
-  # scale_y_continuous(trans = "log1p") +
+  scale_y_continuous(trans = "log1p") +
   # scale_y_continuous(limits = c(0, 50)) +
   # scale_x_continuous(limits = c(0, 700)) +
   scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
@@ -149,30 +160,4 @@ ggplot(incidence_modelled %>%
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
-
-
-transformations <- data.frame(
-  log_beta_0 = seq(-5, 0, 0.5)
-) %>% 
-  dplyr::mutate(beta_0 = as.numeric(10^log_beta_0),
-                scaled_A_ini = seq(0, 1, 0.1),
-                max_A_ini = 0,
-                min_A_ini = -20,
-                log_A_ini = scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini,
-                A_ini = 10^(log_A_ini)*6.7e7) %>% 
-  glimpse()
-
-# test A_ini
-
-log_A_ini = -3.77295312521097
-# log to scaled
-(log_A_ini-(-10)) / (0-(-10)) # (x - min) / (max - min)
-
-
-
-
-
-
-
-
 

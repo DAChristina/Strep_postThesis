@@ -19,21 +19,16 @@ model_vs_data <- function(n_sts){
   
   # Running the SIR model with dust
   pars <- list(N_ini = 6.7e7,
-               log_A_ini = results[1,2],
+               log_A_ini1 = results[1,2],
+               log_A_ini2 = results[2,2],
                D_ini = 0,
                R_ini = 0,
-               time_shift_1 = results[2,2],
-               # time_shift_2 = results[3,2],
-               beta_0 = results[3,2],
-               beta_1 = results[4,2],
-               # beta_2 = results[6,2],
-               # scaled_wane = results[7,2],
-               # psi = (0.5),
+               time_shift_1 = results[3,2],
+               beta_0 = results[4,2],
+               beta_1 = results[5,2],
                hypo_sigma_2 = (1),
-               log_delta = results[5,2]
-               # alpha = results[9,2],
-               # gamma_annual = results[10,2],
-               # nu_annual = results[11,2]
+               log_delta1 = results[6,2],
+               log_delta2 = results[7,2]
   )
   
   time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
@@ -59,28 +54,38 @@ model_vs_data <- function(n_sts){
   n_particles <- 1L
   model <- array(NA, dim = c(sir_model$info()$len, n_particles, n_times))
   
-  # R0 estimation
-  R0 <- pars$beta_0/pars$sigma_2
-  R0
-  
   for (t in seq_len(n_times)) {
     model[ , , t] <- sir_model$run(t)
   }
   # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
-  data <- readRDS("inputs/pmcmc_data_week_allAge_ser1.rds") %>% 
+  data <- readRDS("inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds") %>% 
     glimpse()
   
-  sir_data <- data %>% 
-    dplyr::transmute(
-      replicate = 1,
-      # steps = time_start+1,
-      weekly = seq_along(replicate),
-      value = count_serotype,
-      compartment = "data_count_serotype"
-    ) %>%
+  sir_data <- dplyr::bind_rows(
+    data %>% 
+      dplyr::transmute(
+        replicate = 1,
+        # steps = time_start+1,
+        weekly = seq_along(replicate),
+        value = count_s1_1,
+        compartment = "data_count_s1_1"
+      )
+    ,
+    data %>% 
+      dplyr::transmute(
+        replicate = 1,
+        # steps = time_start+1,
+        weekly = seq_along(replicate),
+        value = count_s1_2,
+        compartment = "data_count_s1_2"
+      )
+  ) %>%
+    tidyr::complete(weekly, compartment,
+                    fill = list(value = 0)) %>% 
     glimpse()
+  
   
   # all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>%
   #   dplyr::mutate(
@@ -104,15 +109,14 @@ model_vs_data <- function(n_sts){
     # dplyr::filter(index < 5) %>%
     dplyr::mutate(compartment = 
                     dplyr::case_when(index == 1 ~ "Time",
-                                     index == 2 ~ "A",
-                                     index == 3 ~ "model_D",
-                                     index == 4 ~ "S",
-                                     index == 5 ~ "R",
-                                     index == 6 ~ "model_n_AD_weekly",
-                                     index == 7 ~ "Ne",
-                                     index == 8 ~ "cases_55",
-                                     index == 9 ~ "cases_non55",
-                                     index == 10 ~ "cases_12F"
+                                     index == 2 ~ "A1",
+                                     index == 3 ~ "A2",
+                                     index == 4 ~ "model_D1",
+                                     index == 5 ~ "model_D2",
+                                     index == 6 ~ "S",
+                                     index == 7 ~ "R",
+                                     index == 8 ~ "n_AD1_weekly",
+                                     index == 9 ~ "n_AD2_weekly"
                     )) %>% 
     dplyr::select(-index) %>%
     dplyr::mutate(weekly = ceiling(steps/7)) %>% 
@@ -136,28 +140,25 @@ model_vs_data <- function(n_sts){
             paste0(dir_name, "incidence_modelled_serotype1.csv"),
             row.names = FALSE)
   
-  png(paste0(dir_name, "figs/model_vs_data_all.png"),
-      width = 24, height = 17, unit = "cm", res = 600)
-  p <- ggplot(incidence_modelled %>% 
-                dplyr::filter(
-                  compartment %in% c("model_D", "data_count_serotype"),
-                  compartment != "Time"
-                  )
-              ,
-              aes(x = yearWeek, y = value,
-                  group = interaction(compartment,replicate),
-                  colour = compartment)) +
+  png(paste0(dir_name, "figs/model_vs_data_ageGroups1.png"),
+      width = 24, height = 34, unit = "cm", res = 600)
+  p1 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(
+                   compartment %in% c("model_D1", "data_count_s1_1"),
+                   compartment != "Time",
+                 )
+               ,
+               aes(x = yearWeek, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
     geom_line() +
     geom_vline(aes(xintercept = as.Date("2010-04-01"),
                    colour = "PCV13 (April 2010)"),
                linetype = "dashed") +
-    # scale_y_continuous(trans = "log1p") +
-    # scale_y_continuous(limits = c(0, 50)) +
-    # scale_x_continuous(limits = c(0, 700)) +
     scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                  date_breaks = "year",
                  date_labels = "%Y") +
-    ggtitle("Cases (Aggregated by Week)") +
+    ggtitle("Cases (Aggregated by Week) for age 0-9") +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +
@@ -167,8 +168,35 @@ model_vs_data <- function(n_sts){
           legend.text = element_text(size = 10),
           legend.background = element_rect(fill = "transparent", color = "transparent"))
   
-  print(p)
+  p2 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(
+                   compartment %in% c("model_D2", "data_count_s1_2"),
+                   compartment != "Time",
+                 )
+               ,
+               aes(x = yearWeek, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
+    geom_line() +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    ggtitle("Cases (Aggregated by Week) for age 10+") +
+    xlab("Time") +
+    ylab("Number of People") +
+    theme_bw() +
+    theme(legend.position = c(0.15, 0.85),
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
   
+  p_combined <- cowplot::plot_grid(p1, p2,
+                                   nrow =2,
+                                   labels = c("A", "B"))
+  
+  
+  print(p_combined)
   dev.off()
   
 }

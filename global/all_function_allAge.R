@@ -12,21 +12,33 @@ case_compare <- function(state, observed, pars = NULL) {
   n <- ncol(state)
   
   # sir_model$info()$index$n_AD_weekly
-  model_55 <- state[6, , drop = TRUE] # fit to D (GPSC55)
+  model_55_1 <- state[8, , drop = TRUE]
+  model_55_2 <- state[9, , drop = TRUE]
   
-  if (is.na(observed$count_serotype)) {
-    ll_55 <- numeric(n)
+  if (is.na(observed$count_s1_1)) {
+    ll_55_1 <- numeric(n)
   } else {
-    ll_55 <- ll_nbinom(data = observed$count_serotype,
-                       model = model_55,
-                       kappa = pars$kappa_1,
-                       exp_noise = exp_noise)
+    ll_55_1 <- ll_nbinom(data = observed$count_s1_1,
+                         model = model_55_1,
+                         kappa = pars$kappa_1,
+                         exp_noise = exp_noise)
   }
-  ll <- ll_55
+  
+  if (is.na(observed$count_s1_2)) {
+    ll_55_2 <- numeric(n)
+  } else {
+    ll_55_2 <- ll_nbinom(data = observed$count_s1_2,
+                         model = model_55_2,
+                         kappa = pars$kappa_1,
+                         exp_noise = exp_noise)
+  }
+  
+  
+  ll <- ll_55_1 + ll_55_2
   
   if (any(!is.finite(ll))) {
     # return -Inf to force rejection
-    ll[!is.finite(ll)] <- -1e10
+    ll[!is.finite(ll)] <- 1e-10
   }
   return(ll)
 }
@@ -45,18 +57,22 @@ index_fun <- function(info){
 # https://github.com/mrc-ide/mcstate/blob/da9f79e4b5dd421fd2e26b8b3d55c78735a29c27/tests/testthat/test-if2.R#L40
 # https://github.com/mrc-ide/mcstate/issues/184
 parameter_transform <- function(pars) {
-  log_A_ini <- pars[["log_A_ini"]]
+  log_A_ini1 <- pars[["log_A_ini1"]]
+  log_A_ini2 <- pars[["log_A_ini2"]]
   time_shift_1 <- pars[["time_shift_1"]]
   beta_0 <- pars[["beta_0"]]
   beta_1 <- pars[["beta_1"]]
-  log_delta <- pars[["log_delta"]]
+  log_delta1 <- pars[["log_delta1"]]
+  log_delta2 <- pars[["log_delta2"]]
   kappa_1 <- pars[["kappa_1"]]
   
-  list(log_A_ini = log_A_ini,
+  list(log_A_ini1 = log_A_ini1,
+       log_A_ini2 = log_A_ini2,
        time_shift_1 = time_shift_1,
        beta_0 = beta_0,
        beta_1 = beta_1,
-       log_delta = log_delta,
+       log_delta1 = log_delta1,
+       log_delta2 = log_delta2,
        kappa_1 = kappa_1
   )
   
@@ -69,7 +85,9 @@ transform <- function(pars) {
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (0.6), min = 0.218, max = 0.8,
+    list(mcstate::pmcmc_parameter("log_A_ini1", (0.6), min = 0.218, max = 0.8,
+                                  prior = priors$log_A_ini),
+         mcstate::pmcmc_parameter("log_A_ini2", (0.6), min = 0.218, max = 0.8,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
@@ -77,7 +95,9 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta", (-4.55), min = (-10), max = 0.7,
+         mcstate::pmcmc_parameter("log_delta1", (-8.37), min = (-10), max = 0.7,
+                                  prior = priors$log_delta),
+         mcstate::pmcmc_parameter("log_delta2", (-5.58), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("kappa_1", 6, min = 0,
                                   prior = priors$kappas) #function(p) log(1e-10))
@@ -236,29 +256,31 @@ observe <- function(pmcmc_samples) {
   time <- pmcmc_samples$trajectories$time
   
   ## extract model outputs
-  model_55 <- state[6, , , drop = TRUE]
+  model_all <- (state[8, , , drop = TRUE]+state[9, , , drop = TRUE])
+  model_child <- state[8, , , drop = TRUE]
   
   observed <- list()
-  observed$cases_child_GPSC55 <- observe_pois(model_55)
+  observed$cases_child <- observe_pois(model_child)
   
   abind::abind(c(list(state), observed), along = 1)
 }
 
 plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
-  matplot(data$yearWeek, t(state[6, , -1]),
+  # model state refers to n_AD_weekly (not the D compartment)
+  matplot(data$yearWeek, t((state["n_AD1_weekly", , -1]+state["n_AD2_weekly", , -1])),
           type = "l", lty = 1, col = col, ylim = c(0, 41),
           xlab = "", ylab = "Serotype 1 cases")
   # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
-  points(data$yearWeek, data$count_serotype, col = 4, type = "l")
+  points(data$yearWeek, (data$count_s1_1+data$count_s1_2), col = 4, type = "l")
   
   matplot(data$yearWeek, xlab = "", t(state["S", , -1]),
           type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6.7e7), yaxt = "n")
   axis(side = 2, at = seq(0, 6e7, length.out = 5),
        labels = seq(0, 100, length.out = 5))
   
-  matlines(data$yearWeek, t(state["A", , -1]), lty = 1, col = 1)
-  matlines(data$yearWeek, t(state["D", , -1]), lty = 1, col = 4)
+  matlines(data$yearWeek, t((state["A1", , -1]+state["A2", , -1])), lty = 1, col = 1)
+  matlines(data$yearWeek, t((state["D1", , -1]+state["D2", , -1])), lty = 1, col = 4)
   matlines(data$yearWeek, t(state["R", , -1]), lty = 1, col = 5)
   legend("right", bty = "n", fill = 2:4, legend = c("S", "A", "D", "R"))
   # 
