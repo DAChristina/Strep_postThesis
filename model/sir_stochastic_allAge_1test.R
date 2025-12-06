@@ -13,7 +13,7 @@ pars <- list(N_ini = 6.7e7,
              log_A_ini2 = 0.7229443,
              time_shift_1 = 0.0639227346367733, #0.302114578070083, # 0.100043419341372, # 
              # time_shift_2 = 0.3766235,
-             beta_0 = 0.0365789436634438, # 0.0381562615720545, #  # 
+             beta_0 = 0.018, # 0.0381562615720545, #  # 
              beta_1 = 0.2647984930712, # 0.464821184134391, #  # 
              # beta_2 = 0.58190970,
              # scaled_wane = 0.0682579543,
@@ -160,4 +160,60 @@ ggplot(incidence_modelled %>%
         legend.key.size = unit(0.8, "lines"),
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+p1 <- ggplot(incidence_modelled %>% 
+               dplyr::filter(
+                 compartment %in% c("model_D1", "data_count_s1_1"),
+                 compartment != "Time",
+               )
+             ,
+             aes(x = yearWeek, y = value,
+                 group = interaction(compartment,replicate),
+                 colour = compartment)) +
+  geom_line() +
+  geom_vline(aes(xintercept = as.Date("2010-04-01"),
+                 colour = "PCV13 (April 2010)"),
+             linetype = "dashed") +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  ggtitle("Cases (Aggregated by Week) for age 0-9") +
+  xlab("Time") +
+  ylab("Number of People") +
+  theme_bw() +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+p2 <- ggplot(incidence_modelled %>% 
+               dplyr::filter(
+                 compartment %in% c("model_D2", "data_count_s1_2"),
+                 compartment != "Time",
+               )
+             ,
+             aes(x = yearWeek, y = value,
+                 group = interaction(compartment,replicate),
+                 colour = compartment)) +
+  geom_line() +
+  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+               date_breaks = "year",
+               date_labels = "%Y") +
+  ggtitle("Cases (Aggregated by Week) for age 10+") +
+  xlab("Time") +
+  ylab("Number of People") +
+  theme_bw() +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+
+p_combined <- cowplot::plot_grid(p1, p2,
+                                 nrow =2,
+                                 labels = c("A", "B"))
+
+
+print(p_combined)
 

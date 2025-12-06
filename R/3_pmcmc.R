@@ -94,6 +94,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # dir_name <- paste0("outputs/genomics/trial_", ifelse(run_stochastic, "stochastic", "deterministic"), "_", n_sts, "/")
   dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
   dir.create(dir_name, FALSE, TRUE)
+  dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
   
   if(run1_stochastic){
     filter <- mcstate::particle_filter$new(data = sir_data,
@@ -121,8 +122,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   
   # The pmcmc
   pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter, control = control)
-  pmcmc_result
-  saveRDS(pmcmc_result, paste0(dir_name, "pmcmc_result.rds"))
+  # pmcmc_result
+  # saveRDS(pmcmc_result, paste0(dir_name, "pmcmc_result.rds"))
   
   new_proposal_mtx <- cov(pmcmc_result$pars)
   write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx.csv"), row.names = FALSE)
@@ -243,9 +244,43 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   
   # The pmcmc
   tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter, control = tune_control)
-  tune_pmcmc_result
-  saveRDS(tune_pmcmc_result, paste0(dir_name, "tune_pmcmc_result.rds"))
+  # saveRDS(tune_pmcmc_result, paste0(dir_name, "tune_pmcmc_result.rds"))
   
+  # final parameters with CI
+  tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
+  mcmc_lo_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.025))
+  mcmc_hi_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.975))
+  
+  binds_tune_initial <- rbind(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]),
+                              mcmc_lo_CI, mcmc_hi_CI)
+  binds_tune_initial2 <- cbind(binds_tune_initial,
+                               log_prior = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                           "log_prior"],
+                               log_likelihood = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                                "log_likelihood"],
+                               log_posterior = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                               "log_posterior"])
+  t_tune_initial <- t(binds_tune_initial2)
+  colnames(t_tune_initial) <- c("values", "low_CI", "high_CI")
+  
+  write.csv(t_tune_initial,
+            paste0(dir_name, "tune_initial_with_CI.csv"), row.names = T)
+  
+  # MCMC diagnostics
+  # 1. Gelman-Rubin
+  figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
+  
+  png(paste0(dir_name, "figs/mcmc2_diag_gelmanRubin_%02d.png"),
+      width = 17, height = 17, unit = "cm", res = 600)
+  diag_gelman_rubin(figs_gelman_init)
+  dev.off()
+  
+  # 2. ggpairs
+  png(paste0(dir_name, "figs/mcmc2_diag_ggPairs_%02d.png"),
+      width = 17, height = 17, unit = "cm", res = 600)
+  p <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
+  print(p)
+  dev.off()
   
   new_proposal_mtx <- cov(tune_pmcmc_result$pars)
   write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx_modified.csv"), row.names = FALSE)
