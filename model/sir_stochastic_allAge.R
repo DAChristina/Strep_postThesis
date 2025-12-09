@@ -36,7 +36,7 @@ vacc <- 0.9*0.862*0.02 # FIXED PCV13 vaccination coverage * efficacy * proportio
 UK_calibration <- user(0.8066608) # FIXED (Lochen et al., 2022)
 
 log_delta <- user(0) # required in mcState
-hypo_sigma1_day <- user(28) # 28 days
+hypo_sigma1_day <- user(15.75) # (95% CI 7.88-31.49) (Chaguza et al., 2021)
 sigma_1 <- 1/(hypo_sigma1_day)
 hypo_sigma2_day <- user(1) # 1 day
 sigma_2 <- 1/(hypo_sigma2_day)
