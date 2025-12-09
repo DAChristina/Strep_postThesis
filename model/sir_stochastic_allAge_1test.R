@@ -129,38 +129,38 @@ incidence_modelled <-
   glimpse()
 
 
-ggplot(incidence_modelled %>% 
-         dplyr::filter(
-           # grepl("cases|D|data", compartment),
-           # compartment %in% c("S",
-           #                    "A1", "A2",
-           #                    "model_D1", "model_D2",
-           #                    "R"),
-           compartment %in% c("model_D1", "model_D2",
-                              "data_count_s1_1", "data_count_s1_2"),
-           compartment != "Time",
-           # compartment %in% c("S")
-         )
-       ,
-       aes(x = yearWeek, y = value,
-           group = interaction(compartment,replicate),
-           colour = compartment)) +
-  geom_line() +
-  scale_y_continuous(trans = "log1p") +
-  # scale_y_continuous(limits = c(0, 50)) +
-  # scale_x_continuous(limits = c(0, 700)) +
-  scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
-               date_breaks = "year",
-               date_labels = "%Y") +
-  ggtitle("Cases (Aggregated by Week)") +
-  xlab("Time") +
-  ylab("Number of People") +
-  theme_bw() +
-  theme(legend.position = c(0.15, 0.85),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.8, "lines"),
-        legend.text = element_text(size = 10),
-        legend.background = element_rect(fill = "transparent", color = "transparent"))
+# ggplot(incidence_modelled %>% 
+#          dplyr::filter(
+#            # grepl("cases|D|data", compartment),
+#            # compartment %in% c("S",
+#            #                    "A1", "A2",
+#            #                    "model_D1", "model_D2",
+#            #                    "R"),
+#            compartment %in% c("model_D1", "model_D2",
+#                               "data_count_s1_1", "data_count_s1_2"),
+#            compartment != "Time",
+#            # compartment %in% c("S")
+#          )
+#        ,
+#        aes(x = yearWeek, y = value,
+#            group = interaction(compartment,replicate),
+#            colour = compartment)) +
+#   geom_line() +
+#   scale_y_continuous(trans = "log1p") +
+#   # scale_y_continuous(limits = c(0, 50)) +
+#   # scale_x_continuous(limits = c(0, 700)) +
+#   scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+#                date_breaks = "year",
+#                date_labels = "%Y") +
+#   ggtitle("Cases (Aggregated by Week)") +
+#   xlab("Time") +
+#   ylab("Number of People") +
+#   theme_bw() +
+#   theme(legend.position = c(0.15, 0.85),
+#         legend.title = element_blank(),
+#         legend.key.size = unit(0.8, "lines"),
+#         legend.text = element_text(size = 10),
+#         legend.background = element_rect(fill = "transparent", color = "transparent"))
 
 p1 <- ggplot(incidence_modelled %>% 
                dplyr::filter(
