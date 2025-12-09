@@ -19,7 +19,8 @@ beta_1 <- user(0)
 # https://fingertips.phe.org.uk/search/PPV#page/4/gid/1/pat/159/par/K02000001/ati/15/are/E92000001/iid/30313/age/27/sex/4/cat/-1/ctp/-1/yrr/1/cid/4/tbm/1
 vacc <- 0.9*0.862*0.3 # FIXED PCV13 vaccination coverage * efficacy * proportion of kids below 2 y.o. (from 0-9)
 
-# Country calibration (Lochen et al., 2022):
+# Country calibration
+# (study_adjusted_type_specific_negbin_serotype_fit.csv; Lochen et al., 2022):
 # Children: 1.07638532472038 (it is called delta in the spreadsheet)
 # Adults: 0.536936186788821 (basically gamma in the spreadsheet)
 # Average: 0.8066608
@@ -28,8 +29,8 @@ UK_calibration2 <- user(0.536936186788821)
 
 log_delta1 <- user(0)
 log_delta2 <- user(0)
-hypo_sigma1_day <- user(15.75) # (95% CI 7.88-31.49) (Chaguza et al., 2021)
-sigma_1 <- 1/(hypo_sigma1_day)
+# hypo_sigma1_day <- user(15.75) # (95% CI 7.88-31.49) (Chaguza et al., 2021)
+sigma_1 <- user(0) # test sigma_1 (A2 -> R)
 hypo_sigma2_day <- user(1) # 1 day
 sigma_2 <- 1/(hypo_sigma2_day)
 mu_0 <- 1/(80.70*365) # background mortality per day, the inverse of life expectancy

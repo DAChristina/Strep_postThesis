@@ -29,6 +29,7 @@ pars <- list(log_A_ini1 = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change
              # scaled_wane = (0.5),
              log_delta1 = (-4.82),
              log_delta2 = (-4.82),
+             sigma_1 = 0.1,
              kappa_1 = 6
              # hypo_sigma_2 = 1,
              
@@ -65,11 +66,11 @@ pars <- list(log_A_ini1 = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(300, 8) # previously 500 in 55
+proposal_matrix <- diag(300, 9) # previously 500 in 55
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
-rownames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
-colnames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+rownames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
+colnames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -156,10 +157,11 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1000
   new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1000
   new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1000
+  new_proposal_matrix[9,9] <- new_proposal_matrix[9,9]*1000
   # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
-  rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
-  colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+  rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
+  colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -179,7 +181,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     #                                                              adapt_end = n_sts*0.8,
     #                                                              pre_diminish = n_sts*0.1)
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/6)/1000,
+                                                                 initial_scaling = (2.38^2/9)/1000,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.234,
                                                                  forget_rate = 0.1,
@@ -191,7 +193,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     # whatver
     # adaptive_proposal_run2 <- FALSE
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/6)/1000,
+                                                                 initial_scaling = (2.38^2/9)/1000,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.234,
                                                                  forget_rate = 0.1,
@@ -414,8 +416,8 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   new_proposal_matrix <- new_proposal_matrix/10 # * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
   # new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
-  colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+  rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
+  colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,

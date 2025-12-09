@@ -64,6 +64,7 @@ parameter_transform <- function(pars) {
   beta_1 <- pars[["beta_1"]]
   log_delta1 <- pars[["log_delta1"]]
   log_delta2 <- pars[["log_delta2"]]
+  sigma_1 <- pars[["sigma_1"]]
   kappa_1 <- pars[["kappa_1"]]
   
   list(log_A_ini1 = log_A_ini1,
@@ -73,6 +74,7 @@ parameter_transform <- function(pars) {
        beta_1 = beta_1,
        log_delta1 = log_delta1,
        log_delta2 = log_delta2,
+       sigma_1 = sigma_1,
        kappa_1 = kappa_1
   )
   
@@ -99,6 +101,8 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("log_delta2", (-5.58), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
+         mcstate::pmcmc_parameter("sigma_1", 0.1, min = 0, max = 1,
+                                  prior = priors$sigma),
          mcstate::pmcmc_parameter("kappa_1", 6, min = 0,
                                   prior = priors$kappas) #function(p) log(1e-10))
     ),
@@ -122,6 +126,9 @@ prepare_priors <- function(pars) {
   priors$log_delta <- function(s) {
     stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.8, delta = -6.5, log = TRUE)
     # dunif(s, min = (-10), max = 0.7, log = TRUE)
+  }
+  priors$sigma <- function(s) {
+    dgamma(s, shape = 1, scale = 0.5, log = TRUE)
   }
   priors$kappas <- function(s) {
     # dunif(s, min = 0, log = TRUE)

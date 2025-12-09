@@ -28,7 +28,8 @@ model_vs_data <- function(n_sts){
                beta_1 = results[5,2],
                hypo_sigma_2 = (1),
                log_delta1 = results[6,2],
-               log_delta2 = results[7,2]
+               log_delta2 = results[7,2],
+               sigma_1 = results[8,2]
   )
   
   time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
