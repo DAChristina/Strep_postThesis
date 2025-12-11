@@ -12,8 +12,8 @@ case_compare <- function(state, observed, pars = NULL) {
   n <- ncol(state)
   
   # sir_model$info()$index$n_AD_weekly
-  model_55_1 <- state[8, , drop = TRUE]
-  model_55_2 <- state[9, , drop = TRUE]
+  model_55_1 <- state[7, , drop = TRUE]
+  model_55_2 <- state[8, , drop = TRUE]
   
   if (is.na(observed$count_s1_1)) {
     ll_55_1 <- numeric(n)
@@ -56,55 +56,82 @@ index_fun <- function(info){
 # That transform function
 # https://github.com/mrc-ide/mcstate/blob/da9f79e4b5dd421fd2e26b8b3d55c78735a29c27/tests/testthat/test-if2.R#L40
 # https://github.com/mrc-ide/mcstate/issues/184
-parameter_transform <- function(pars) {
-  log_A_ini1 <- pars[["log_A_ini1"]]
-  log_A_ini2 <- pars[["log_A_ini2"]]
-  time_shift_1 <- pars[["time_shift_1"]]
-  beta_0 <- pars[["beta_0"]]
-  beta_1 <- pars[["beta_1"]]
-  log_delta1 <- pars[["log_delta1"]]
-  log_delta2 <- pars[["log_delta2"]]
-  sigma_1 <- pars[["sigma_1"]]
-  kappa_1 <- pars[["kappa_1"]]
+parameter_transform <- function(transmission) {
+  age.limits = c(0, 10)
+  N_age <- length(age.limits)
   
-  list(log_A_ini1 = log_A_ini1,
-       log_A_ini2 = log_A_ini2,
-       time_shift_1 = time_shift_1,
-       beta_0 = beta_0,
-       beta_1 = beta_1,
-       log_delta1 = log_delta1,
-       log_delta2 = log_delta2,
-       sigma_1 = sigma_1,
-       kappa_1 = kappa_1
+  contact_2_demographic <- 
+    socialmixr::contact_matrix(polymod,
+                               countries = "United Kingdom",
+                               age.limits = age.limits,
+                               symmetric = TRUE
   )
   
+  transmission <- contact_2_demographic$matrix /
+    rep(contact_2_demographic$demography$population,
+        each = ncol(contact_2_demographic$matrix))
+  transmission
+  
+  
+  transform <- function(pars) {
+    # re-define pars with pars that I really wanna fit only
+    # log_A_ini1 <- pars[["log_A_ini1"]] # [1]
+    # log_A_ini2 <- pars[["log_A_ini2"]] # [2]
+    log_A_ini <- pars[paste0("log_A_ini", 1:2)]
+    
+    time_shift_1 <- pars[["time_shift_1"]]
+    beta_0 <- pars[["beta_0"]]
+    beta_1 <- pars[["beta_1"]]
+    
+    log_delta1 <- pars[["log_delta1"]]
+    log_delta2 <- pars[["log_delta2"]]
+    sigma_1 <- pars[["sigma_1"]]
+    kappa_1 <- pars[["kappa_1"]]
+    
+    pars <- list(log_A_ini = log_A_ini,
+                 # log_A_ini1 = log_A_ini1,
+                 # log_A_ini2 = log_A_ini2,
+                 time_shift_1 = time_shift_1,
+                 beta_0 = beta_0,
+                 beta_1 = beta_1,
+                 log_delta1 = log_delta1,
+                 log_delta2 = log_delta2,
+                 sigma_1 = sigma_1,
+                 kappa_1 = kappa_1
+    )
+    
+    pars$N_ini <-  contact_2_demographic$demography$population
+    pars$m <- transmission
+    
+    pars
+  }
+  
+  transform
 }
 
-transform <- function(pars) {
-  parameter_transform(pars)
-}
+transform <- parameter_transform(transmission)
 
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini1", (0.8), min = 0.218, max = 0.8,
+    list(mcstate::pmcmc_parameter("log_A_ini1", (0.5), min = 0.218, max = 0.9,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.218, max = 0.8,
+         mcstate::pmcmc_parameter("log_A_ini2", (0.5), min = 0.218, max = 0.9,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
+         mcstate::pmcmc_parameter("time_shift_1", 0.3, min = 0, max = 1,
                                   prior = priors$time_shifts),
          mcstate::pmcmc_parameter("beta_0", 0.018, min = 0, max = 0.8,
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 0.7,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta1", (-8.37), min = (-10), max = 0.7,
+         mcstate::pmcmc_parameter("log_delta1", (-5), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("log_delta2", (-5.58), min = (-10), max = 0.7,
+         mcstate::pmcmc_parameter("log_delta2", (-5), min = (-10), max = 0.7,
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("sigma_1", 0.1, min = 0, max = 1,
+         mcstate::pmcmc_parameter("sigma_1", 0.00001, min = 0, max = 1,
                                   prior = priors$sigma),
          mcstate::pmcmc_parameter("kappa_1", 6, min = 0,
-                                  prior = priors$kappas) #function(p) log(1e-10))
+                                  prior = priors$kappas)
     ),
     proposal = proposal,
     transform = transform
@@ -263,8 +290,8 @@ observe <- function(pmcmc_samples) {
   time <- pmcmc_samples$trajectories$time
   
   ## extract model outputs
-  model_all <- (state[8, , , drop = TRUE]+state[9, , , drop = TRUE])
-  model_child <- state[8, , , drop = TRUE]
+  model_all <- (state[7, , , drop = TRUE]+state[8, , , drop = TRUE])
+  model_child <- state[7, , , drop = TRUE]
   
   observed <- list()
   observed$cases_child <- observe_pois(model_child)
@@ -281,15 +308,15 @@ plot_states <- function(state, data) {
   # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
   points(data$yearWeek, (data$count_s1_1+data$count_s1_2), col = 4, type = "l")
   
-  matplot(data$yearWeek, xlab = "", t(state["S", , -1]),
+  matplot(data$yearWeek, xlab = "", t(state["S_tot", , -1]),
           type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6.7e7), yaxt = "n")
   axis(side = 2, at = seq(0, 6e7, length.out = 5),
        labels = seq(0, 100, length.out = 5))
   
-  matlines(data$yearWeek, t((state["A1", , -1]+state["A2", , -1])), lty = 1, col = 1)
-  matlines(data$yearWeek, t((state["D1", , -1]+state["D2", , -1])), lty = 1, col = 4)
-  matlines(data$yearWeek, t(state["R", , -1]), lty = 1, col = 5)
-  legend("right", bty = "n", fill = 2:4, legend = c("S", "A", "D", "R"))
+  matlines(data$yearWeek, t(state["A_tot", , -1]), lty = 1, col = 1)
+  matlines(data$yearWeek, t(state["D_tot", , -1]), lty = 1, col = 4)
+  matlines(data$yearWeek, t(state["R_tot", , -1]), lty = 1, col = 5)
+  legend("right", bty = "n", fill = 2:4, legend = c("S_tot", "A_tot", "D_tot", "R_tot"))
   # 
   # matplot(data$yearWeek, xlab = "", t(state["I_tot", , -1]),
   #         type = "l", lty = 1, col = 3, ylab = "carriers")

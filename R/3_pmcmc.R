@@ -4,7 +4,7 @@ library(coda)
 library(odin.dust)
 library(dust)
 library(GGally)
-# library(socialmixr)
+library(socialmixr)
 
 source("global/all_function_allAge.R")
 sir_data <- readRDS("inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
@@ -14,32 +14,18 @@ rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the parti
 # The model below is stochastic, closed system SADR model that I have created before
 # I updated the code, filled the parameters with numbers;
 # e.g.dt <- user(0) because if dt <- user() generates error during MCMC run
-gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
+gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
 
 # This is part of sir odin model:
-pars <- list(log_A_ini1 = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change A_ini into log10(A_ini)
-             log_A_ini2 = 0.6,
-             time_shift_1 = 0.07,
-             # time_shift_2 = 0.23,
-             beta_0 = 0.04,
-             beta_1 = 0.04, # in toy data the real value of beta_1 = 0.07
-             # beta_2 = 0.2,
-             # max_wane = (-0.5),
-             # min_wane = (-4),
-             # scaled_wane = (0.5),
-             log_delta1 = (-4.82),
-             log_delta2 = (-4.82),
-             sigma_1 = 0.1,
-             kappa_1 = 6
-             # hypo_sigma_2 = 1,
-             
-             # alpha = 1,
-             # gamma_annual = 1,
-             # nu_annual = 1,
-             
-             # kappa_Ne = 1,
-             # kappa_12F = 1,
-             # kappa_1 = 1
+pars <- list(m = transmission,
+             N_ini = contact_2_demographic$demography$population,
+             log_A_ini = c(0, 0),
+             time_shift_1 = 0,
+             beta_0 = 0,
+             beta_1 = 0,
+             log_delta1 = 0,
+             log_delta2 = 0,
+             sigma_1 = 0
 )
 
 # https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model-over-time
@@ -66,7 +52,7 @@ pars <- list(log_A_ini1 = 0.6, # S_ini*10^(log10(-5.69897)) = 120 people; change
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(300, 9) # previously 500 in 55
+proposal_matrix <- diag(0.1, 9) # previously 300
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
 rownames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
@@ -150,14 +136,15 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   # vcv positive definite error if matrix/1000
-  new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*100
-  new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*100
-  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1000
-  new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1000
-  new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1000
-  new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1000
-  new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1000
-  new_proposal_matrix[9,9] <- new_proposal_matrix[9,9]*1000
+  new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*100000
+  new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*100000
+  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1000000
+  new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*100000
+  new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1000000
+  new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1000000
+  new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1000000
+  # new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1000 # 6 orders of magnitude due to extremely small sigma_1
+  new_proposal_matrix[9,9] <- new_proposal_matrix[9,9]*100000
   # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
   rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
@@ -181,7 +168,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     #                                                              adapt_end = n_sts*0.8,
     #                                                              pre_diminish = n_sts*0.1)
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/9)/1000,
+                                                                 initial_scaling = (2.38^2/9)*1000000,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.234,
                                                                  forget_rate = 0.1,
@@ -193,7 +180,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     # whatver
     # adaptive_proposal_run2 <- FALSE
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/9)/1000,
+                                                                 initial_scaling = (2.38^2/9)/100,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.234,
                                                                  forget_rate = 0.1,

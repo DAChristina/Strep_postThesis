@@ -13,8 +13,8 @@ UK_calibration_kids <- user(1.07638532472038) # FIXED (Lochen et al., 2022)
 UK_calibration_adults <- user(0.536936186788821) # FIXED (Lochen et al., 2022)
 
 # stratify log_delta
-log_delta_kids <- user(0)
-log_delta_adults <- user(0)
+log_delta1 <- user(0)
+log_delta2 <- user(0)
 
 # hypo_sigma_1_day <- user(15.75) # (95% CI 7.88-31.49) (Chaguza et al., 2021)
 sigma_1 <- user(0) # test sigma_1 (A2 -> R)
@@ -69,13 +69,15 @@ dim(n_Rdead) <- N_age
 # 2. INITIAL VALUES ############################################################
 # Initial values (user-defined parameters)
 N_ini[] <- user()
+max_A_ini <- 0
+min_A_ini <- -10
 
+# directly test log_A_ini as scaled
 log_A_ini[] <- user()
-A_ini[1] <- 10^(log_A_ini[1])*N_ini[1]
-A_ini[2] <- 10^(log_A_ini[2])*N_ini[2]
+A_ini[] <- 10^(log_A_ini[i]*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[i]
 
-D_ini[] <- user()
-R_ini[] <- user()
+D_ini[] <- 0
+R_ini[] <- 0
 
 # Age-structured states:
 initial(S[]) <- N_ini[i] -(A_ini[i]+D_ini[i]+R_ini[i])
@@ -109,8 +111,8 @@ foi_ij[2, ] <- beta * m[2, j] * (A[j] + D[j])/N[j]
 lambda[1] <- sum(foi_ij[1, ])
 lambda[2] <- sum(foi_ij[2, ])
 
-delta[1] <- (10^(log_delta_kids))*UK_calibration_kids
-delta[2] <- (10^(log_delta_adults))*UK_calibration_adults
+delta[1] <- (10^(log_delta1))*UK_calibration_kids
+delta[2] <- (10^(log_delta2))*UK_calibration_adults
 
 wane <- user(0, min = 0)
 

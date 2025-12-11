@@ -1,5 +1,6 @@
 library(tidyverse)
 library(odin.dust)
+library(socialmixr)
 
 # I update odin.dust by force
 # remotes::install_github("mrc-ide/odin.dust")
@@ -7,7 +8,7 @@ source("global/all_function_allAge.R")
 
 
 model_vs_data <- function(n_sts){
-  dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
+  dir_name <- paste0("outputs/genomics/trial_", 2000, "/")
   dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
   # run 4_post_pmcmc_pics.R first
   results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv")) %>% 
@@ -15,29 +16,49 @@ model_vs_data <- function(n_sts){
   
   
   # gen_sir <- odin.dust::odin_dust("model/sir_basic_trial.R")
-  gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
+  gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
+  
+  # Create contact_matrix 5 demographic groups:
+  # > 5
+  # 5-18
+  # 19-30
+  # 31-64
+  # 65+
+  # age.limits = c(0, 5, 19, 31, 65)
+  
+  # Create contact_matrix 2 demographic groups:
+  # > 10
+  # 10+
+  age.limits = c(0, 10)
+  N_age <- length(age.limits)
+  
+  contact_2_demographic <- socialmixr::contact_matrix(polymod,
+                                                      countries = "United Kingdom",
+                                                      age.limits = age.limits,
+                                                      symmetric = TRUE
+  )
+  
+  transmission <- contact_2_demographic$matrix /
+    rep(contact_2_demographic$demography$population, each = ncol(contact_2_demographic$matrix))
+  transmission
   
   # Running the SIR model with dust
-  pars <- list(N_ini = 6.7e7,
-               log_A_ini1 = results[1,2],
-               log_A_ini2 = results[2,2],
-               D_ini = 0,
-               R_ini = 0,
+  pars <- list(m = transmission,
+               N_ini = contact_2_demographic$demography$population,
+               log_A_ini = c(results[1,2], results[2,2]),
                time_shift_1 = results[3,2],
                beta_0 = results[4,2],
                beta_1 = results[5,2],
-               hypo_sigma_2 = (1),
                log_delta1 = results[6,2],
                log_delta2 = results[7,2],
                sigma_1 = results[8,2]
   )
   
-  time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
-  # n_times <- length(time_points)
-  n_times <- 13800 # roughly from 1987-2025 in days
+  n_times <- 5000 # 500 for trial
+  n_pars <- 1L
   sir_model <- gen_sir$new(pars = pars,
                            time = 1,
-                           n_particles = 1L,
+                           n_particles = n_pars,
                            n_threads = 4L,
                            seed = 1L)
   
@@ -52,8 +73,7 @@ model_vs_data <- function(n_sts){
   # all_date <- data.frame(col = integer(4745))
   # incidence <- read.csv("inputs/incidence_week_12F_allAge.csv") %>% 
   #   dplyr::mutate(day = week*7) 
-  n_particles <- 1L
-  model <- array(NA, dim = c(sir_model$info()$len, n_particles, n_times))
+  model <- array(NA, dim = c(sir_model$info()$len, n_pars, n_times))
   
   for (t in seq_len(n_times)) {
     model[ , , t] <- sir_model$run(t)
@@ -110,14 +130,22 @@ model_vs_data <- function(n_sts){
     # dplyr::filter(index < 5) %>%
     dplyr::mutate(compartment = 
                     dplyr::case_when(index == 1 ~ "Time",
-                                     index == 2 ~ "A1",
-                                     index == 3 ~ "A2",
-                                     index == 4 ~ "model_D1",
-                                     index == 5 ~ "model_D2",
-                                     index == 6 ~ "S",
-                                     index == 7 ~ "R",
-                                     index == 8 ~ "n_AD1_weekly",
-                                     index == 9 ~ "n_AD2_weekly"
+                                     index == 2 ~ "total N",
+                                     index == 3 ~ "total S",
+                                     index == 4 ~ "total A",
+                                     index == 5 ~ "total D",
+                                     index == 6 ~ "total R",
+                                     index == 7 ~ "n_AD1_weekly",
+                                     index == 8 ~ "n_AD2_weekly",
+                                     
+                                     index == 9 ~ "S <10",
+                                     index == 10 ~ "S 10+",
+                                     index == 11 ~ "A <10",
+                                     index == 12 ~ "A 10+",
+                                     index == 13 ~ "model_D1",
+                                     index == 14 ~ "model_D2",
+                                     index == 15 ~ "R <10",
+                                     index == 16 ~ "R 10+"
                     )) %>% 
     dplyr::select(-index) %>%
     dplyr::mutate(weekly = ceiling(steps/7)) %>% 
