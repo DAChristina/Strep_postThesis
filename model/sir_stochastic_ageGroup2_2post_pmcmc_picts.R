@@ -8,7 +8,7 @@ source("global/all_function_allAge.R")
 
 
 model_vs_data <- function(n_sts){
-  dir_name <- paste0("outputs/genomics/trial_", 2000, "/")
+  dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
   dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
   # run 4_post_pmcmc_pics.R first
   results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv")) %>% 
