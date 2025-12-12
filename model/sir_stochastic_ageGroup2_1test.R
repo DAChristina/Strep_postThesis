@@ -34,13 +34,13 @@ transmission
 # Running the SIR model with dust
 pars <- list(m = transmission,
              N_ini = contact_2_demographic$demography$population,
-             log_A_ini = c(0.7, 0.75),
-             time_shift_1 = 8.1641013543843e-05,
-             beta_0 = 0.0181876429043882,
+             log_A_ini = c(0.8, 0.4),
+             time_shift_1 = 0.01,
+             beta_0 = 0.3,
              beta_1 = 0.572361512425665,
-             log_delta1 = -5.17672314999,
-             log_delta2 = -5.54764767530806,
-             sigma_1 = 1e-10 # 0.0236590172218236
+             log_delta1 = -6.17672314999,
+             log_delta2 = -1.54764767530806,
+             sigma_1 = 0.002 # 0.0236590172218236
 )
 
 n_times <- 5000 # 500 for trial

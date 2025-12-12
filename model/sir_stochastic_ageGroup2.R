@@ -109,7 +109,7 @@ foi_ij[1, ] <- beta * m[1, j] * (A[j] + D[j])/N[j]
 foi_ij[2, ] <- beta * m[2, j] * (A[j] + D[j])/N[j]
 
 lambda[1] <- sum(foi_ij[1, ])
-lambda[2] <- sum(foi_ij[2, ])
+lambda[2] <- sum(foi_ij[1, ]) # test only children transmit the disease
 
 delta[1] <- (10^(log_delta1))*UK_calibration_kids
 delta[2] <- (10^(log_delta2))*UK_calibration_adults

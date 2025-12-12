@@ -52,7 +52,7 @@ pars <- list(m = transmission,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(0.1, 9) # previously 300
+proposal_matrix <- diag(500, 9) # previously 300
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
 rownames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "sigma_1", "kappa_1")
@@ -136,7 +136,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   # vcv positive definite error if matrix/1000
-  new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*100000
+  new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1000000
   new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*100000
   new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1000000
   new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*100000
