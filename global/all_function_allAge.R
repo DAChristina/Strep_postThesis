@@ -57,6 +57,7 @@ index_fun <- function(info){
 # https://github.com/mrc-ide/mcstate/blob/da9f79e4b5dd421fd2e26b8b3d55c78735a29c27/tests/testthat/test-if2.R#L40
 # https://github.com/mrc-ide/mcstate/issues/184
 parameter_transform <- function(transmission) {
+  library(socialmixr)
   age.limits = c(0, 10)
   N_age <- length(age.limits)
   

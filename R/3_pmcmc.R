@@ -16,6 +16,21 @@ rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the parti
 # e.g.dt <- user(0) because if dt <- user() generates error during MCMC run
 gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
 
+age.limits = c(0, 10)
+N_age <- length(age.limits)
+
+contact_2_demographic <- 
+  socialmixr::contact_matrix(polymod,
+                             countries = "United Kingdom",
+                             age.limits = age.limits,
+                             symmetric = TRUE
+  )
+
+transmission <- contact_2_demographic$matrix /
+  rep(contact_2_demographic$demography$population,
+      each = ncol(contact_2_demographic$matrix))
+transmission
+
 # This is part of sir odin model:
 pars <- list(m = transmission,
              N_ini = contact_2_demographic$demography$population,
