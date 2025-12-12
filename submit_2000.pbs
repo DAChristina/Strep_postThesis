@@ -22,7 +22,7 @@ conda run -n R_envConda Rscript "$HOME/Strep_postThesis/R/4_post_pmcmc_pics.R" \
     --n_steps "$steps_folder"
 
 sleep 1
-conda run -n R_envConda Rscript "$HOME/Strep_postThesis/model/sir_stochastic_allAge_2post_pmcmc_picts.R" \
+conda run -n R_envConda Rscript "$HOME/Strep_postThesis/model/sir_stochastic_ageGroup2_2post_pmcmc_picts.R" \
     --n_steps "$steps_folder"
     
 sleep 1
