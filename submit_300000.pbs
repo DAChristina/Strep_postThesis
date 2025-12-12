@@ -2,7 +2,7 @@
 
 #PBS -N Det1_300000
 #PBS -l walltime=72:00:00
-#PBS -l select=1:ncpus=32:mem=700gb
+#PBS -l select=1:ncpus=32:mem=900gb
 
 # https://icl-rcs-user-guide.readthedocs.io/en/latest/hpc/pilot/cx3-phase2/#job-sizing-guidance
 
