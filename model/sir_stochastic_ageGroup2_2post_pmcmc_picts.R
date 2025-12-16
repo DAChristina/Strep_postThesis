@@ -27,23 +27,24 @@ model_vs_data <- function(n_sts){
   # age.limits = c(0, 5, 19, 31, 65)
   
   # Create contact_matrix 2 demographic groups:
-  # > 10
-  # 10+
-  age.limits = c(0, 10)
+  # < 15
+  # 15+
+  age.limits = c(0, 15)
   N_age <- length(age.limits)
   
-  contact_2_demographic <- socialmixr::contact_matrix(polymod,
-                                                      countries = "United Kingdom",
-                                                      age.limits = age.limits,
-                                                      symmetric = TRUE
-  )
+  contact_2_demographic <- suppressMessages(
+    socialmixr::contact_matrix(polymod,
+                               countries = "United Kingdom",
+                               age.limits = age.limits,
+                               symmetric = TRUE
+    ))
   
   transmission <- contact_2_demographic$matrix /
-    rep(contact_2_demographic$demography$population, each = ncol(contact_2_demographic$matrix))
-  transmission
+    rep(contact_2_demographic$demography$population,
+        each = ncol(contact_2_demographic$matrix))
+  t_norm <- transmission/max(transmission)
   
-  # Running the SIR model with dust
-  pars <- list(m = transmission,
+  pars <- list(m = t_norm,
                N_ini = contact_2_demographic$demography$population,
                log_A_ini = c(results[1,2], results[2,2]),
                time_shift_1 = results[3,2],
@@ -54,7 +55,7 @@ model_vs_data <- function(n_sts){
                sigma_1 = results[8,2]
   )
   
-  n_times <- 5000 # 500 for trial
+  n_times <- 7500 # 500 for trial
   n_pars <- 1L
   sir_model <- gen_sir$new(pars = pars,
                            time = 1,

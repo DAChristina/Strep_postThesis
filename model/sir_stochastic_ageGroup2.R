@@ -6,26 +6,27 @@ initial(time) <- 0
 time_shift_1 <- user(0)
 beta_0 <- user(0)
 beta_1 <- user(0)
-theta <- 0.3 # proportion of vaccinated children in 0-9 age group
-vacc <- 0.9*0.862*theta # FIXED PCV13 vaccination coverage * efficacy * proportion of kids below 2 y.o. (from 0-9)
+theta <- 0.19 # proportion of vaccinated children in 0-14 age group
+vacc <- 0.9*0.862*theta # coverage*efficacy*proportion of kids 2y.o. (from 0-9)
 
-UK_calibration_kids <- user(1.07638532472038) # FIXED (Lochen et al., 2022)
-UK_calibration_adults <- user(0.536936186788821) # FIXED (Lochen et al., 2022)
+UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
+UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
 
 # stratify log_delta
 log_delta1 <- user(0)
 log_delta2 <- user(0)
 
-# hypo_sigma_1_day <- user(15.75) # (95% CI 7.88-31.49) (Chaguza et al., 2021)
-sigma_1 <- user(0) # test sigma_1 (A2 -> R)
+hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
+sigma_1 <- 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
 # psi <- user(0, min = 0) # Immunity differences between children & adults
 sigma_2 <- user(1) # Assumed acute phase, 1 day
 mu_0 <- 1/(80.70*365) # background mortality FIXED based on the inverse of life expectancy
-mu_1 <- user(0) # disease-related death, no data available
-pi <- user(3.141593) # FIXED
+mu_1 <- 0 # disease-related death, no data available
+pi <- 3.141593 # FIXED
+wane <- 0
 
 # Dimensions of arrays #########################################################
-N_age <- user(2)
+N_age <- 2
 
 dim(N_ini) <- N_age
 # dim(S_ini) <- N_age
@@ -105,16 +106,11 @@ m[, ] <- user() # age-structured contact matrix
 beta <- beta_0*(
   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
-foi_ij[1, ] <- beta * m[1, j] * (A[j] + D[j])/N[j]
-foi_ij[2, ] <- beta * m[2, j] * (A[j] + D[j])/N[j]
-
-lambda[1] <- sum(foi_ij[1, ])
-lambda[2] <- sum(foi_ij[1, ]) # test only children transmit the disease
+foi_ij[, ] <- beta * m[i, j] * (A[j] + D[j])/N[j]
+lambda[] <- sum(foi_ij[i, ])
 
 delta[1] <- (10^(log_delta1))*UK_calibration_kids
 delta[2] <- (10^(log_delta2))*UK_calibration_adults
-
-wane <- user(0, min = 0)
 
 # sigma_1[1] <- hypo_sigma_1 # test no A -> R in kids
 # sigma_1[2] <- psi*hypo_sigma_1
@@ -123,7 +119,7 @@ wane <- user(0, min = 0)
 p_Suscep[1] <- 1- exp(-(lambda[i]+vacc) * dt)
 p_Suscep[2] <- 1- exp(-(lambda[i]+mu_0) * dt)
 
-p_Asym[1] <- 1- exp(-(delta[1]) * dt) # no sigma_1 (A->R) for children
+p_Asym[1] <- 1- exp(-(delta[1]+sigma_1) * dt) # no A -> R for kids
 p_Asym[2] <- 1- exp(-(delta[2]+mu_0+sigma_1) * dt)
 
 p_Dis[1] <- 1- exp(-(sigma_2+mu_1) * dt)
@@ -134,26 +130,34 @@ p_RS <- 1- exp(-(wane+mu_0) * dt)
 # Draws for numbers changing between compartments
 # Leaving S
 n_Suscep[] <- rbinom(S[i], p_Suscep[i])
-n_SA[1] <- rbinom(n_Suscep[1], lambda[i]/(lambda[i]+vacc))
+
+n_SA[1] <- (if (time >= 2648) rbinom(n_Suscep[1], lambda[i]/(lambda[i]+vacc)) 
+            else rbinom(n_Suscep[1], (1-exp(-lambda[i]*dt))))
 n_SA[2] <- rbinom(n_Suscep[2], lambda[i]/(lambda[i]+mu_0))
-n_SR[1] <- rbinom(n_Suscep[1], vacc/(lambda[i]+vacc))
-n_SR[2] <- rbinom(n_Suscep[2], 0/(lambda[i]+mu_0)) # no direct S -> R for adults
-n_Sdead[] <- n_Suscep[i] - n_SA[i] - n_SR[i]
+
+n_SR[1] <- (if (time >= 2648) rbinom((n_Suscep[1] - n_SA[1]), vacc/(lambda[i]+vacc)) 
+            else rbinom(n_Suscep[1], (1-exp(-vacc*dt))))
+n_SR[2] <- rbinom((n_Suscep[2] - n_SA[2]), 0/(lambda[i]+mu_0)) # no direct S -> R for adults
+
+n_Sdead[] <- n_Suscep[i] - (n_SA[i] + n_SR[i])
 
 # Leaving A
 n_Asym[] <- rbinom(A[i], p_Asym[i])
-n_AD[1] <- rbinom(n_Asym[1], delta[1]/(delta[1]))
+
+n_AD[1] <- rbinom(n_Asym[1], delta[1]/(delta[1]+sigma_1))
 n_AD[2] <- rbinom(n_Asym[2], delta[2]/(delta[2]+mu_0+sigma_1))
-n_AR[1] <- rbinom((n_Asym[1] - n_AD[1]), 0) # no direct A -> R for kids
+
+n_AR[1] <- rbinom((n_Asym[1] - n_AD[1]), sigma_1/(delta[1]+sigma_1)) # test no A -> R for kids later
 n_AR[2] <- rbinom((n_Asym[2] - n_AD[2]), sigma_1/(delta[2]+mu_0+sigma_1))
+
 n_Adead[] <- n_Asym[i] - (n_AD[i] + n_AR[i])
 
 # Leaving D
 n_Dis[] <- rbinom(D[i], p_Dis[i])
-n_DR[1] <- rbinom(n_Dis[i], sigma_2/(sigma_2+mu_1))
-n_DR[2] <- rbinom(n_Dis[i], sigma_2/(sigma_2+mu_0+mu_1))
-n_Dd[1] <- rbinom((n_Dis[i] - n_DR[i]), mu_1/(sigma_2+mu_1))
-n_Dd[2] <- rbinom((n_Dis[i] - n_DR[i]), mu_1/(sigma_2+mu_0+mu_1))
+n_DR[1] <- rbinom(n_Dis[1], sigma_2/(sigma_2+mu_1))
+n_DR[2] <- rbinom(n_Dis[2], sigma_2/(sigma_2+mu_0+mu_1))
+n_Dd[1] <- rbinom((n_Dis[1] - n_DR[1]), mu_1/(sigma_2+mu_1))
+n_Dd[2] <- rbinom((n_Dis[2] - n_DR[2]), mu_1/(sigma_2+mu_0+mu_1))
 n_Ddead[] <- n_Dis[i] - (n_DR[i] + n_Dd[i])
 
 # Leaving R
@@ -173,10 +177,10 @@ update(R[]) <- R[i] + (n_AR[i] + n_DR[i] + n_SR[i]) - (n_RS[i] + n_Rdead[i])
 
 # Core equations of the transitions
 update(N_tot) <- sum(N)
-update(S_tot) <- S_tot - (sum(n_SA) + sum(n_SR)) + sum(n_RS)
-update(A_tot) <- A_tot + sum(n_SA) - (sum(n_AD) + sum(n_AR))
-update(D_tot) <- D_tot + sum(n_AD) - (sum(n_DR) + sum(n_Dd))
-update(R_tot) <- R_tot + sum(n_AR) + sum(n_DR) - sum(n_RS)
+update(S_tot) <- sum(S)
+update(A_tot) <- sum(A)
+update(D_tot) <- sum(D)
+update(R_tot) <- sum(R)
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
 
 # that "little trick" previously explained in https://github.com/mrc-ide/dust/blob/master/src/sir.cpp for cumulative incidence:

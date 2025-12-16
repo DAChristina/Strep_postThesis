@@ -56,9 +56,9 @@ index_fun <- function(info){
 # That transform function
 # https://github.com/mrc-ide/mcstate/blob/da9f79e4b5dd421fd2e26b8b3d55c78735a29c27/tests/testthat/test-if2.R#L40
 # https://github.com/mrc-ide/mcstate/issues/184
-parameter_transform <- function(transmission) {
+parameter_transform <- function(t_norm) {
   library(socialmixr)
-  age.limits = c(0, 10)
+  age.limits = c(0, 15)
   N_age <- length(age.limits)
   
   contact_2_demographic <- 
@@ -71,8 +71,7 @@ parameter_transform <- function(transmission) {
   transmission <- contact_2_demographic$matrix /
     rep(contact_2_demographic$demography$population,
         each = ncol(contact_2_demographic$matrix))
-  transmission
-  
+  t_norm <- transmission/max(transmission)
   
   transform <- function(pars) {
     # re-define pars with pars that I really wanna fit only
@@ -86,7 +85,7 @@ parameter_transform <- function(transmission) {
     
     log_delta1 <- pars[["log_delta1"]]
     log_delta2 <- pars[["log_delta2"]]
-    sigma_1 <- pars[["sigma_1"]]
+    # sigma_1 <- pars[["sigma_1"]]
     kappa_1 <- pars[["kappa_1"]]
     
     pars <- list(log_A_ini = log_A_ini,
@@ -97,12 +96,12 @@ parameter_transform <- function(transmission) {
                  beta_1 = beta_1,
                  log_delta1 = log_delta1,
                  log_delta2 = log_delta2,
-                 sigma_1 = sigma_1,
+                 # sigma_1 = sigma_1,
                  kappa_1 = kappa_1
     )
     
     pars$N_ini <-  contact_2_demographic$demography$population
-    pars$m <- transmission
+    pars$m <- t_norm
     
     pars
   }
@@ -110,27 +109,27 @@ parameter_transform <- function(transmission) {
   transform
 }
 
-transform <- parameter_transform(transmission)
+transform <- parameter_transform(t_norm)
 
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini1", (0.6), min = 0.218, max = 0.9,
+    list(mcstate::pmcmc_parameter("log_A_ini1", (0.3), min = 0.29, max = 0.9,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("log_A_ini2", (0.6), min = 0.218, max = 0.9,
+         mcstate::pmcmc_parameter("log_A_ini2", (0.3), min = 0.29, max = 0.9,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("time_shift_1", 0.3, min = 0, max = 0.5,
+         mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.3, min = 0, max = 0.8,
+         mcstate::pmcmc_parameter("beta_0", 0.0001, min = 0, max = 1, # max based on 1/t_norm values; worst case increased to 5x
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("beta_1", 0.3, min = 0, max = 0.7,
+         mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 1,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta1", (-4.5), min = (-10), max = 0.7,
+         mcstate::pmcmc_parameter("log_delta1", (-6.5), min = (-10), max = -0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("log_delta2", (-4.5), min = (-10), max = 0.7,
+         mcstate::pmcmc_parameter("log_delta2", (-3.5), min = (-10), max = 0.2700773,
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("sigma_1", 0.0002, min = 0, max = 1,
-                                  prior = priors$sigma),
+         # mcstate::pmcmc_parameter("sigma_1", 0.0002, min = 0, max = 1,
+         #                          prior = priors$sigma),
          mcstate::pmcmc_parameter("kappa_1", 3, min = 0,
                                   prior = priors$kappas)
     ),
@@ -149,11 +148,11 @@ prepare_priors <- function(pars) {
     dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$betas <- function(s) {
-    dgamma(s, shape = 25, scale = 0.01, log = TRUE) # previously 6.5; 0.05
+    dgamma(s, shape = 10, scale = 0.02, log = TRUE) # previously 25, 0.01
   }
   priors$log_delta <- function(s) {
-    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.8, delta = -6.5, log = TRUE)
-    # dunif(s, min = (-10), max = 0.7, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 1, delta = -4.5, log = TRUE)
+    # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.8, delta = -6.5, log = TRUE)
   }
   priors$sigma <- function(s) {
     dgamma(s, shape = 1, scale = 0.5, log = TRUE)

@@ -31,8 +31,8 @@ allAges_weekly_ser1 <- dplyr::left_join(
                   yearWeek =ISOweek::ISOweek2date(iso_week),
                   
                   ageGroup_s1 = case_when(
-                    AGEYR < 10 ~ "0-9",
-                    AGEYR >= 10 ~ "10+"
+                    AGEYR < 15 ~ "0-15",
+                    AGEYR >= 15 ~ "15+"
                   )
     ) %>% 
     dplyr::filter(!is.na(ageGroup_s1)) %>% 
@@ -46,8 +46,8 @@ allAges_weekly_ser1 <- dplyr::left_join(
       values_from = "count_serotype"
     ) %>% 
     dplyr::rename(
-      count_s1_1 = "count_0-9",
-      count_s1_2 = "count_10+"
+      count_s1_1 = "count_0-15",
+      count_s1_2 = "count_15+"
     ) %>% 
     dplyr::arrange(yearWeek)
   ,

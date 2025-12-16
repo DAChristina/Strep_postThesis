@@ -16,34 +16,35 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
 # age.limits = c(0, 5, 19, 31, 65)
 
 # Create contact_matrix 2 demographic groups:
-# > 10
-# 10+
-age.limits = c(0, 10)
+# < 15
+# 15+
+age.limits = c(0, 15)
 N_age <- length(age.limits)
 
-contact_2_demographic <- socialmixr::contact_matrix(polymod,
-                                                    countries = "United Kingdom",
-                                                    age.limits = age.limits,
-                                                    symmetric = TRUE
-)
+contact_2_demographic <- suppressMessages(
+  socialmixr::contact_matrix(polymod,
+                             countries = "United Kingdom",
+                             age.limits = age.limits,
+                             symmetric = TRUE
+  ))
 
 transmission <- contact_2_demographic$matrix /
-  rep(contact_2_demographic$demography$population, each = ncol(contact_2_demographic$matrix))
-transmission
+  rep(contact_2_demographic$demography$population,
+      each = ncol(contact_2_demographic$matrix))
+t_norm <- transmission/max(transmission)
 
-# Running the SIR model with dust
-pars <- list(m = transmission,
+pars <- list(m = t_norm,
              N_ini = contact_2_demographic$demography$population,
-             log_A_ini = c(0.8, 0.4),
-             time_shift_1 = 0.01,
-             beta_0 = 0.3,
-             beta_1 = 0.572361512425665,
-             log_delta1 = -6.17672314999,
-             log_delta2 = -1.54764767530806,
-             sigma_1 = 0.002 # 0.0236590172218236
+             log_A_ini = c(0.2, 0.2),
+             time_shift_1 = 0.1,
+             beta_0 = 0.2055, #0.6,
+             beta_1 = 0.15,
+             log_delta1 = -0.65,
+             log_delta2 = -3.7
+             # sigma_1 = 0.00002
 )
 
-n_times <- 5000 # 500 for trial
+n_times <- 7500 # 500 for trial
 n_pars <- 1L
 sir_model <- gen_sir$new(pars = pars,
                          time = 1,
@@ -118,14 +119,14 @@ incidence_modelled <-
                                    index == 7 ~ "n_AD1_weekly",
                                    index == 8 ~ "n_AD2_weekly",
                                    
-                                   index == 9 ~ "S <10",
-                                   index == 10 ~ "S 10+",
-                                   index == 11 ~ "A <10",
-                                   index == 12 ~ "A 10+",
+                                   index == 9 ~ "S <14",
+                                   index == 10 ~ "S 15+",
+                                   index == 11 ~ "A <14",
+                                   index == 12 ~ "A 15+",
                                    index == 13 ~ "model_D1",
                                    index == 14 ~ "model_D2",
-                                   index == 15 ~ "R <10",
-                                   index == 16 ~ "R 10+"
+                                   index == 15 ~ "R <14",
+                                   index == 16 ~ "R 15+"
                                    
                   )) %>% 
   dplyr::select(-index) %>%
@@ -160,7 +161,7 @@ p1 <- ggplot(incidence_modelled %>%
   scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                date_breaks = "year",
                date_labels = "%Y") +
-  ggtitle("Cases (Aggregated by Week) for age 0-9") +
+  ggtitle("Cases (Aggregated by Week) for age 0-14") +
   xlab("Time") +
   ylab("Number of People") +
   theme_bw() +
@@ -183,7 +184,7 @@ p2 <- ggplot(incidence_modelled %>%
   scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                date_breaks = "year",
                date_labels = "%Y") +
-  ggtitle("Cases (Aggregated by Week) for age 10+") +
+  ggtitle("Cases (Aggregated by Week) for age 15+") +
   xlab("Time") +
   ylab("Number of People") +
   theme_bw() +
