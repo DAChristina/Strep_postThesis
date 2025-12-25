@@ -153,12 +153,12 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # vcv positive definite error if matrix/1000
   new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1e3#*100000
   new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1e3#*100000
-  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]#*100000
-  new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]#*100000
+  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1e3#*100000
+  new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1e2#*100000
   new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1e3#*100000
   new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1e3#*100000
   new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1e3#*100000
-  # new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1000 # 5 orders of magnitude due to extremely small sigma_1
+  new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1e3 # 5 orders of magnitude due to extremely small sigma_1
   # new_proposal_matrix[9,9] <- new_proposal_matrix[9,9]#*100000
   # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2

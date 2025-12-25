@@ -114,19 +114,19 @@ transform <- parameter_transform(t_norm)
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini1", (0.3), min = 0.29, max = 0.9,
+    list(mcstate::pmcmc_parameter("log_A_ini1", (0.45), min = 0.29, max = 0.85,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("log_A_ini2", (0.3), min = 0.29, max = 0.9,
+         mcstate::pmcmc_parameter("log_A_ini2", (0.45), min = 0.29, max = 0.85,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 1,
+         mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 0.6,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.0001, min = 0, max = 1, # max based on 1/t_norm values; worst case increased to 5x
+         mcstate::pmcmc_parameter("beta_0", 0.5, min = 0, max = 5, # max based on 1/t_norm values; worst case increased to 5x
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 1,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta1", (-6.5), min = (-10), max = -0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+         mcstate::pmcmc_parameter("log_delta1", (-6), min = (-10), max = 1, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("log_delta2", (-3.5), min = (-10), max = 0.2700773,
+         mcstate::pmcmc_parameter("log_delta2", (-3.5), min = (-10), max = 1, #0.2700773,
                                   prior = priors$log_delta),
          # mcstate::pmcmc_parameter("sigma_1", 0.0002, min = 0, max = 1,
          #                          prior = priors$sigma),

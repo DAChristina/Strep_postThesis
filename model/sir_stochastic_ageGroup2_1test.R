@@ -35,12 +35,12 @@ t_norm <- transmission/max(transmission)
 
 pars <- list(m = t_norm,
              N_ini = contact_2_demographic$demography$population,
-             log_A_ini = c(0.2, 0.2),
-             time_shift_1 = 0.1,
-             beta_0 = 0.2055, #0.6,
-             beta_1 = 0.15,
-             log_delta1 = -0.65,
-             log_delta2 = -3.7
+             log_A_ini = c(0.5, 0.5), # test c(0.65, 0.35),
+             time_shift_1 = 0.1254,
+             beta_0 = 0.1,
+             beta_1 = 0.3,
+             log_delta1 = -6.2,
+             log_delta2 = -6.2
              # sigma_1 = 0.00002
 )
 
@@ -137,6 +137,9 @@ incidence_modelled <-
                    .groups = "drop") %>% 
   dplyr::ungroup() %>% 
   dplyr::bind_rows(sir_data) %>%
+  tidyr::complete(weekly,
+                  fill = list(value = 0)
+  ) %>%
   dplyr::full_join(
     all_dates
     ,

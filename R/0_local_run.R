@@ -53,7 +53,7 @@ pmcmc_run_plus_tuning(n_pars = 10, n_sts = 10000,
 post_pmcmc_pics(10000)
 model_vs_data(10000)
 post_particle_pics(10000)
-# age_validation(10000)
+age_validation(10000)
 
 
 

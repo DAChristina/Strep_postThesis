@@ -42,11 +42,10 @@ dim(R) <- N_age
 
 dim(m) <- c(N_age, N_age)
 dim(foi_ij) <- c(N_age, N_age)
-dim(vacc_m) <- c(N_age, N_age)
-dim(vacc) <- N_age
 dim(lambda) <- N_age
 dim(delta) <- N_age
 dim(mu_0) <- N_age
+dim(vacc) <- N_age
 
 dim(p_Suscep) <- N_age
 dim(p_Asym) <- N_age
@@ -107,14 +106,11 @@ beta <- beta_0*(
   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
 # coverage*efficacy*proportion of kids 2y.o. (from 0-14)
-vacc_m[, 1] <- (if (time >= 2648) 0.9*0.862*theta
+vacc[1] <- (if (time >= 2648) 0.9*0.862*theta
             else 0)
-vacc_m[, 2] <- 0
-vacc[] <- sum(vacc_m[i, ])
+vacc[2] <- 0
 
-# vacc[] <- 0
-
-foi_ij[, ] <- beta * m[i, j] * ((A[j] + D[j])/N[j])
+foi_ij[, ] <- beta * m[i, j] * (A[j] + D[j])/N[j]
 # lambda[] <- if (sum(foi_ij[i, ]) > 0) sum(foi_ij[i, ]) else 0
 lambda[] <- sum(foi_ij[i, ])
 
@@ -177,5 +173,6 @@ update(R_tot) <- sum(R)
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
 update(n_AD1_weekly) <- if (step %% 7 == 0) n_AD[1] else n_AD1_weekly + n_AD[1]
 update(n_AD2_weekly) <- if (step %% 7 == 0) n_AD[2] else n_AD2_weekly + n_AD[2]
+# update(n_AD_cumul) <- n_AD_cumul + n_AD # no interest in asymptomatic cases that've recovered
 
 
