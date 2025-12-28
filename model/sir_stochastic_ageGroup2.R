@@ -43,7 +43,7 @@ dim(R) <- N_age
 dim(m) <- c(N_age, N_age)
 dim(foi_ij) <- c(N_age, N_age)
 dim(vacc_m) <- c(N_age, N_age)
-dim(vacc) <- N_age
+# dim(vacc) <- N_age
 dim(lambda) <- N_age
 dim(delta) <- N_age
 dim(mu_0) <- N_age
@@ -107,12 +107,16 @@ beta <- beta_0*(
   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
 # coverage*efficacy*proportion of kids 2y.o. (from 0-14)
-vacc_m[, 1] <- (if (time >= 2648) 0.9*0.862*theta
-            else 0)
-vacc_m[, 2] <- 0
-vacc[] <- sum(vacc_m[i, ])
+# vacc_m[1, 1] <- 0.5 #(if (time >= 2648) 0.9*0.862*theta
+#                  #else 0)
+# vacc_m[1, 2] <- 0
+# vacc_m[2, 1] <- 0 #(if (time >= 2648) 0.9*0.862*theta
+#                  #else 0)
+# vacc_m[2, 2] <- 0
+# vacc[] <- sum(vacc_m[i, ])
 
 # vacc[] <- 0
+vacc_m[, ] <- user()
 
 foi_ij[, ] <- beta * m[i, j] * ((A[j] + D[j])/N[j])
 # lambda[] <- if (sum(foi_ij[i, ]) > 0) sum(foi_ij[i, ]) else 0
@@ -125,7 +129,7 @@ delta[2] <- (10^(log_delta2))*UK_calibration_adults
 # sigma_1[2] <- psi*hypo_sigma_1
 
 # Individual probabilities of transition
-p_Suscep[] <- 1- exp(-(lambda[i]+vacc[i]+mu_0[i]) * dt)
+p_Suscep[] <- 1- exp(-(lambda[i]+vacc_m[i, j]+mu_0[i]) * dt)
 p_Asym[] <- 1- exp(-(delta[i]+sigma_1+mu_0[i]) * dt)
 p_Dis[] <- 1- exp(-(sigma_2+mu_1+mu_0[i]) * dt)
 p_RS[] <- 1- exp(-(wane+mu_0[i]) * dt)
@@ -133,8 +137,8 @@ p_RS[] <- 1- exp(-(wane+mu_0[i]) * dt)
 # Draws for numbers changing between compartments
 # Leaving S kids
 n_Suscep[] <- rbinom(S[i], p_Suscep[i])
-n_SA[] <- rbinom(n_Suscep[i], lambda[i]/(lambda[i]+vacc[i]+mu_0[i]))
-n_SR[] <- rbinom((n_Suscep[i] - n_SA[i]), vacc[i]/(lambda[i]+vacc[i]+mu_0[i]))
+n_SA[] <- rbinom(n_Suscep[i], lambda[i]/(lambda[i]+vacc_m[i, j]+mu_0[i]))
+n_SR[] <- rbinom((n_Suscep[i] - n_SA[i]), vacc_m[i, j]/(lambda[i]+vacc_m[i, j]+mu_0[i]))
 
 n_Sdead[] <- n_Suscep[i] - (n_SA[i] + n_SR[i])
 
@@ -177,5 +181,4 @@ update(R_tot) <- sum(R)
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
 update(n_AD1_weekly) <- if (step %% 7 == 0) n_AD[1] else n_AD1_weekly + n_AD[1]
 update(n_AD2_weekly) <- if (step %% 7 == 0) n_AD[2] else n_AD2_weekly + n_AD[2]
-
 
