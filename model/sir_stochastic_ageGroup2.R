@@ -48,20 +48,15 @@ dim(lambda) <- N_age
 dim(delta) <- N_age
 dim(mu_0) <- N_age
 
-dim(p_Suscep) <- c(N_age, N_age)
+dim(p_Suscep) <- N_age
 dim(p_Asym) <- N_age
 dim(p_Dis) <- N_age
 dim(p_RS) <- N_age
 
 dim(n_Sborn) <- N_age
-dim(n_Suscepm) <- c(N_age, N_age)
-dim(n_SAm) <- c(N_age, N_age)
-dim(n_SRm) <- c(N_age, N_age)
-
 dim(n_Suscep) <- N_age
 dim(n_SA) <- N_age
-dim(n_SR) <- N_age
-
+# dim(n_SR) <- N_age
 dim(n_Sdead) <- N_age
 dim(n_Asym) <- N_age
 dim(n_AD) <- N_age
@@ -88,6 +83,16 @@ A_ini[] <- 10^(log_A_ini[i]*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[i]
 # Age-structured states:
 initial(S[]) <- N_ini[i] -(A_ini[i]+0+0) # D_ini = R_ini = 0
 initial(A[]) <- A_ini[i]
+
+# initial(S[]) <- (if(i == 1)
+#   N_ini[i] -(A_ini[i]+0+0)
+#   else
+#     0)
+# initial(A[]) <- (if(i == 1)
+#   A_ini[i]
+#   else
+#     0)
+
 initial(D[]) <- 0
 initial(R[]) <- 0
 
@@ -106,25 +111,24 @@ initial(n_AD2_weekly) <- 0
 # age-structured contact matrix featured in lambda:
 # https://mrc-ide.github.io/odin.dust/articles/sir_models.html
 N[] <- S[i] + A[i] + D[i] + R[i]
+
 m[, ] <- user() # age-structured contact matrix
+
+# coverage*efficacy*proportion of kids 2y.o. (from 0-14)
+vacc_m[1, 1] <- 0.9*0.862*theta # child->child
+vacc_m[1, 2] <- 0
+vacc_m[2, 1] <- 0.9*0.862*theta # adult->child
+vacc_m[2, 2] <- 0
 
 beta <- beta_0*(
   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
-# coverage*efficacy*proportion of kids 2y.o. (from 0-14)
-# vacc_m[1, 1] <- 0.5 #(if (time >= 2648) 0.9*0.862*theta
-#                  #else 0)
-# vacc_m[1, 2] <- 0
-# vacc_m[2, 1] <- 0 #(if (time >= 2648) 0.9*0.862*theta
-#                  #else 0)
-# vacc_m[2, 2] <- 0
-# vacc[] <- sum(vacc_m[i, ])
+foi_ij[, ] <- (if (time >= 2648)
+  beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))
+  else
+    beta * m[i, j] * (((A[j] + D[j])/N[j]))
+)
 
-# vacc[] <- 0
-vacc_m[, ] <- user()
-
-foi_ij[, ] <- beta * m[i, j] * ((A[j] + D[j])/N[j])
-# lambda[] <- if (sum(foi_ij[i, ]) > 0) sum(foi_ij[i, ]) else 0
 lambda[] <- sum(foi_ij[i, ])
 
 delta[1] <- (10^(log_delta1))*UK_calibration_kids
@@ -134,22 +138,18 @@ delta[2] <- (10^(log_delta2))*UK_calibration_adults
 # sigma_1[2] <- psi*hypo_sigma_1
 
 # Individual probabilities of transition
-p_Suscep[, ] <- 1- exp(-(lambda[i]+vacc_m[i, j]+mu_0[i]) * dt)
+p_Suscep[] <- 1- exp(-(lambda[i]+mu_0[i]) * dt)
 p_Asym[] <- 1- exp(-(delta[i]+sigma_1+mu_0[i]) * dt)
 p_Dis[] <- 1- exp(-(sigma_2+mu_1+mu_0[i]) * dt)
 p_RS[] <- 1- exp(-(wane+mu_0[i]) * dt)
 
 # Draws for numbers changing between compartments
 # Leaving S
-n_Suscepm[, ] <- rbinom(S[i], p_Suscep[i, j])
-n_SAm[, ] <- rbinom(n_Suscepm[i, j], lambda[i]/(lambda[i]+vacc_m[i, j]+mu_0[i]))
-n_SRm[, ] <- rbinom((n_Suscepm[i, j] - n_SAm[i, j]), vacc_m[i, j]/(lambda[i]+vacc_m[i, j]+mu_0[i]))
+n_Suscep[] <- rbinom(S[i], p_Suscep[i])
+n_SA[] <- rbinom(n_Suscep[i], lambda[i]/(lambda[i]+mu_0[i]))
+# n_SR[] <- rbinom((n_Suscep[i] - n_SA[i]), vacc[i]/(lambda[i]+mu_0[i]))
 
-n_Suscep[] <- sum(n_Suscepm[i, ])
-n_SA[] <- sum(n_SAm[i, ])
-n_SR[] <- sum(n_SRm[i, ])
-
-n_Sdead[] <- n_Suscep[i] - (n_SA[i] + n_SR[i])
+n_Sdead[] <- n_Suscep[i] - (n_SA[i])
 
 # Leaving A
 n_Asym[] <- rbinom(A[i], p_Asym[i])
@@ -173,10 +173,10 @@ n_Sborn[] <- n_Sdead[i] + n_Adead[i] + n_Dd[i] + n_Ddead[i] + n_Rdead[i]
 born <- sum(n_Sborn)
 
 update(time) <- (step + 1) * dt
-update(S[]) <- S[i] + (born*(i==1) + n_RS[i]) - (n_SA[i] + n_SR[i] + n_Sdead[i])
+update(S[]) <- S[i] + (born*(i==1) + n_RS[i]) - (n_SA[i] + n_Sdead[i])
 update(A[]) <- A[i] + n_SA[i] - (n_AD[i] + n_AR[i] + n_Adead[i])
 update(D[]) <- D[i] + n_AD[i] - (n_DR[i] + n_Dd[i] + n_Ddead[i])
-update(R[]) <- R[i] + (n_AR[i] + n_DR[i] + n_SR[i]) - (n_RS[i] + n_Rdead[i])
+update(R[]) <- R[i] + (n_AR[i] + n_DR[i]) - (n_RS[i] + n_Rdead[i])
 
 # Core equations of the transitions
 update(N_tot) <- sum(N)
