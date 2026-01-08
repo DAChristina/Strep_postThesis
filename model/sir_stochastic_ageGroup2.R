@@ -154,13 +154,13 @@ n_Sdead[] <- n_Suscep[i] - (n_SA[i])
 # Leaving A
 n_Asym[] <- rbinom(A[i], p_Asym[i])
 n_AD[] <- rbinom(n_Asym[i], delta[i]/(delta[i]+sigma_1+mu_0[i]))
-n_AR[] <- rbinom((n_Asym[i] - n_AD[i]), sigma_1/(delta[i]+sigma_1+mu_0[i]))
+n_AR[] <- rbinom((n_Asym[i] - n_AD[i]), sigma_1/(sigma_1+mu_0[i]))
 n_Adead[] <- n_Asym[i] - (n_AD[i] + n_AR[i])
 
 # Leaving D
 n_Dis[] <- rbinom(D[i], p_Dis[i])
 n_DR[] <- rbinom(n_Dis[i], sigma_2/(sigma_2+mu_1+mu_0[i]))
-n_Dd[] <- rbinom((n_Dis[i] - n_DR[i]), mu_1/(sigma_2+mu_1+mu_0[i]))
+n_Dd[] <- rbinom((n_Dis[i] - n_DR[i]), mu_1/(mu_1+mu_0[i]))
 n_Ddead[] <- n_Dis[i] - (n_DR[i] + n_Dd[i])
 
 # Leaving R

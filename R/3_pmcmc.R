@@ -153,8 +153,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # vcv positive definite error if matrix/1000
   new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1e3#*100000
   new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1e3#*100000
-  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1e3#*100000
-  new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1e2#*100000
+  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1e2#*100000
+  new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1e3#*100000
   new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1e3#*100000
   new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1e3#*100000
   new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1e3#*100000
