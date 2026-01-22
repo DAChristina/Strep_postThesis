@@ -55,7 +55,7 @@ allAges_weekly_ser1 <- dplyr::left_join(
 ) %>% 
   dplyr::mutate(
     yearWeek = as.Date(yearWeek),
-    day = as.numeric(round((yearWeek - (as.Date("2003-01-01")-2)))), # min(dat_g$Earliest.specimen.date)-2 to make it 7
+    day = as.numeric(round((yearWeek - (as.Date("2003-01-01")-2))))*24, # min(dat_g$Earliest.specimen.date)-2 to make it 7
     # day = seq_len(n())
   ) %>% 
   dplyr::filter(day > 0) %>%

@@ -139,14 +139,14 @@ model_vs_data <- function(n_sts){
                                      index == 7 ~ "n_AD1_weekly",
                                      index == 8 ~ "n_AD2_weekly",
                                      
-                                     index == 9 ~ "S <10",
-                                     index == 10 ~ "S 10+",
-                                     index == 11 ~ "A <10",
-                                     index == 12 ~ "A 10+",
+                                     index == 9 ~ "S <15",
+                                     index == 10 ~ "S 15+",
+                                     index == 11 ~ "A <15",
+                                     index == 12 ~ "A 15+",
                                      index == 13 ~ "model_D1",
                                      index == 14 ~ "model_D2",
-                                     index == 15 ~ "R <10",
-                                     index == 16 ~ "R 10+"
+                                     index == 15 ~ "R <15",
+                                     index == 16 ~ "R 15+"
                     )) %>% 
     dplyr::select(-index) %>%
     dplyr::mutate(weekly = ceiling(steps/7)) %>% 
@@ -211,7 +211,7 @@ model_vs_data <- function(n_sts){
     scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                  date_breaks = "year",
                  date_labels = "%Y") +
-    ggtitle("Cases (Aggregated by Week) for age 10+") +
+    ggtitle("Cases (Aggregated by Week) for age 15+") +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +

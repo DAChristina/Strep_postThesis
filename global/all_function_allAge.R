@@ -108,7 +108,7 @@ parameter_transform <- function(t_norm) {
   
   transform
 }
-
+# https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/transformation
 transform <- parameter_transform(t_norm)
 
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
@@ -120,7 +120,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 0.6,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.5, min = 0, max = 5, # max based on 1/t_norm values; worst case increased to 5x
+         mcstate::pmcmc_parameter("beta_0", 0.2, min = 0, max = 5, # max based on 1/ values; worst case increased to 5x
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 1,
                                   prior = priors$betas),

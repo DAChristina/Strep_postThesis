@@ -1,6 +1,7 @@
-freq <- user(1) # model is daily but aggregated to weekly
+freq <- user(24) # 24 steps per day; prev model is daily but aggregated to weekly
 dt <- 1/freq
 initial(time) <- 0
+update(time) <- (step + 1) * dt
 
 # 1. PARAMETERS ################################################################
 time_shift_1 <- user(0, min = 0)
@@ -18,10 +19,13 @@ log_delta2 <- user(0, min = -10, max = 1)
 hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
 sigma_1 <- 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
 # psi <- user(0, min = 0) # Immunity differences between children & adults
-sigma_2 <- user(1) # Assumed acute phase, 1 day
+sigma_2 <- 1 # Assumed acute phase, 1 day
 
 mu_0[1] <- 1/((80.70-14)*365)
 mu_0[2] <- 1/(14*365)
+# mu_0[1] <- 0
+# mu_0[2] <- 0
+# mu <- 0
 mu_1 <- 0 # disease-related death, no data available
 pi <- 3.141593 # FIXED
 wane <- 0
@@ -106,6 +110,9 @@ initial(R_tot) <- 0
 # make it traditional way:
 initial(n_AD1_weekly) <- 0
 initial(n_AD2_weekly) <- 0
+# initial(lambda[]) <- (if (sum(foi_ij[i, ]) > 1) 1 else sum(foi_ij[i, ]))
+# initial(lambda[]) <- 0
+# initial(beta) <- beta_0
 
 # 3. UPDATES ###################################################################
 # age-structured contact matrix featured in lambda:
@@ -119,6 +126,15 @@ vacc_m[1, 1] <- 0.9*0.862*theta # child->child
 vacc_m[1, 2] <- 0
 vacc_m[2, 1] <- 0.9*0.862*theta # adult->child
 vacc_m[2, 2] <- 0
+
+# https://mrc-ide.github.io/odin/articles/functions.html
+# tau <- 180 # days
+# t0  <- round(365/4) # seasonality starts after 1/4 year
+# ramp <- (if (time < t0)
+#   0
+#   else
+#     1-exp(-(time-t0)/tau)
+# )
 
 beta <- beta_0*(
   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
@@ -137,42 +153,42 @@ delta[2] <- (10^(log_delta2))*UK_calibration_adults
 # sigma_1[1] <- hypo_sigma_1 # test no A -> R in kids
 # sigma_1[2] <- psi*hypo_sigma_1
 
-# Individual probabilities of transition
-p_Suscep[] <- 1- exp(-(lambda[i]+mu_0[i]) * dt)
-p_Asym[] <- 1- exp(-(delta[i]+sigma_1+mu_0[i]) * dt)
-p_Dis[] <- 1- exp(-(sigma_2+mu_1+mu_0[i]) * dt)
-p_RS[] <- 1- exp(-(wane+mu_0[i]) * dt)
+# Cumulative hazard
+p_Suscep[] <- lambda[i]+mu_0[i]
+p_Asym[] <- delta[i]+sigma_1+mu_0[i]
+p_Dis[] <- sigma_2+mu_1+mu_0[i]
+p_RS[] <- wane+mu_0[i]
 
 # Draws for numbers changing between compartments
 # Leaving S
-n_Suscep[] <- rbinom(S[i], p_Suscep[i])
+n_Suscep[] <- rbinom(S[i], 1- exp(-p_Suscep[i]*dt))
 n_SA[] <- rbinom(n_Suscep[i], lambda[i]/(lambda[i]+mu_0[i]))
 # n_SR[] <- rbinom((n_Suscep[i] - n_SA[i]), vacc[i]/(lambda[i]+mu_0[i]))
 
 n_Sdead[] <- n_Suscep[i] - (n_SA[i])
 
 # Leaving A
-n_Asym[] <- rbinom(A[i], p_Asym[i])
+n_Asym[] <- rbinom(A[i], 1- exp(-p_Asym[i]*dt))
 n_AD[] <- rbinom(n_Asym[i], delta[i]/(delta[i]+sigma_1+mu_0[i]))
 n_AR[] <- rbinom((n_Asym[i] - n_AD[i]), sigma_1/(sigma_1+mu_0[i]))
 n_Adead[] <- n_Asym[i] - (n_AD[i] + n_AR[i])
 
 # Leaving D
-n_Dis[] <- rbinom(D[i], p_Dis[i])
+n_Dis[] <- rbinom(D[i], 1- exp(-p_Dis[i]*dt))
 n_DR[] <- rbinom(n_Dis[i], sigma_2/(sigma_2+mu_1+mu_0[i]))
 n_Dd[] <- rbinom((n_Dis[i] - n_DR[i]), mu_1/(mu_1+mu_0[i]))
 n_Ddead[] <- n_Dis[i] - (n_DR[i] + n_Dd[i])
 
 # Leaving R
-n_Resist[] <- rbinom(R[i], p_RS[i]) # RS is considered 0 in both age groups
+n_Resist[] <- rbinom(R[i], 1- exp(-p_RS[i]*dt)) # RS is considered 0 in both age groups
 n_RS[] <- rbinom(n_Resist[i], wane/(wane+mu_0[i]))
 n_Rdead[] <- n_Resist[i] - n_RS[i]
 
 # Equations for transitions between compartments by age group
 n_Sborn[] <- n_Sdead[i] + n_Adead[i] + n_Dd[i] + n_Ddead[i] + n_Rdead[i]
 born <- sum(n_Sborn)
+# born <- rpois(mu * sum(N) * dt)
 
-update(time) <- (step + 1) * dt
 update(S[]) <- S[i] + (born*(i==1) + n_RS[i]) - (n_SA[i] + n_Sdead[i])
 update(A[]) <- A[i] + n_SA[i] - (n_AD[i] + n_AR[i] + n_Adead[i])
 update(D[]) <- D[i] + n_AD[i] - (n_DR[i] + n_Dd[i] + n_Ddead[i])
@@ -190,4 +206,9 @@ update(R_tot) <- sum(R)
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
 update(n_AD1_weekly) <- if (step %% 7 == 0) n_AD[1] else n_AD1_weekly + n_AD[1]
 update(n_AD2_weekly) <- if (step %% 7 == 0) n_AD[2] else n_AD2_weekly + n_AD[2]
+
+# update(lambda[]) <- (if (sum(foi_ij[i, ]) > 1) 1 else sum(foi_ij[i, ]))
+# update(lambda[]) <- sum(foi_ij[i, ])
+# update(beta) <- beta_0*(
+#   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
