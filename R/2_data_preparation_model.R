@@ -1,161 +1,99 @@
 rm(list = ls())
-
 library(tidyverse)
 
 if (!dir.exists("inputs")) {
   dir.create("inputs")
 }
 
-# 12F all ages
-dat_combined_week <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
-  dplyr::group_by(week_date) %>% 
-  dplyr::summarise(counts = sum(counts)) %>% 
-  dplyr::ungroup() %>% 
-  dplyr::mutate(week_date = as.Date(week_date))
+# Data preparation for serotype 1
+# mcstate data preparation #####################################################
+# non-heterogeneity (allAges), weekly
+serotype1_data <- read.csv("raw_data/serotype1_UKHSA_imperial_date_age_region_MOLIS_sequenced_postThesis_cleaned.csv") %>% 
+  glimpse()
 
-all_date <- data.frame(week_date = seq.Date(from = min(dat_combined_week$week_date),
-                                          to = max(dat_combined_week$week_date), 
-                                          by = 1)) %>% 
-  dplyr::mutate(week_step = 1:nrow(.))
-
-incidence_week_allAge <- dplyr::left_join(all_date, 
-                                          dat_combined_week, 
-                                          by = "week_date"
-                                          ) %>% 
-  dplyr::select(week_step, counts) %>% 
-  dplyr::rename(week = week_step,
-                cases = counts) # Annoying name requirement inputs to monty
-
-write.csv(incidence_week_allAge, "inputs/incidence_week_12F_allAge.csv", row.names = FALSE)
-
-
-# 12F 3 age groups
-dat_combined_week <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
-  dplyr::group_by(week_date, ageGroup3) %>% 
-  dplyr::summarise(counts = sum(counts)) %>% 
-  dplyr::ungroup() %>% 
-  dplyr::mutate(week_date = as.Date(week_date))
-
-all_date <- data.frame(week_date = seq.Date(from = min(dat_combined_week$week_date),
-                                            to = max(dat_combined_week$week_date), 
+all_week <- data.frame(week_date = seq.Date(from = min(as.Date(serotype1_data$Earliest.specimen.date)),
+                                            to = max(as.Date(serotype1_data$Earliest.specimen.date)), 
                                             by = 1)) %>% 
-  dplyr::mutate(week_step = 1:nrow(.))
-
-# Annoying R dimension requirement
-dat_combined_week_age_ <- list()
-incidence_week_3ageG_ <- list()
-
-for (i in 1:3) {
-  ageGroups <- c("<2", "2-64", "65+") #, "Unknown")
-  
-  dat_combined_week_age_[[i]] <- dat_combined_week %>% 
-    dplyr::filter(ageGroup3 == ageGroups[i])
-  
-  incidence_week_3ageG_[[i]] <- dplyr::left_join(all_date, 
-                                                 dat_combined_week_age_[[i]], 
-                                                 by = "week_date"
+  dplyr::mutate(week_step = 1:nrow(.),
+                iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
+                yearWeek =ISOweek::ISOweek2date(iso_week)
   ) %>% 
-    dplyr::select(week_step, counts) %>% 
-    dplyr::rename(time = week_step,
-                  cases = counts) # Annoying name requirement inputs to monty
-  
-  write.csv(incidence_week_3ageG_[[i]],
-            paste0("inputs/incidence_week_12F_3ageG_", i, ".csv"),
-            row.names = FALSE)
-}
-
-# Test load agegroups
-below_2 <- read.csv("inputs/incidence_week_12F_3ageG_1.csv")
-adults <- read.csv("inputs/incidence_week_12F_3ageG_2.csv")
-elderly <- read.csv("inputs/incidence_week_12F_3ageG_3.csv")
-
-# combine data into 1 csv
-dat_week_12F_3ageG <- below_2 %>% 
-  dplyr::rename(cases_1 = cases) %>% 
-  dplyr::left_join(adults %>% 
-                     dplyr::rename(cases_2 = cases)
-                   , by = "time"
-                   ) %>% 
-  dplyr::left_join(elderly %>% 
-                     dplyr::rename(cases_3 = cases)
-                   , by = "time"
-  ) %>% 
-  dplyr::rename(week = time) # naming error in mcState -_-)
-
-write.csv(dat_week_12F_3ageG, "inputs/incidence_week_12F_3ageG_all.csv", row.names = FALSE)
-
-plot(below_2$time, below_2$cases, type = "p", col = "red", ylim = c(0,30))
-points(adults$time, adults$cases, col = "green")
-points(elderly$time, elderly$cases, col = "blue")
+  distinct(yearWeek) %>% 
+  glimpse()
 
 
-# 12F 6 age groups
-dat_combined_week <- read.csv("raw_data/12F_Jan_2025_combined_cleaned.csv") %>% 
-  dplyr::group_by(week_date, ageGroup6) %>% 
-  dplyr::summarise(counts = sum(counts)) %>% 
-  dplyr::ungroup() %>% 
-  dplyr::mutate(week_date = as.Date(week_date))
-
-all_date <- data.frame(week_date = seq.Date(from = min(dat_combined_week$week_date),
-                                            to = max(dat_combined_week$week_date), 
-                                            by = 1)) %>% 
-  dplyr::mutate(week_step = 1:nrow(.))
-
-# Annoying R dimension requirement
-dat_combined_week_age_ <- list()
-incidence_week_6ageG_ <- list()
-
-for (i in 1:6) {
-  ageGroups <- c("<2", "2-4", "5-14", "15-44", "45-64", "65+") #, "Unknown")
-  
-  dat_combined_week_age_[[i]] <- dat_combined_week %>% 
-    dplyr::filter(ageGroup6 == ageGroups[i])
-  
-  incidence_week_6ageG_[[i]] <- dplyr::left_join(all_date, 
-                                                 dat_combined_week_age_[[i]], 
-                                                 by = "week_date"
-  ) %>% 
-    dplyr::select(week_step, counts) %>% 
-    dplyr::rename(time = week_step,
-                  cases = counts) # Annoying name requirement inputs to monty
-  
-  write.csv(incidence_week_6ageG_[[i]],
-            paste0("inputs/incidence_week_12F_6ageG_", i, ".csv"),
-            row.names = FALSE)
-}
-
-# Test load agegroups
-# combine data into 1 csv
-dat_week_12F_6ageG <- read.csv("inputs/incidence_week_12F_6ageG_1.csv") %>% 
-  dplyr::rename(cases_1 = cases) %>% 
-  dplyr::left_join(
-    read.csv("inputs/incidence_week_12F_6ageG_2.csv") %>% 
-      dplyr::rename(cases_2 = cases)
-    , by = "time"
+allAges_weekly_ser1 <- dplyr::left_join(
+  all_week
+  ,
+  serotype1_data %>% 
+    dplyr::mutate(Earliest.specimen.date = as.Date(Earliest.specimen.date),
+                  iso_week = paste0(year(Earliest.specimen.date), "-W", sprintf("%02d", week(Earliest.specimen.date)), "-1"),
+                  yearWeek =ISOweek::ISOweek2date(iso_week),
+                  
+                  ageGroup_s1 = case_when(
+                    AGEYR < 15 ~ "0-14",
+                    AGEYR >= 15 ~ "15+"
+                  )
     ) %>% 
-  dplyr::left_join(
-    read.csv("inputs/incidence_week_12F_6ageG_3.csv") %>% 
-      dplyr::rename(cases_3 = cases)
-    , by = "time"
+    dplyr::filter(!is.na(ageGroup_s1)) %>% 
+    dplyr::group_by(yearWeek, ageGroup_s1) %>% 
+    dplyr::summarise(count_serotype = n()) %>% 
+    dplyr::ungroup() %>% 
+    tidyr::pivot_wider(
+      .,
+      names_from = contains("ageGroup"),
+      names_prefix = "count_",
+      values_from = "count_serotype"
+    ) %>% 
+    dplyr::rename(
+      count_s1_1 = "count_0-14",
+      count_s1_2 = "count_15+"
+    ) %>% 
+    dplyr::arrange(yearWeek)
+  ,
+  by = "yearWeek"
+) %>% 
+  dplyr::mutate(
+    yearWeek = as.Date(yearWeek),
+    day = as.numeric(round((yearWeek - (as.Date("2003-01-01")-2)))), # min(dat_g$Earliest.specimen.date)-2 to make it 7
+    # day = seq_len(n())
   ) %>% 
-  dplyr::left_join(
-    read.csv("inputs/incidence_week_12F_6ageG_4.csv") %>% 
-      dplyr::rename(cases_4 = cases)
-    , by = "time"
-  ) %>% 
-  dplyr::left_join(
-    read.csv("inputs/incidence_week_12F_6ageG_5.csv") %>% 
-      dplyr::rename(cases_5 = cases)
-    , by = "time"
-  ) %>% 
-  dplyr::left_join(
-    read.csv("inputs/incidence_week_12F_6ageG_6.csv") %>% 
-      dplyr::rename(cases_6 = cases)
-    , by = "time"
-  ) %>% 
-  dplyr::rename(week = time) # naming error in mcState -_-)
+  dplyr::filter(day > 0) %>%
+  mcstate::particle_filter_data(.,
+                                time = "day", # I use steps instead of day
+                                rate = 1, # I change the model to weekly, therefore weekly rate is required
+                                initial_time = 0
+  ) %>%
+  glimpse()
 
-write.csv(dat_week_12F_6ageG, "inputs/incidence_week_12F_6ageG_all.csv", row.names = FALSE)
+saveRDS(allAges_weekly_ser1, "inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
+
+# test plot
+ggplot(allAges_weekly_ser1
+       , aes(x = yearWeek)) +
+  geom_line(size = 1, aes(y = count_s1_1), colour = "darkgreen") +
+  geom_line(size = 1, aes(y = count_s1_2), colour = "maroon") +
+  geom_vline(xintercept = as.Date("2010-04-01"), color = "steelblue", linetype = "dashed") +
+  scale_x_date(limits = c(as.Date("2002-12-31"), as.Date("2020-12-31")),
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  # scale_y_log10() +
+  theme_bw() +
+  labs(
+    title = "Serotype 1 Counts",
+    y = "Serotype 1 counts"
+  ) +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", colour = "transparent"))
+
+
+
+
+
+
 
 
 
