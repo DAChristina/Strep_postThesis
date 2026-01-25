@@ -111,8 +111,8 @@ initial(R_tot) <- 0
 initial(n_AD1_weekly) <- 0
 initial(n_AD2_weekly) <- 0
 # initial(lambda[]) <- (if (sum(foi_ij[i, ]) > 1) 1 else sum(foi_ij[i, ]))
-# initial(lambda[]) <- 0
-# initial(beta) <- beta_0
+initial(lambda[]) <- 0
+initial(beta) <- beta_0
 
 # 3. UPDATES ###################################################################
 # age-structured contact matrix featured in lambda:
@@ -136,16 +136,16 @@ vacc_m[2, 2] <- 0
 #     1-exp(-(time-t0)/tau)
 # )
 
-beta <- beta_0*(
-  (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
+# beta <- beta_0*(
+#   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
-foi_ij[, ] <- (if (time >= 2648)
+foi_ij[, ] <- (if (time >= 2648*freq)
   beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))
   else
     beta * m[i, j] * (((A[j] + D[j])/N[j]))
 )
 
-lambda[] <- sum(foi_ij[i, ])
+# lambda[] <- sum(foi_ij[i, ])
 
 delta[1] <- (10^(log_delta1))*UK_calibration_kids
 delta[2] <- (10^(log_delta2))*UK_calibration_adults
@@ -204,11 +204,11 @@ update(R_tot) <- sum(R)
 
 # that "little trick" previously explained in https://github.com/mrc-ide/dust/blob/master/src/sir.cpp for cumulative incidence:
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
-update(n_AD1_weekly) <- if (step %% 7 == 0) n_AD[1] else n_AD1_weekly + n_AD[1]
-update(n_AD2_weekly) <- if (step %% 7 == 0) n_AD[2] else n_AD2_weekly + n_AD[2]
+update(n_AD1_weekly) <- if (step %% (7*freq) == 0) n_AD[1] else n_AD1_weekly + n_AD[1]
+update(n_AD2_weekly) <- if (step %% (7*freq) == 0) n_AD[2] else n_AD2_weekly + n_AD[2]
 
 # update(lambda[]) <- (if (sum(foi_ij[i, ]) > 1) 1 else sum(foi_ij[i, ]))
-# update(lambda[]) <- sum(foi_ij[i, ])
-# update(beta) <- beta_0*(
-#   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
+update(lambda[]) <- sum(foi_ij[i, ])
+update(beta) <- beta_0*(
+  (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
