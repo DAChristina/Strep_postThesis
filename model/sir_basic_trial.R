@@ -1,9 +1,8 @@
 freq <- user(1) # 1 step per day; prev model is daily but aggregated to weekly
 dt <- 1/freq
-initial(time) <- 0
+initial(time) <- -365
 update(time) <- (step + 1) * dt
 
-# burn_in <- 
 
 # 1. PARAMETERS ################################################################
 time_shift_1 <- user(0, min = 0)
