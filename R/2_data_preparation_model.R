@@ -55,7 +55,7 @@ allAges_weekly_ser1 <- dplyr::left_join(
 ) %>% 
   dplyr::mutate(
     yearWeek = as.Date(yearWeek),
-    day = as.numeric(round((yearWeek - (as.Date("2003-01-01")-2))))*24, # min(dat_g$Earliest.specimen.date)-2 to make it 7
+    day = as.numeric(round((yearWeek - (as.Date("2003-01-01")-2)))), # min(dat_g$Earliest.specimen.date)-2 to make it 7
     # day = seq_len(n())
   ) %>% 
   dplyr::filter(day > 0) %>%
@@ -66,7 +66,7 @@ allAges_weekly_ser1 <- dplyr::left_join(
   ) %>%
   glimpse()
 
-saveRDS(allAges_weekly_ser1, "inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
+saveRDS(allAges_weekly_ser1, "raw_data/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
 
 # test plot
 ggplot(allAges_weekly_ser1

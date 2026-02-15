@@ -82,7 +82,7 @@ model_vs_data <- function(n_sts){
   # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
-  data <- readRDS("inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds") %>% 
+  data <- readRDS("raw_data/pmcmc_data_week_allAge_ser1_test_2agegroups.rds") %>% 
     glimpse()
   
   sir_data <- dplyr::bind_rows(
@@ -149,7 +149,7 @@ model_vs_data <- function(n_sts){
                                      index == 16 ~ "R 15+"
                     )) %>% 
     dplyr::select(-index) %>%
-    dplyr::mutate(weekly = ceiling(steps/7)) %>% 
+    dplyr::mutate(weekly = ceiling((steps-1)/7)) %>% 
     dplyr::group_by(replicate, weekly, compartment) %>% 
     dplyr::summarise(value = sum(value, na.rm = T),
                      # date = max(date),
@@ -164,6 +164,7 @@ model_vs_data <- function(n_sts){
       ,
       by = "weekly"
     ) %>%
+    dplyr::filter(!is.na(yearWeek)) %>%
     glimpse()
   
   write.csv(incidence_modelled,

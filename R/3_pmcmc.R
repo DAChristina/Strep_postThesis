@@ -7,7 +7,7 @@ library(GGally)
 library(socialmixr)
 
 source("global/all_function_allAge.R")
-sir_data <- readRDS("inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
+sir_data <- readRDS("raw_data/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
 rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the particle filter to use
 
 ## 2a. Model Load ##############################################################

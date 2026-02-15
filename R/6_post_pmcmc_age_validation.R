@@ -42,13 +42,13 @@ age_validation <- function(n_sts){
       dplyr::left_join(
         # age proportion in England
         dplyr::left_join(
-          read.csv("inputs/nomis_population_long.csv") %>% 
+          read.csv("raw_data/nomis_population_long.csv") %>% 
             # region stratification is not needed
             dplyr::group_by(year) %>% 
             dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
             dplyr::ungroup()
           ,
-          read.csv("inputs/nomis_population_long.csv") %>% 
+          read.csv("raw_data/nomis_population_long.csv") %>% 
             # region stratification is not needed
             dplyr::group_by(ageGroup6, year) %>% 
             dplyr::summarise(PopSize6 = sum(PopSize)) %>% 
@@ -77,13 +77,13 @@ age_validation <- function(n_sts){
       dplyr::left_join(
         # age proportion in England
         dplyr::left_join(
-          read.csv("inputs/nomis_population_long.csv") %>% 
+          read.csv("raw_data/nomis_population_long.csv") %>% 
             # region stratification is not needed
             dplyr::group_by(year) %>% 
             dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
             dplyr::ungroup()
           ,
-          read.csv("inputs/nomis_population_long.csv") %>% 
+          read.csv("raw_data/nomis_population_long.csv") %>% 
             # region stratification is not needed
             dplyr::group_by(ageGroup6, year) %>% 
             dplyr::summarise(PopSize6 = sum(PopSize)) %>% 
@@ -107,7 +107,7 @@ age_validation <- function(n_sts){
   )
   
   # comparison with the real case counts data
-  serotype1_data <- read.csv("inputs/serotype1_UKHSA_imperial_date_age_region_MOLIS_sequenced_postThesis_cleaned.csv") %>% 
+  serotype1_data <- read.csv("raw_data/serotype1_UKHSA_imperial_date_age_region_MOLIS_sequenced_postThesis_cleaned.csv") %>% 
     glimpse()
   
   all_week <- data.frame(week_date = seq.Date(from = min(as.Date(serotype1_data$Earliest.specimen.date)),

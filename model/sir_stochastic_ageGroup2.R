@@ -1,6 +1,6 @@
-freq <- user(24) # 24 steps per day; prev model is daily but aggregated to weekly
+freq <- user(1) # prev model is daily but aggregated to weekly
 dt <- 1/freq
-initial(time) <- 0
+initial(time) <- -365
 update(time) <- (step + 1) * dt
 
 # 1. PARAMETERS ################################################################
@@ -55,6 +55,13 @@ dim(mu_0) <- N_age
 dim(p_Suscep) <- N_age
 dim(p_Asym) <- N_age
 dim(p_Dis) <- N_age
+dim(p_Rec) <- N_age
+
+dim(p_SA) <- N_age
+dim(p_AD) <- N_age
+dim(p_AR) <- N_age
+dim(p_DR) <- N_age
+dim(p_Dd) <- N_age
 dim(p_RS) <- N_age
 
 dim(n_Sborn) <- N_age
@@ -87,16 +94,6 @@ A_ini[] <- 10^(log_A_ini[i]*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[i]
 # Age-structured states:
 initial(S[]) <- N_ini[i] -(A_ini[i]+0+0) # D_ini = R_ini = 0
 initial(A[]) <- A_ini[i]
-
-# initial(S[]) <- (if(i == 1)
-#   N_ini[i] -(A_ini[i]+0+0)
-#   else
-#     0)
-# initial(A[]) <- (if(i == 1)
-#   A_ini[i]
-#   else
-#     0)
-
 initial(D[]) <- 0
 initial(R[]) <- 0
 
@@ -110,9 +107,6 @@ initial(R_tot) <- 0
 # make it traditional way:
 initial(n_AD1_weekly) <- 0
 initial(n_AD2_weekly) <- 0
-# initial(lambda[]) <- (if (sum(foi_ij[i, ]) > 1) 1 else sum(foi_ij[i, ]))
-initial(lambda[]) <- 0
-initial(beta) <- beta_0
 
 # 3. UPDATES ###################################################################
 # age-structured contact matrix featured in lambda:
@@ -127,17 +121,8 @@ vacc_m[1, 2] <- 0
 vacc_m[2, 1] <- 0.9*0.862*theta # adult->child
 vacc_m[2, 2] <- 0
 
-# https://mrc-ide.github.io/odin/articles/functions.html
-# tau <- 180 # days
-# t0  <- round(365/4) # seasonality starts after 1/4 year
-# ramp <- (if (time < t0)
-#   0
-#   else
-#     1-exp(-(time-t0)/tau)
-# )
-
-# beta <- beta_0*(
-#   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
+beta <- (if (time < 0) beta_0 else 
+  (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))))
 
 foi_ij[, ] <- (if (time >= 2648*freq)
   beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))
@@ -145,7 +130,7 @@ foi_ij[, ] <- (if (time >= 2648*freq)
     beta * m[i, j] * (((A[j] + D[j])/N[j]))
 )
 
-# lambda[] <- sum(foi_ij[i, ])
+lambda[] <- sum(foi_ij[i, ])
 
 delta[1] <- (10^(log_delta1))*UK_calibration_kids
 delta[2] <- (10^(log_delta2))*UK_calibration_adults
@@ -157,31 +142,47 @@ delta[2] <- (10^(log_delta2))*UK_calibration_adults
 p_Suscep[] <- lambda[i]+mu_0[i]
 p_Asym[] <- delta[i]+sigma_1+mu_0[i]
 p_Dis[] <- sigma_2+mu_1+mu_0[i]
-p_RS[] <- wane+mu_0[i]
+p_Rec[] <- wane+mu_0[i]
+
+p_SA[] <- (if (lambda[i]/(lambda[i]+mu_0[i]) <= 0) 0 else 
+  (lambda[i]/(lambda[i]+mu_0[i])))
+
+p_AD[] <- (if (delta[i]/(delta[i]+sigma_1+mu_0[i]) <= 0) 0 else 
+  (delta[i]/(delta[i]+sigma_1+mu_0[i])))
+p_AR[] <- (if (sigma_1/(sigma_1+mu_0[i]) <= 0) 0 else 
+  (sigma_1/(sigma_1+mu_0[i])))
+
+p_DR[] <- (if (sigma_2/(sigma_2+mu_1+mu_0[i]) <= 0) 0 else 
+  (sigma_2/(sigma_2+mu_1+mu_0[i])))
+p_Dd[] <- (if (mu_1/(mu_1+mu_0[i]) <= 0) 0 else 
+  (mu_1/(mu_1+mu_0[i])))
+
+p_RS[] <- (if (wane/(wane+mu_0[i]) <= 0) 0 else 
+  (wane/(wane+mu_0[i])))
+
 
 # Draws for numbers changing between compartments
 # Leaving S
 n_Suscep[] <- rbinom(S[i], 1- exp(-p_Suscep[i]*dt))
-n_SA[] <- rbinom(n_Suscep[i], lambda[i]/(lambda[i]+mu_0[i]))
+n_SA[] <- rbinom(n_Suscep[i], p_SA[i])
 # n_SR[] <- rbinom((n_Suscep[i] - n_SA[i]), vacc[i]/(lambda[i]+mu_0[i]))
-
 n_Sdead[] <- n_Suscep[i] - (n_SA[i])
 
 # Leaving A
 n_Asym[] <- rbinom(A[i], 1- exp(-p_Asym[i]*dt))
-n_AD[] <- rbinom(n_Asym[i], delta[i]/(delta[i]+sigma_1+mu_0[i]))
-n_AR[] <- rbinom((n_Asym[i] - n_AD[i]), sigma_1/(sigma_1+mu_0[i]))
+n_AD[] <- rbinom(n_Asym[i], p_AD[i])
+n_AR[] <- rbinom((n_Asym[i] - n_AD[i]), p_AR[i])
 n_Adead[] <- n_Asym[i] - (n_AD[i] + n_AR[i])
 
 # Leaving D
 n_Dis[] <- rbinom(D[i], 1- exp(-p_Dis[i]*dt))
-n_DR[] <- rbinom(n_Dis[i], sigma_2/(sigma_2+mu_1+mu_0[i]))
-n_Dd[] <- rbinom((n_Dis[i] - n_DR[i]), mu_1/(mu_1+mu_0[i]))
+n_DR[] <- rbinom(n_Dis[i], p_DR[i])
+n_Dd[] <- rbinom((n_Dis[i] - n_DR[i]), p_Dd[i])
 n_Ddead[] <- n_Dis[i] - (n_DR[i] + n_Dd[i])
 
 # Leaving R
-n_Resist[] <- rbinom(R[i], 1- exp(-p_RS[i]*dt)) # RS is considered 0 in both age groups
-n_RS[] <- rbinom(n_Resist[i], wane/(wane+mu_0[i]))
+n_Resist[] <- rbinom(R[i], 1- exp(-p_Rec[i]*dt)) # RS is considered 0 in both age groups
+n_RS[] <- rbinom(n_Resist[i], p_RS[i])
 n_Rdead[] <- n_Resist[i] - n_RS[i]
 
 # Equations for transitions between compartments by age group
@@ -206,9 +207,4 @@ update(R_tot) <- sum(R)
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
 update(n_AD1_weekly) <- if (step %% (7*freq) == 0) n_AD[1] else n_AD1_weekly + n_AD[1]
 update(n_AD2_weekly) <- if (step %% (7*freq) == 0) n_AD[2] else n_AD2_weekly + n_AD[2]
-
-# update(lambda[]) <- (if (sum(foi_ij[i, ]) > 1) 1 else sum(foi_ij[i, ]))
-update(lambda[]) <- sum(foi_ij[i, ])
-update(beta) <- beta_0*(
-  (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 

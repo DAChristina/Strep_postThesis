@@ -33,7 +33,7 @@ pmcmc_run_plus_tuning(n_pars = 10, n_sts = 1000,
 post_pmcmc_pics(1000)
 model_vs_data(1000)
 post_particle_pics(1000)
-age_validation(1000)
+# age_validation(1000)
 
 
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 5000,
@@ -42,7 +42,7 @@ pmcmc_run_plus_tuning(n_pars = 10, n_sts = 5000,
 post_pmcmc_pics(5000)
 model_vs_data(5000)
 post_particle_pics(5000)
-age_validation(5000)
+# age_validation(5000)
 
 
 # pmcmc_run_plus_tuning(n_pars = 10, n_sts = 10000,
@@ -59,6 +59,6 @@ pmcmc_run_plus_tuning(n_pars = 10, n_sts = 10010,
 post_pmcmc_pics(10010)
 model_vs_data(10010)
 post_particle_pics(10010)
-age_validation(10010)
+# age_validation(10010)
 
 

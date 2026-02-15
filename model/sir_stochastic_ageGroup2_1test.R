@@ -44,7 +44,7 @@ pars <- list(m = t_norm,
              # sigma_1 = 0.00002
 )
 
-n_times <- 7500 # 500 for trial
+n_times <- 8000 # 500 for trial
 n_pars <- 1L
 sir_model <- gen_sir$new(pars = pars,
                          time = 1,
@@ -63,7 +63,7 @@ for (t in seq_len(n_times)) {
 }
 # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
 # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
-data <- readRDS("inputs/pmcmc_data_week_allAge_ser1_test_2agegroups.rds") %>% 
+data <- readRDS("raw_data/pmcmc_data_week_allAge_ser1_test_2agegroups.rds") %>% 
   glimpse()
 
 sir_data <- dplyr::bind_rows(
@@ -89,11 +89,7 @@ sir_data <- dplyr::bind_rows(
                   fill = list(value = 0)) %>% 
   glimpse()
 
-# all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>%
-#   dplyr::mutate(
-#     steps = seq_along(date)
-#   ) %>%
-#   glimpse()
+
 all_dates <- data %>%
   dplyr::select(yearWeek) %>% 
   dplyr::mutate(
@@ -130,7 +126,7 @@ incidence_modelled <-
                                    
                   )) %>% 
   dplyr::select(-index) %>%
-  dplyr::mutate(weekly = ceiling(steps/7)) %>% 
+  dplyr::mutate(weekly = ceiling((steps-1)/7)) %>% 
   dplyr::group_by(replicate, weekly, compartment) %>% 
   dplyr::summarise(value = sum(value, na.rm = T),
                    # date = max(date),
@@ -145,7 +141,7 @@ incidence_modelled <-
     ,
     by = "weekly"
   ) %>%
-  # dplyr::filter(date %in% data$yearWeek) %>%
+  dplyr::filter(!is.na(yearWeek)) %>%
   glimpse()
 
 p1 <- ggplot(incidence_modelled %>% 
