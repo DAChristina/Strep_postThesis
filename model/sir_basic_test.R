@@ -35,18 +35,18 @@ t_norm <- transmission/max(transmission)
 
 pars <- list(m = t_norm,
              N_ini = contact_2_demographic$demography$population,
-             log_E_ini = c(0.5, 0.5), # test c(0.65, 0.35),
-             I_ini = c(3,3),
+             log_E_ini = c(0.65, 0.65), # test c(0.65, 0.35),
+             # I_ini = c(3,3),
              log_delta1 = -5,
-             log_delta2 = -4,
+             log_delta2 = -5,
              hypo_sigma_1_day = 16,
-             time_shift_1 = 0.1254,
+             # time_shift_1 = 0.1254,
              
              # betas according to seasons
              beta_0wn = 0.15,
-             beta_0sp = 0.01,
-             beta_0su = 0.01,
-             beta_0au = 0.001,
+             beta_0sp = 0.12,
+             beta_0su = 0.1,
+             beta_0au = 0.01,
              iota = 20,
              beta_0 = 0.5,
              beta_1 = 0.3
@@ -189,7 +189,7 @@ p1 <- ggplot(incidence_modelled %>%
   geom_vline(aes(xintercept = as.Date("2010-04-01"),
                  colour = "PCV13 (April 2010)"),
              linetype = "dashed") +
-  # scale_y_continuous(limits = c(0, 40)) +
+  scale_y_continuous(limits = c(0, 40)) +
   scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                date_breaks = "year",
                date_labels = "%Y") +
@@ -215,7 +215,7 @@ p2 <- ggplot(incidence_modelled %>%
                  group = interaction(compartment,replicate),
                  colour = compartment)) +
   geom_line() +
-  # scale_y_continuous(limits = c(0, 40)) +
+  scale_y_continuous(limits = c(0, 40)) +
   scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                date_breaks = "year",
                date_labels = "%Y") +
