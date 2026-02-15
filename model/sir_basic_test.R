@@ -38,14 +38,21 @@ pars <- list(m = t_norm,
              log_E_ini = c(0.5, 0.5), # test c(0.65, 0.35),
              I_ini = c(3,3),
              log_delta1 = -5,
-             log_delta2 = -5,
+             log_delta2 = -4,
              hypo_sigma_1_day = 16,
              time_shift_1 = 0.1254,
+             
+             # betas according to seasons
+             beta_0wn = 0.15,
+             beta_0sp = 0.01,
+             beta_0su = 0.01,
+             beta_0au = 0.001,
+             iota = 20,
              beta_0 = 0.5,
              beta_1 = 0.3
 )
 
-n_times <- 7500*24 # 500 for trial
+n_times <- 7500 #*24 # 500 for trial
 n_pars <- 1L
 sir_model <- gen_sir$new(pars = pars,
                          time = 1,
@@ -120,18 +127,19 @@ incidence_modelled <-
                                    index == 6 ~ "total R",
                                    index == 7 ~ "n_EI1_weekly",
                                    index == 8 ~ "n_EI2_weekly",
-                                   index == 9 ~ "beta",
+                                   # index == 9 ~ "beta",
                                    
-                                   index == 10 ~ "S <14",
-                                   index == 11 ~ "S 15+",
-                                   index == 12 ~ "E1",
-                                   index == 13 ~ "E2",
-                                   index == 14 ~ "model_D1",
-                                   index == 15 ~ "model_D2",
-                                   index == 16 ~ "R <14",
-                                   index == 17 ~ "R 15+",
-                                   index == 18 ~ "lambda1",
-                                   index == 19 ~ "lambda2"
+                                   index == 9 ~ "S <14",
+                                   index == 10 ~ "S 15+",
+                                   index == 11 ~ "E1",
+                                   index == 12 ~ "E2",
+                                   index == 13 ~ "model_D1",
+                                   index == 14 ~ "model_D2",
+                                   index == 15 ~ "R <14",
+                                   index == 16 ~ "R 15+"
+                                   
+                                   # index == 18 ~ "lambda1",
+                                   # index == 19 ~ "lambda2"
                                    
                                    
                   )) %>% 
@@ -139,8 +147,8 @@ incidence_modelled <-
   # step --> time (day) --> week adjustment
   dplyr::mutate(
     # day = (steps - 1) %/% 24 + 1
-    # day = (steps - 1) %/% 1 + 1
-    day = (steps - 365) %/% 1 + 1
+    day = (steps - 1) %/% 1 + 1
+    # day = (steps - 365) %/% 1 + 1
   ) %>%
   dplyr::group_by(replicate, day, compartment) %>%
   summarise(

@@ -1,13 +1,13 @@
 freq <- user(1) # 1 step per day; prev model is daily but aggregated to weekly
 dt <- 1/freq
-initial(time) <- -365
+initial(time) <- 0
 update(time) <- (step + 1) * dt
 
 
 # 1. PARAMETERS ################################################################
-time_shift_1 <- user(0, min = 0)
-beta_0 <- user(0, min = 0)
-beta_1 <- user(0, min = 0)
+# time_shift_1 <- user(0, min = 0)
+# beta_0 <- user(0, min = 0)
+# beta_1 <- user(0, min = 0)
 theta <- 0.19 # proportion of vaccinated children in 0-14 age group
 
 hypo_sigma_1_day <- user() #15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
@@ -19,7 +19,7 @@ mu_0[2] <- 1/(14*365)
 mu_1 <- 0 # disease-related death, no data available
 alpha[1] <- 1/(15*365) # ageing child -> adult
 alpha[2] <- 0
-pi <- 3.141593 # FIXED
+# pi <- 3.141593 # FIXED
 wane <- 0
 
 # Dimensions of arrays #########################################################
@@ -119,8 +119,8 @@ initial(R_tot) <- 0
 initial(n_EI1_weekly) <- 0
 initial(n_EI2_weekly) <- 0
 
-initial(lambda[]) <- sum(foi_ij[i, ])
-initial(beta) <- beta_0 * (1 + beta_1 * cos(2*pi * time_shift_1))
+# initial(lambda[]) <- sum(foi_ij[i, ])
+# initial(beta) <- beta_0 * (1 + beta_1 * cos(2*pi * time_shift_1))
 
 # 3. UPDATES ###################################################################
 N[] <- S[i] + E[i] + I[i] + R[i]
@@ -135,13 +135,59 @@ vacc_m[2, 2] <- 0
 # beta <- beta_0 *(
 #   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
 
+doy <- time %% 365
+iota <- user(0, min = 0) # 20 # how long the peak of the season last
+
+# Winter center day = 15 (Jan 15)
+d1_wn <- abs(doy - 15)
+d2_wn <- 365 - d1_wn
+dist_wn <- (d1_wn + d2_wn - abs(d1_wn - d2_wn)) / 2
+
+# Spring center = 105 (Apr 15)
+d1_sp <- abs(doy - 105)
+d2_sp <- 365 - d1_sp
+dist_sp <- (d1_sp + d2_sp - abs(d1_sp - d2_sp)) / 2
+
+# Summer center = 196 (Jul 15)
+d1_su <- abs(doy - 196)
+d2_su <- 365 - d1_su
+dist_su <- (d1_su + d2_su - abs(d1_su - d2_su)) / 2
+
+# Autumn center = 288 (Oct 15)
+d1_au <- abs(doy - 288)
+d2_au <- 365 - d1_au
+dist_au <- (d1_au + d2_au - abs(d1_au - d2_au)) / 2
+
+w_winter <- exp(-(dist_wn^2)/(2*iota^2))
+w_spring <- exp(-(dist_sp^2)/(2*iota^2))
+w_summer <- exp(-(dist_su^2)/(2*iota^2))
+w_autumn <- exp(-(dist_au^2)/(2*iota^2))
+
+# beta_0wn <- beta_0*1
+# beta_0sp <- beta_0*0.5
+# beta_0su <- beta_0*0.5
+# beta_0au <- beta_0*0.2
+
+beta_0wn <- user(0, min = 0)
+beta_0sp <- user(0, min = 0)
+beta_0su <- user(0, min = 0)
+beta_0au <- user(0, min = 0)
+
+beta <- (
+  w_winter*beta_0wn +
+    w_spring*beta_0sp +
+    w_summer*beta_0su +
+    w_autumn*beta_0au
+) / (w_winter + w_spring + w_summer + w_autumn)
+
+
 foi_ij[, ] <- (if (time >= 2648*freq)
   beta * m[i, j] * (((E[j] + I[j])/N[j]) * (1 - vacc_m[i, j]))
   else
     beta * m[i, j] * (((E[j] + I[j])/N[j]))
 )
 
-# lambda[] <- sum(foi_ij[i, ])
+lambda[] <- sum(foi_ij[i, ])
 
 # lambda[] <- (if (sum(foi_ij[i, ]) <= 0) 0 else
 #   (sum(foi_ij[i, ])))
@@ -228,6 +274,6 @@ update(R_tot) <- sum(R)
 update(n_EI1_weekly) <- if (step %% (7*freq) == 0) n_EI[1] else n_EI1_weekly + n_EI[1]
 update(n_EI2_weekly) <- if (step %% (7*freq) == 0) n_EI[2] else n_EI2_weekly + n_EI[2]
 
-update(lambda[]) <- sum(foi_ij[i, ])
-update(beta) <- beta_0*(
-  (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
+# update(lambda[]) <- sum(foi_ij[i, ])
+# update(beta) <- beta_0*(
+#   (1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))
