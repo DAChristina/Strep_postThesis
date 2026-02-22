@@ -5,6 +5,10 @@ if (!dir.exists("inputs")) {
   dir.create("inputs")
 }
 
+source("global/all_function_allAge.R")
+# global/all_function_allAge.R also incorporated:
+# burnin_days
+
 # Data preparation for serotype 1
 # mcstate data preparation #####################################################
 # non-heterogeneity (allAges), weekly
@@ -52,13 +56,20 @@ allAges_weekly_ser1 <- dplyr::left_join(
     dplyr::arrange(yearWeek)
   ,
   by = "yearWeek"
-) %>% 
+  ) %>% 
   dplyr::mutate(
     yearWeek = as.Date(yearWeek),
     day = as.numeric(round((yearWeek - (as.Date("2003-01-01")-2)))), # min(dat_g$Earliest.specimen.date)-2 to make it 7
-    # day = seq_len(n())
+    
+    # adjust burn in
+    day = burnin_days+day,
+    count_s1_1 = ifelse(dplyr::row_number() == 1, NA, count_s1_1),
+    count_s1_2 = ifelse(dplyr::row_number() == 1, NA, count_s1_2)
   ) %>% 
-  dplyr::filter(day > 0) %>%
+  dplyr::filter(day > 0,
+                # adjust data fitting from the lowest case peak post-winter
+                # yearWeek >= as.Date("2003-03-01")
+                ) %>%
   mcstate::particle_filter_data(.,
                                 time = "day", # I use steps instead of day
                                 rate = 1, # I change the model to weekly, therefore weekly rate is required
@@ -71,8 +82,8 @@ saveRDS(allAges_weekly_ser1, "raw_data/pmcmc_data_week_allAge_ser1_test_2agegrou
 # test plot
 ggplot(allAges_weekly_ser1
        , aes(x = yearWeek)) +
-  geom_line(size = 1, aes(y = count_s1_1), colour = "darkgreen") +
-  geom_line(size = 1, aes(y = count_s1_2), colour = "maroon") +
+  geom_line(size = 0.5, aes(y = count_s1_1), colour = "darkgreen") +
+  geom_line(size = 0.5, aes(y = count_s1_2), colour = "maroon") +
   geom_vline(xintercept = as.Date("2010-04-01"), color = "steelblue", linetype = "dashed") +
   scale_x_date(limits = c(as.Date("2002-12-31"), as.Date("2020-12-31")),
                date_breaks = "1 year",

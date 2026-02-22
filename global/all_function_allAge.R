@@ -1,4 +1,7 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
+
+burnin_days <- 365*100
+
 ll_nbinom <- function(data, model, kappa, exp_noise) {
   if (is.na(data)) {
     return(numeric(length(model)))
@@ -10,6 +13,11 @@ ll_nbinom <- function(data, model, kappa, exp_noise) {
 case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
   n <- ncol(state)
+  
+  # Ignore likelihood during burn-in
+  if (observed$time_start < burnin_days) {
+    return(numeric(n))
+  }
   
   # sir_model$info()$index$n_AD_weekly
   model_55_1 <- state[7, , drop = TRUE]
@@ -114,9 +122,9 @@ transform <- parameter_transform(t_norm)
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini1", (0.45), min = 0.29, max = 0.85,
+    list(mcstate::pmcmc_parameter("log_A_ini1", (0.6), min = 0.29, max = 0.85,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("log_A_ini2", (0.45), min = 0.29, max = 0.85,
+         mcstate::pmcmc_parameter("log_A_ini2", (0.6), min = 0.29, max = 0.85,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 0.6,
                                   prior = priors$time_shifts),
@@ -124,9 +132,9 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 1,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta1", (-6), min = (-10), max = 1, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+         mcstate::pmcmc_parameter("log_delta1", (-4), min = (-10), max = 1, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("log_delta2", (-3.5), min = (-10), max = 1, #0.2700773,
+         mcstate::pmcmc_parameter("log_delta2", (-4), min = (-10), max = 1, #0.2700773,
                                   prior = priors$log_delta),
          # mcstate::pmcmc_parameter("sigma_1", 0.0002, min = 0, max = 1,
          #                          prior = priors$sigma),

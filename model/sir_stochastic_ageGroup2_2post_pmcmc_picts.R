@@ -5,6 +5,8 @@ library(socialmixr)
 # I update odin.dust by force
 # remotes::install_github("mrc-ide/odin.dust")
 source("global/all_function_allAge.R")
+# global/all_function_allAge.R also incorporated:
+# burnin_days
 
 
 model_vs_data <- function(n_sts){
@@ -55,7 +57,7 @@ model_vs_data <- function(n_sts){
                sigma_1 = results[8,2]
   )
   
-  n_times <- 7500 # 500 for trial
+  n_times <- burnin_days+7500 # 500 for trial
   n_pars <- 1L
   sir_model <- gen_sir$new(pars = pars,
                            time = 1,
@@ -128,6 +130,9 @@ model_vs_data <- function(n_sts){
                   replicate = Var2, # Var2 = particles
                   steps = Var3       # Var3 = steps are in days, but n_AD_weekly is aggregated in weeks
     ) %>% 
+    # adjust burn in
+    dplyr::filter(steps > burnin_days) %>% 
+    dplyr::mutate(steps = steps-burnin_days) %>% 
     # dplyr::filter(index < 5) %>%
     dplyr::mutate(compartment = 
                     dplyr::case_when(index == 1 ~ "Time",
@@ -189,7 +194,7 @@ model_vs_data <- function(n_sts){
     scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                  date_breaks = "year",
                  date_labels = "%Y") +
-    ggtitle("Cases (Aggregated by Week) for age 0-9") +
+    ggtitle("Cases (Aggregated by Week) for age 0-14") +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +

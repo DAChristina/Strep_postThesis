@@ -44,17 +44,17 @@ age_validation <- function(n_sts){
         dplyr::left_join(
           read.csv("raw_data/nomis_population_long.csv") %>% 
             # region stratification is not needed
-            dplyr::group_by(year) %>% 
+            dplyr::group_by(Year) %>% 
             dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
             dplyr::ungroup()
           ,
           read.csv("raw_data/nomis_population_long.csv") %>% 
             # region stratification is not needed
-            dplyr::group_by(ageGroup6, year) %>% 
+            dplyr::group_by(ageGroup6, Year) %>% 
             dplyr::summarise(PopSize6 = sum(PopSize)) %>% 
             dplyr::ungroup()
           ,
-          by = "year"
+          by = "Year"
         ) %>% 
           dplyr::mutate(
             ageGroup6 = factor(ageGroup6,
@@ -62,7 +62,7 @@ age_validation <- function(n_sts){
             PopProp = round(PopSize6/PopSize_year, 1)
           )
         ,
-        by = "year",
+        by = c("year" = "Year"),
         relationship = "many-to-many"
       ) %>% 
       dplyr::filter(ageGroup6 %in% c("<2", "2-4", "5-14")) %>% # D1 (0-14)
@@ -79,17 +79,17 @@ age_validation <- function(n_sts){
         dplyr::left_join(
           read.csv("raw_data/nomis_population_long.csv") %>% 
             # region stratification is not needed
-            dplyr::group_by(year) %>% 
+            dplyr::group_by(Year) %>% 
             dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
             dplyr::ungroup()
           ,
           read.csv("raw_data/nomis_population_long.csv") %>% 
             # region stratification is not needed
-            dplyr::group_by(ageGroup6, year) %>% 
+            dplyr::group_by(ageGroup6, Year) %>% 
             dplyr::summarise(PopSize6 = sum(PopSize)) %>% 
             dplyr::ungroup()
           ,
-          by = "year"
+          by = "Year"
         ) %>% 
           dplyr::mutate(
             ageGroup6 = factor(ageGroup6,
@@ -97,7 +97,7 @@ age_validation <- function(n_sts){
             PopProp = round(PopSize6/PopSize_year, 1)
           )
         ,
-        by = "year",
+        by = c("year" = "Year"),
         relationship = "many-to-many"
       ) %>% 
       dplyr::filter(ageGroup6 %in% c("15-44", "45-64", "65+")) %>% # D2 (15+)

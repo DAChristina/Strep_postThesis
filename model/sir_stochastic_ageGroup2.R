@@ -1,7 +1,9 @@
 freq <- user(1) # prev model is daily but aggregated to weekly
 dt <- 1/freq
-initial(time) <- -365
+initial(time) <- 0
 update(time) <- (step + 1) * dt
+
+burnin_days <- 365*100
 
 # 1. PARAMETERS ################################################################
 time_shift_1 <- user(0, min = 0)
@@ -124,7 +126,7 @@ vacc_m[2, 2] <- 0
 beta <- (if (time < 0) beta_0 else 
   (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))))
 
-foi_ij[, ] <- (if (time >= 2648*freq)
+foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
   beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))
   else
     beta * m[i, j] * (((A[j] + D[j])/N[j]))
