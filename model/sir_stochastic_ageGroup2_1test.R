@@ -7,6 +7,11 @@ library(socialmixr)
 
 gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
 
+source("global/all_function_allAge.R")
+# global/all_function_allAge.R also incorporated:
+# burnin_days
+burnin_days <- 365*50
+
 # Create contact_matrix 5 demographic groups:
 # > 5
 # 5-18
@@ -35,16 +40,16 @@ t_norm <- transmission/max(transmission)
 
 pars <- list(m = t_norm,
              N_ini = contact_2_demographic$demography$population,
-             log_A_ini = c(0.5, 0.5), # test c(0.65, 0.35),
+             log_A_ini = c(0.6, 0.8), # test c(0.65, 0.35),
              time_shift_1 = 0.1254,
-             beta_0 = 0.1,
+             beta_0 = 0.3,
              beta_1 = 0.3,
-             log_delta1 = -6.2,
-             log_delta2 = -6.2
+             log_delta1 = -5.45,
+             log_delta2 = -1.0
              # sigma_1 = 0.00002
 )
 
-n_times <- 8000 # 500 for trial
+n_times <- burnin_days+8000 # 500 for trial
 n_pars <- 1L
 sir_model <- gen_sir$new(pars = pars,
                          time = 1,
@@ -104,6 +109,9 @@ incidence_modelled <-
                 replicate = Var2, # Var2 = particles
                 steps = Var3       # Var3 = steps are in days, but n_AD_weekly is aggregated in weeks
   ) %>% 
+  # adjust burn in
+  dplyr::filter(steps > burnin_days) %>% 
+  dplyr::mutate(steps = steps-burnin_days) %>% 
   # dplyr::filter(index < 5) %>%
   dplyr::mutate(compartment = 
                   dplyr::case_when(index == 1 ~ "Time",
@@ -115,15 +123,14 @@ incidence_modelled <-
                                    index == 7 ~ "n_AD1_weekly",
                                    index == 8 ~ "n_AD2_weekly",
                                    
-                                   index == 9 ~ "S <14",
+                                   index == 9 ~ "S <15",
                                    index == 10 ~ "S 15+",
-                                   index == 11 ~ "A <14",
+                                   index == 11 ~ "A <15",
                                    index == 12 ~ "A 15+",
                                    index == 13 ~ "model_D1",
                                    index == 14 ~ "model_D2",
-                                   index == 15 ~ "R <14",
+                                   index == 15 ~ "R <15",
                                    index == 16 ~ "R 15+"
-                                   
                   )) %>% 
   dplyr::select(-index) %>%
   dplyr::mutate(weekly = ceiling((steps-1)/7)) %>% 

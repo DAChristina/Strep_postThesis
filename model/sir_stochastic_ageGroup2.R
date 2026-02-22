@@ -3,7 +3,7 @@ dt <- 1/freq
 initial(time) <- 0
 update(time) <- (step + 1) * dt
 
-burnin_days <- 365*100
+burnin_days <- 365*50
 
 # 1. PARAMETERS ################################################################
 time_shift_1 <- user(0, min = 0)

@@ -1,6 +1,6 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
 
-burnin_days <- 365*100
+burnin_days <- 365*50
 
 ll_nbinom <- function(data, model, kappa, exp_noise) {
   if (is.na(data)) {
@@ -124,11 +124,11 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   mcmc_pars <- mcstate::pmcmc_parameters$new(
     list(mcstate::pmcmc_parameter("log_A_ini1", (0.6), min = 0.29, max = 0.85,
                                   prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("log_A_ini2", (0.6), min = 0.29, max = 0.85,
+         mcstate::pmcmc_parameter("log_A_ini2", (0.8), min = 0.29, max = 0.85,
                                   prior = priors$log_A_ini),
          mcstate::pmcmc_parameter("time_shift_1", 0.1, min = 0, max = 0.6,
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.2, min = 0, max = 5, # max based on 1/ values; worst case increased to 5x
+         mcstate::pmcmc_parameter("beta_0", 0.4, min = 0, max = 5, # max based on 1/ values; worst case increased to 5x
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 1,
                                   prior = priors$betas),
