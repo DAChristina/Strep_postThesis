@@ -3,10 +3,11 @@ dt <- 1/freq
 initial(time) <- 0
 update(time) <- (step + 1) * dt
 
-burnin_days <- 365*50
+burnin_days <- 365*30
 
 # 1. PARAMETERS ################################################################
-time_shift_1 <- user(0, min = 0)
+time_shift_1 <- user(0, min = -10, max = 1)
+trans_time_shift_1 <- 10^(time_shift_1)
 beta_0 <- user(0, min = 0)
 beta_1 <- user(0, min = 0)
 theta <- 0.19 # proportion of vaccinated children in 0-14 age group
@@ -124,7 +125,7 @@ vacc_m[2, 1] <- 0.9*0.862*theta # adult->child
 vacc_m[2, 2] <- 0
 
 beta <- (if (time < 0) beta_0 else 
-  (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))))
+  (beta_0*((1+beta_1*cos(2*pi*((trans_time_shift_1*(365))+time)/(365))))))
 
 foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
   beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))

@@ -10,7 +10,7 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
 source("global/all_function_allAge.R")
 # global/all_function_allAge.R also incorporated:
 # burnin_days
-burnin_days <- 365*50
+burnin_days <- 365*30
 
 # Create contact_matrix 5 demographic groups:
 # > 5
@@ -40,12 +40,12 @@ t_norm <- transmission/max(transmission)
 
 pars <- list(m = t_norm,
              N_ini = contact_2_demographic$demography$population,
-             log_A_ini = c(0.6, 0.8), # test c(0.65, 0.35),
-             time_shift_1 = 0.1254,
-             beta_0 = 0.3,
-             beta_1 = 0.3,
-             log_delta1 = -5.45,
-             log_delta2 = -1.0
+             log_A_ini = c(0.4, 0.73), # test c(0.65, 0.35),
+             time_shift_1 = 0.0001,
+             beta_0 = 0.25,
+             beta_1 = 0.13,
+             log_delta1 = -5.25,
+             log_delta2 = -2
              # sigma_1 = 0.00002
 )
 

@@ -43,26 +43,28 @@ age_validation <- function(n_sts){
         # age proportion in England
         dplyr::left_join(
           read.csv("raw_data/nomis_population_long.csv") %>% 
+            janitor::clean_names() %>% 
             # region stratification is not needed
-            dplyr::group_by(Year) %>% 
-            dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
+            dplyr::group_by(year) %>% 
+            dplyr::summarise(PopSize_year = sum(pop_size)) %>% 
             dplyr::ungroup()
           ,
           read.csv("raw_data/nomis_population_long.csv") %>% 
+            janitor::clean_names() %>% 
             # region stratification is not needed
-            dplyr::group_by(ageGroup6, Year) %>% 
-            dplyr::summarise(PopSize6 = sum(PopSize)) %>% 
+            dplyr::group_by(age_group6, year) %>% 
+            dplyr::summarise(PopSize6 = sum(pop_size)) %>% 
             dplyr::ungroup()
           ,
-          by = "Year"
+          by = "year"
         ) %>% 
           dplyr::mutate(
-            ageGroup6 = factor(ageGroup6,
+            ageGroup6 = factor(age_group6,
                                levels = c("<2", "2-4", "5-14", "15-44", "45-64", "65+")),
             PopProp = round(PopSize6/PopSize_year, 1)
           )
         ,
-        by = c("year" = "Year"),
+        by = "year",
         relationship = "many-to-many"
       ) %>% 
       dplyr::filter(ageGroup6 %in% c("<2", "2-4", "5-14")) %>% # D1 (0-14)
@@ -78,26 +80,28 @@ age_validation <- function(n_sts){
         # age proportion in England
         dplyr::left_join(
           read.csv("raw_data/nomis_population_long.csv") %>% 
+            janitor::clean_names() %>% 
             # region stratification is not needed
-            dplyr::group_by(Year) %>% 
-            dplyr::summarise(PopSize_year = sum(PopSize)) %>% 
+            dplyr::group_by(year) %>% 
+            dplyr::summarise(PopSize_year = sum(pop_size)) %>% 
             dplyr::ungroup()
           ,
           read.csv("raw_data/nomis_population_long.csv") %>% 
+            janitor::clean_names() %>% 
             # region stratification is not needed
-            dplyr::group_by(ageGroup6, Year) %>% 
-            dplyr::summarise(PopSize6 = sum(PopSize)) %>% 
+            dplyr::group_by(age_group6, year) %>% 
+            dplyr::summarise(PopSize6 = sum(pop_size)) %>% 
             dplyr::ungroup()
           ,
-          by = "Year"
+          by = "year"
         ) %>% 
           dplyr::mutate(
-            ageGroup6 = factor(ageGroup6,
+            ageGroup6 = factor(age_group6,
                                levels = c("<2", "2-4", "5-14", "15-44", "45-64", "65+")),
             PopProp = round(PopSize6/PopSize_year, 1)
           )
         ,
-        by = c("year" = "Year"),
+        by = "year",
         relationship = "many-to-many"
       ) %>% 
       dplyr::filter(ageGroup6 %in% c("15-44", "45-64", "65+")) %>% # D2 (15+)
@@ -177,11 +181,11 @@ age_validation <- function(n_sts){
                          levels = c("<2", "2-4", "5-14",
                                     "15-44", "45-64", "65+")),
       version = factor(version,
-                       levels = c("model", "data"))
+                       levels = c("data", "model"))
     ) %>% 
     ggplot(aes(x = yearWeek, y = counts,
                color = version, group = version)) +
-    geom_line() +
+    geom_line(linewidth = 0.2) +
     geom_vline(aes(xintercept = as.Date("2010-04-01"),
                    colour = "PCV13 (April 2010)"),
                linetype = "dashed") +

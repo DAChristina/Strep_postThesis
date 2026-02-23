@@ -67,7 +67,7 @@ pars <- list(m = t_norm,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(0.1, 8) # previously 300
+proposal_matrix <- diag(10, 8) # previously 500 or 0.1; 2.38^2/8
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
 rownames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
@@ -151,15 +151,15 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   # vcv positive definite error if matrix/1000
-  new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1e2#*100000
-  new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1e2#*100000
-  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1e3#*100000
-  new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1e3#*100000
-  new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1e3#*100000
-  new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1e3#*100000
-  new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1e3#*100000
-  new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1e3#*100000
-  new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
+  # new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1e1#*100000
+  # new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1e1#*100000
+  # # new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1e1#*100000
+  # new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1e1#*100000
+  # new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1e1#*100000
+  # new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1e1#*100000
+  # new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1e1#*100000
+  # new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1e1#*100000
+  # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
   rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
   colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
@@ -181,11 +181,11 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     #                                                              # forget_end = n_sts*0.75,
     #                                                              adapt_end = n_sts*0.8,
     #                                                              pre_diminish = n_sts*0.1)
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/8)/1e3,
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 2,
+                                                                 initial_scaling = (2.38^2/8), #/1e3,
                                                                  # scaling_increment = NULL,
-                                                                 acceptance_target = 0.234,
-                                                                 forget_rate = 0.1,
+                                                                 acceptance_target = 0.3,
+                                                                 forget_rate = 0.5,
                                                                  forget_end = Inf,
                                                                  adapt_end = Inf,
                                                                  pre_diminish = 0
@@ -193,11 +193,11 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   } else {
     # whatver
     # adaptive_proposal_run2 <- FALSE
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/8)/1e3,
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 2,
+                                                                 initial_scaling = (2.38^2/8), #/1e3,
                                                                  # scaling_increment = NULL,
-                                                                 acceptance_target = 0.234,
-                                                                 forget_rate = 0.1,
+                                                                 acceptance_target = 0.3,
+                                                                 forget_rate = 0.5,
                                                                  forget_end = Inf,
                                                                  adapt_end = Inf,
                                                                  pre_diminish = 0
