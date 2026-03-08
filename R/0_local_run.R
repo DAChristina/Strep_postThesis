@@ -11,11 +11,11 @@ pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 200,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 200,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 200,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
 
 
@@ -26,6 +26,7 @@ post_pmcmc_pics(600)
 model_vs_data(600)
 post_particle_pics(600)
 age_validation(600)
+
 
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 1000,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)

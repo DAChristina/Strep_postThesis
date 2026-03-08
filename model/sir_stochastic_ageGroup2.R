@@ -6,18 +6,19 @@ update(time) <- (step + 1) * dt
 burnin_days <- 365*30
 
 # 1. PARAMETERS ################################################################
-time_shift_1 <- user(0, min = -10, max = 1)
-trans_time_shift_1 <- 10^(time_shift_1)
+time_shift_1 <- user(0, min = 0) #user(0, min = -10, max = 1)
+# trans_time_shift_1 <- 10^(time_shift_1)
 beta_0 <- user(0, min = 0)
 beta_1 <- user(0, min = 0)
 theta <- 0.19 # proportion of vaccinated children in 0-14 age group
 
-UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
-UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
+# UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
+# UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
 
 # stratify log_delta
 log_delta1 <- user(0, min = -10, max = 1)
-log_delta2 <- user(0, min = -10, max = 1)
+rho <- user(0)
+# log_delta2 <- user(0, min = -10, max = 1)
 
 hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
 sigma_1 <- 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
@@ -38,8 +39,8 @@ N_age <- 2
 
 dim(N_ini) <- N_age
 # dim(S_ini) <- N_age
-dim(A_ini) <- N_age
-dim(log_A_ini) <- N_age
+dim(A_ini) <- N_age # consider adults only, kids as faction
+# dim(log_A_ini) <- N_age
 
 dim(N) <- N_age
 dim(S) <- N_age
@@ -91,8 +92,10 @@ max_A_ini <- 0
 min_A_ini <- -10
 
 # directly test log_A_ini as scaled
-log_A_ini[] <- user()
-A_ini[] <- 10^(log_A_ini[i]*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[i]
+log_A_ini <- user()
+phi <- user(0, min = 0)
+A_ini[1] <- 10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*phi*N_ini[1]
+A_ini[2] <- 10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[2]
 
 # Age-structured states:
 initial(S[]) <- N_ini[i] -(A_ini[i]+0+0) # D_ini = R_ini = 0
@@ -125,7 +128,7 @@ vacc_m[2, 1] <- 0.9*0.862*theta # adult->child
 vacc_m[2, 2] <- 0
 
 beta <- (if (time < 0) beta_0 else 
-  (beta_0*((1+beta_1*cos(2*pi*((trans_time_shift_1*(365))+time)/(365))))))
+  (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))))
 
 foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
   beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))
@@ -135,8 +138,8 @@ foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
 
 lambda[] <- sum(foi_ij[i, ])
 
-delta[1] <- (10^(log_delta1))*UK_calibration_kids
-delta[2] <- (10^(log_delta2))*UK_calibration_adults
+delta[1] <- (10^(log_delta1))#*UK_calibration_kids
+delta[2] <- (10^(log_delta1+rho))#*UK_calibration_adults
 
 # sigma_1[1] <- hypo_sigma_1 # test no A -> R in kids
 # sigma_1[2] <- psi*hypo_sigma_1

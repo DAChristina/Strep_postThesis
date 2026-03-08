@@ -48,12 +48,14 @@ model_vs_data <- function(n_sts){
   
   pars <- list(m = t_norm,
                N_ini = contact_2_demographic$demography$population,
-               log_A_ini = c(results[1,2], results[2,2]),
+               log_A_ini = results[1,2], # c(results[1,2], results[2,2]),
+               phi = results[2,2],
                time_shift_1 = results[3,2],
                beta_0 = results[4,2],
                beta_1 = results[5,2],
                log_delta1 = results[6,2],
-               log_delta2 = results[7,2],
+               rho = results[7,2],
+               # log_delta2 = results[7,2],
                sigma_1 = results[8,2]
   )
   

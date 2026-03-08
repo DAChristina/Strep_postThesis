@@ -34,11 +34,13 @@ t_norm <- transmission/max(transmission)
 # This is part of sir odin model:
 pars <- list(m = t_norm,
              N_ini = contact_2_demographic$demography$population,
-             log_A_ini = c(0, 0),
+             log_A_ini = 0, # c(0, 0),
+             phi = 0,
              time_shift_1 = 0,
              beta_0 = 0,
              beta_1 = 0,
              log_delta1 = 0,
+             rho = 1,
              log_delta2 = 0
              # sigma_1 = 0
 )
@@ -67,11 +69,11 @@ pars <- list(m = t_norm,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(10, 8) # previously 500 or 0.1; 2.38^2/8
+proposal_matrix <- diag(0.1, 8) # previously 500 or 0.1; 2.38^2/8
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
-rownames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
-colnames(proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+rownames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
+colnames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -161,8 +163,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1e1#*100000
   # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
-  rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
-  colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -181,27 +183,27 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     #                                                              # forget_end = n_sts*0.75,
     #                                                              adapt_end = n_sts*0.8,
     #                                                              pre_diminish = n_sts*0.1)
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 2,
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 5,
                                                                  initial_scaling = (2.38^2/8), #/1e3,
                                                                  # scaling_increment = NULL,
-                                                                 acceptance_target = 0.3,
-                                                                 forget_rate = 0.5,
+                                                                 acceptance_target = 0.23,
+                                                                 forget_rate = 0.05,
                                                                  forget_end = Inf,
-                                                                 adapt_end = Inf,
+                                                                 adapt_end = 20000, #Inf,
                                                                  pre_diminish = 0
                                                                  )
   } else {
     # whatver
     # adaptive_proposal_run2 <- FALSE
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 2,
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 5,
                                                                  initial_scaling = (2.38^2/8), #/1e3,
                                                                  # scaling_increment = NULL,
-                                                                 acceptance_target = 0.3,
-                                                                 forget_rate = 0.5,
+                                                                 acceptance_target = 0.23,
+                                                                 forget_rate = 0.05,
                                                                  forget_end = Inf,
-                                                                 adapt_end = Inf,
+                                                                 adapt_end = 20000, #Inf,
                                                                  pre_diminish = 0
-                                                                 )
+    )
   }
   
   if(run2_stochastic){
@@ -417,8 +419,8 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   new_proposal_matrix <- new_proposal_matrix/10 # * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
   # new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
-  rownames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
-  colnames(new_proposal_matrix) <- c("log_A_ini1", "log_A_ini2", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "kappa_1")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
