@@ -128,11 +128,11 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini),
          # mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.29, max = 0.85,
          #                          prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("phi", (0.5), min = (0), max = 2,
+         mcstate::pmcmc_parameter("phi", (0.8), min = (0), max = 2,
                                   prior = priors$phi),
          mcstate::pmcmc_parameter("time_shift_1", (0.1), min = (0), max = 0.6, # previously (-10, 1)
                                   prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.1, min = 0, max = 2, # max based on 1/values; worst case increased to 5x
+         mcstate::pmcmc_parameter("beta_0", 0.9, min = 0, max = 2, # max based on 1/values; worst case increased to 5x
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.13, min = 0, max = 1,
                                   prior = priors$betas),
