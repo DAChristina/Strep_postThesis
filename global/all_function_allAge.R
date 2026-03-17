@@ -124,11 +124,11 @@ transform <- parameter_transform(t_norm)
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (0.8), min = 0.29, max = 0.85,
+    list(mcstate::pmcmc_parameter("log_A_ini", (0.3), min = 0.29, max = 0.85,
                                   prior = priors$log_A_ini),
          # mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.29, max = 0.85,
          #                          prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("phi", (0.8), min = (0), max = 2,
+         mcstate::pmcmc_parameter("phi", (0.1), min = (0), max = 2,
                                   prior = priors$phi),
          mcstate::pmcmc_parameter("time_shift_1", (0.1), min = (0), max = 0.6, # previously (-10, 1)
                                   prior = priors$time_shifts),
@@ -156,7 +156,7 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dgamma(s, shape = 6, scale = 0.05, log = TRUE)
+    dgamma(s, shape = 6, scale = 0.03, log = TRUE) # previously scale = 0.05
   }
   priors$phi <- function(s) {
     dunif(s, min = 0, log = TRUE)

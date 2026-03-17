@@ -183,26 +183,26 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     #                                                              # forget_end = n_sts*0.75,
     #                                                              adapt_end = n_sts*0.8,
     #                                                              pre_diminish = n_sts*0.1)
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 10,
-                                                                 initial_scaling = (2.38^2/8), #/1e1,
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1,
+                                                                 initial_scaling = 0.02, #(2.38^2/8), #/1e1,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.23,
-                                                                 forget_rate = 0.05,
+                                                                 forget_rate = 0.2,
                                                                  forget_end = Inf,
                                                                  adapt_end = 20000, #Inf,
-                                                                 pre_diminish = 0
+                                                                 pre_diminish = 0.5
                                                                  )
   } else {
     # whatver
     # adaptive_proposal_run2 <- FALSE
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 10,
-                                                                 initial_scaling = (2.38^2/8), #/1e1,
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1,
+                                                                 initial_scaling = 0.02, #(2.38^2/8), #/1e1,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.23,
-                                                                 forget_rate = 0.05,
+                                                                 forget_rate = 0.2,
                                                                  forget_end = Inf,
                                                                  adapt_end = 20000, #Inf,
-                                                                 pre_diminish = 0
+                                                                 pre_diminish = 0.5
     )
   }
   
