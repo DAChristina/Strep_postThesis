@@ -69,7 +69,7 @@ pars <- list(m = t_norm,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(0.01, 8) # previously 500 or 0.1; 2.38^2/8
+proposal_matrix <- diag(0.1, 8) # previously 500 or 0.1; 2.38^2/8
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
 rownames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
@@ -184,7 +184,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     #                                                              adapt_end = n_sts*0.8,
     #                                                              pre_diminish = n_sts*0.1)
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1,
-                                                                 initial_scaling = 0.02, #(2.38^2/8), #/1e1,
+                                                                 initial_scaling = (2.38^2/8), #/1e1,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.23,
                                                                  forget_rate = 0.2,
@@ -196,7 +196,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
     # whatver
     # adaptive_proposal_run2 <- FALSE
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1,
-                                                                 initial_scaling = 0.02, #(2.38^2/8), #/1e1,
+                                                                 initial_scaling = (2.38^2/8), #/1e1,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.23,
                                                                  forget_rate = 0.2,
