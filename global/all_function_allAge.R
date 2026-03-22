@@ -128,7 +128,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini),
          # mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.29, max = 0.85,
          #                          prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("phi", (0.1), min = (0), max = 2,
+         mcstate::pmcmc_parameter("phi", (1), min = (0), max = 2,
                                   prior = priors$phi),
          mcstate::pmcmc_parameter("time_shift_1", (0.1), min = (0), max = 0.6, # previously (-10, 1)
                                   prior = priors$time_shifts),
@@ -136,9 +136,9 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.13, min = 0, max = 1,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta1", (-4.2), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+         mcstate::pmcmc_parameter("log_delta1", (-4.4), min = (-4.45), max = -4.3, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$log_delta),
-         mcstate::pmcmc_parameter("rho", (3), min = (-5), max = 5, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+         mcstate::pmcmc_parameter("rho", (3), min = (-5), max = 10, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$rho),
          # mcstate::pmcmc_parameter("log_delta2", (-2), min = (-10), max = 1, #0.2700773,
          #                          prior = priors$log_delta),
