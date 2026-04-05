@@ -9,7 +9,7 @@ burnin_days <- 365*30
 time_shift_1 <- user(0, min = 0) #user(0, min = -10, max = 1)
 # trans_time_shift_1 <- 10^(time_shift_1)
 beta_0 <- user(0, min = 0)
-beta_1 <- user(0, min = 0)
+beta_1 <- user(0, min = 0, max = 1)
 theta <- 0.19 # proportion of vaccinated children in 0-14 age group
 
 # UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
