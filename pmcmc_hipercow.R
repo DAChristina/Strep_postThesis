@@ -9,7 +9,7 @@ library(ids)
 # See filesystems and paths, CHANGE wd to those in /etc/fstab
 # DO NOT CHANGE THE ARRANGEMENT OF THESE COMMANDS!!!
 
-hipercow_init(driver = "windows")
+hipercow_init(driver = "dide-windows")
 hipercow_configure("windows", r_version = "4.4.0")
 windows_authenticate() # authenticate by using DIDE account
 windows_check()
