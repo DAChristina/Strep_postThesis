@@ -165,8 +165,11 @@ prepare_priors <- function(pars) {
     dgamma(s, shape = 1, scale = 0.01, log = TRUE) # previously dunif(s, min = 0, max = 1, log = TRUE)
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.5, delta = -5, log = TRUE)
   }
-  priors$betas <- function(s) {
+  priors$beta_0 <- function(s) {
     dgamma(s, shape = 10, scale = 0.02, log = TRUE) # previously 25, 0.01
+  }
+  priors$beta_1 <- function(s) {
+    dbeta(s, 2, 2, log = TRUE)
   }
   priors$log_delta <- function(s) {
     stabledist::dstable(s, alpha = 2, beta = 0, gamma = 1, delta = -4.5, log = TRUE)
