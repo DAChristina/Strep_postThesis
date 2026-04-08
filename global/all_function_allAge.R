@@ -156,10 +156,10 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dgamma(s, shape = 6, scale = 0.03, log = TRUE) # previously scale = 0.05
+    dbeta(s, 2, 8, log = TRUE)
   }
   priors$phi <- function(s) {
-    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.5, delta = 3, log = TRUE)
+    dbeta(s, 2, 2, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dgamma(s, shape = 1, scale = 0.01, log = TRUE) # previously dunif(s, min = 0, max = 1, log = TRUE)
