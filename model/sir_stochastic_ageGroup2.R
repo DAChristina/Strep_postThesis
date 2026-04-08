@@ -106,8 +106,8 @@ min_A_ini <- -10
 # directly test log_A_ini as scaled
 log_A_ini <- user()
 phi <- user(0, min = 0, max = 1)
-A_ini[1] <- 10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*phi*N_ini[1]
-A_ini[2] <- 10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[2]
+A_ini[1] <- 10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[1]
+A_ini[2] <- 10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*phi*N_ini[2]
 
 # Age-structured states:
 initial(S[]) <- N_ini[i] -(A_ini[i]+0+0) # D_ini = R_ini = 0

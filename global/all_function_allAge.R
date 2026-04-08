@@ -128,15 +128,15 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini),
          # mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.29, max = 0.85,
          #                          prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("phi", (1), min = (0), max = 2,
+         mcstate::pmcmc_parameter("phi", (1), min = (0), max = 1,
                                   prior = priors$phi),
-         mcstate::pmcmc_parameter("time_shift_1", (0.05), min = (0), max = 0.1, # previously (-10, 1)
+         mcstate::pmcmc_parameter("time_shift_1", (0.05), min = (0), max = 0.6, # previously (-10, 1)
                                   prior = priors$time_shifts),
          mcstate::pmcmc_parameter("beta_0", 0.9, min = 0, max = 2, # max based on 1/values; worst case increased to 5x
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.13, min = 0, max = 1,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta1", (-4.35), min = (-4.4), max = -4.3, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+         mcstate::pmcmc_parameter("log_delta1", (-4.35), min = -8, max = -1, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("rho", (3), min = (-5), max = 10, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$rho),
@@ -165,8 +165,11 @@ prepare_priors <- function(pars) {
     dgamma(s, shape = 1, scale = 0.01, log = TRUE) # previously dunif(s, min = 0, max = 1, log = TRUE)
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.5, delta = -5, log = TRUE)
   }
-  priors$betas <- function(s) {
+  priors$beta_0 <- function(s) {
     dgamma(s, shape = 10, scale = 0.02, log = TRUE) # previously 25, 0.01
+  }
+  priors$beta_1 <- function(s) {
+    dbeta(s, 2, 2, log = TRUE)
   }
   priors$log_delta <- function(s) {
     stabledist::dstable(s, alpha = 2, beta = 0, gamma = 1, delta = -4.5, log = TRUE)

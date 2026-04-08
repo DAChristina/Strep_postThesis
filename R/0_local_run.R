@@ -62,4 +62,10 @@ model_vs_data(10010)
 post_particle_pics(10010)
 age_validation(10010)
 
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 10020,
+                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
 
+post_pmcmc_pics(10020)
+model_vs_data(10020)
+post_particle_pics(10020)
+age_validation(10020)
