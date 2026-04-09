@@ -124,7 +124,7 @@ transform <- parameter_transform(t_norm)
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", (0.6), min = 0.29, max = 0.85,
+    list(mcstate::pmcmc_parameter("log_A_ini", (0.1), min = 0, max = 1,
                                   prior = priors$log_A_ini),
          # mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.29, max = 0.85,
          #                          prior = priors$log_A_ini),
@@ -156,7 +156,7 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dbeta(s, 2, 8, log = TRUE)
+    dbeta(s, 4, 8, log = TRUE)
   }
   priors$phi <- function(s) {
     dbeta(s, 2, 2, log = TRUE)
@@ -166,7 +166,7 @@ prepare_priors <- function(pars) {
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.5, delta = -5, log = TRUE)
   }
   priors$beta_0 <- function(s) {
-    dgamma(s, shape = 10, scale = 0.02, log = TRUE) # previously 25, 0.01
+    dgamma(s, shape = 10, scale = 0.1, log = TRUE) # previously 25, 0.01
   }
   priors$beta_1 <- function(s) {
     dbeta(s, 2, 2, log = TRUE)
