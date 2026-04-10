@@ -1,6 +1,6 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
 
-burnin_days <- 365*30
+burnin_days <- 365
 
 ll_nbinom <- function(data, model, kappa, exp_noise) {
   if (is.na(data)) {
@@ -156,7 +156,7 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dgamma(s, shape = 6, scale = 0.03, log = TRUE) # previously scale = 0.05
+    dgamma(s, shape = 6, scale = 0.05, log = TRUE) # previously scale = 0.03
   }
   priors$phi <- function(s) {
     stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.5, delta = 3, log = TRUE)
