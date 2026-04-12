@@ -113,64 +113,32 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                                   index = index_fun)
   }
   
-  # adjust short run
-  if(n_sts < 10000){
-    control <- mcstate::pmcmc_control(n_steps = 100,
-                                      rerun_every = 50,
-                                      rerun_random = TRUE,
-                                      progress = TRUE,
-                                      
-                                      n_chains = 1,
-                                      # n_workers = 4,
-                                      n_threads_total = ncpus,
-                                      save_state = TRUE,
-                                      save_trajectories = TRUE)
-    
-    # The pmcmc
-    pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter, control = control)
-    # pmcmc_result
-    # saveRDS(pmcmc_result, paste0(dir_name, "pmcmc_result.rds"))
-    
-    new_proposal_mtx <- cov(pmcmc_result$pars)
-    write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx.csv"), row.names = FALSE)
-    
-    lpost_max <- which.max(pmcmc_result$probabilities[, "log_posterior"])
-    write.csv(as.list(pmcmc_result$pars[lpost_max, ]),
-              paste0(dir_name, "initial.csv"), row.names = FALSE)
-    
-    # Further processing for thinning chains
-    mcmc1 <- pmcmc_further_process(100, pmcmc_result)
-    
-  } else {
-    control <- mcstate::pmcmc_control(n_steps = 10000,
-                                      rerun_every = 50,
-                                      rerun_random = TRUE,
-                                      progress = TRUE,
-                                      
-                                      n_chains = 1,
-                                      # n_workers = 4,
-                                      n_threads_total = ncpus,
-                                      save_state = TRUE,
-                                      save_trajectories = TRUE)
-    
-    # The pmcmc
-    pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter, control = control)
-    # pmcmc_result
-    # saveRDS(pmcmc_result, paste0(dir_name, "pmcmc_result.rds"))
-    
-    new_proposal_mtx <- cov(pmcmc_result$pars)
-    write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx.csv"), row.names = FALSE)
-    
-    lpost_max <- which.max(pmcmc_result$probabilities[, "log_posterior"])
-    write.csv(as.list(pmcmc_result$pars[lpost_max, ]),
-              paste0(dir_name, "initial.csv"), row.names = FALSE)
-    
-    # Further processing for thinning chains
-    mcmc1 <- pmcmc_further_process(10000, pmcmc_result)
-    
-  }
+  # adjust short run 10% of MCMC2
+  control <- mcstate::pmcmc_control(n_steps = n_sts/10,
+                                    rerun_every = 50,
+                                    rerun_random = TRUE,
+                                    progress = TRUE,
+                                    
+                                    n_chains = 1,
+                                    # n_workers = 4,
+                                    n_threads_total = ncpus,
+                                    save_state = TRUE,
+                                    save_trajectories = TRUE)
   
+  # The pmcmc
+  pmcmc_result <- mcstate::pmcmc(mcmc_pars, filter, control = control)
+  # pmcmc_result
+  # saveRDS(pmcmc_result, paste0(dir_name, "pmcmc_result.rds"))
   
+  new_proposal_mtx <- cov(pmcmc_result$pars)
+  write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx.csv"), row.names = FALSE)
+  
+  lpost_max <- which.max(pmcmc_result$probabilities[, "log_posterior"])
+  write.csv(as.list(pmcmc_result$pars[lpost_max, ]),
+            paste0(dir_name, "initial.csv"), row.names = FALSE)
+  
+  # Further processing for thinning chains
+  mcmc1 <- pmcmc_further_process(n_sts/10, pmcmc_result)
   write.csv(mcmc1, paste0(dir_name, "mcmc1.csv"), row.names = FALSE)
   
   # Calculating ESS & Acceptance Rate

@@ -1,6 +1,6 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
 
-burnin_days <- 365*30
+burnin_days <- 0
 
 ll_nbinom <- function(data, model, kappa, exp_noise) {
   if (is.na(data)) {
@@ -11,7 +11,7 @@ ll_nbinom <- function(data, model, kappa, exp_noise) {
 }
 
 case_compare <- function(state, observed, pars = NULL) {
-  exp_noise <- 1e6
+  exp_noise <- 1e20
   n <- ncol(state)
   
   # Ignore likelihood during burn-in
@@ -24,7 +24,10 @@ case_compare <- function(state, observed, pars = NULL) {
   model_55_2 <- state[8, , drop = TRUE]
   
   if (is.na(observed$count_s1_1)) {
-    ll_55_1 <- numeric(n)
+    ll_55_1 <- ll_nbinom(data = 0,
+                         model = model_55_1,
+                         kappa = pars$kappa_1,
+                         exp_noise = exp_noise)
   } else {
     ll_55_1 <- ll_nbinom(data = observed$count_s1_1,
                          model = model_55_1,
@@ -33,7 +36,10 @@ case_compare <- function(state, observed, pars = NULL) {
   }
   
   if (is.na(observed$count_s1_2)) {
-    ll_55_2 <- numeric(n)
+    ll_55_2 <- ll_nbinom(data = 0,
+                         model = model_55_2,
+                         kappa = pars$kappa_1,
+                         exp_noise = exp_noise)
   } else {
     ll_55_2 <- ll_nbinom(data = observed$count_s1_2,
                          model = model_55_2,
@@ -128,7 +134,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$log_A_ini),
          # mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.29, max = 0.85,
          #                          prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("phi", (1), min = (0), max = 2,
+         mcstate::pmcmc_parameter("phi", (0.8), min = (0), max = 1,
                                   prior = priors$phi),
          mcstate::pmcmc_parameter("time_shift_1", (0.05), min = (0), max = 0.1, # previously (-10, 1)
                                   prior = priors$time_shifts),

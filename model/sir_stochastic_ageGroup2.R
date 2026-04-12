@@ -3,7 +3,7 @@ dt <- 1/freq
 initial(time) <- 0
 update(time) <- (step + 1) * dt
 
-burnin_days <- 365*30
+burnin_days <- 0
 
 # 1. PARAMETERS ################################################################
 time_shift_1 <- user(0, min = 0) #user(0, min = -10, max = 1)
@@ -101,7 +101,7 @@ dim(n_age_R) <- N_age
 # Initial values (user-defined parameters)
 N_ini[] <- user()
 max_A_ini <- 0
-min_A_ini <- log(1/(N_ini[1]+N_ini[2]),10)
+min_A_ini <- log(1/(N_ini[1]+N_ini[2]), 10)
 
 # directly test log_A_ini as scaled
 log_A_ini <- user()
@@ -184,7 +184,8 @@ p_RS[] <- (if (wane/(wane+mu_0[i]+age_rate[i]) <= 0) 0 else
 n_Suscep[] <- rbinom(S[i], 1 - exp(-p_Suscep[i]*dt))
 n_SA[] <- rbinom(n_Suscep[i], p_SA[i])
 # n_SR[] <- rbinom((n_Suscep[i] - n_SA[i]), vacc[i]/(lambda[i]+mu_0[i]))
-n_age_S[1] <- if (i == 1) rbinom(n_Suscep[i] - n_SA[i], age_rate[i]/(mu_0[i] + age_rate[i])) else 0
+n_age_S[1] <- if (i == 1) rbinom((n_Suscep[i] - n_SA[i]),
+                                 age_rate[i]/(mu_0[i] + age_rate[i])) else 0
 n_age_S[2] <- 0
 n_Sdead[] <- n_Suscep[i] - n_SA[i] - n_age_S[i]
 
@@ -192,7 +193,8 @@ n_Sdead[] <- n_Suscep[i] - n_SA[i] - n_age_S[i]
 n_Asym[] <- rbinom(A[i], 1- exp(-p_Asym[i]*dt))
 n_AD[] <- rbinom(n_Asym[i], p_AD[i])
 n_AR[] <- rbinom((n_Asym[i] - n_AD[i]), p_AR[i])
-n_age_A[1] <- if (i == 1) rbinom(n_Asym[i] - n_AD[i] - n_AR[i], age_rate[i]/(mu_0[i] + age_rate[i])) else 0
+n_age_A[1] <- if (i == 1) rbinom((n_Asym[i] - n_AD[i] - n_AR[i]),
+                                 age_rate[i]/(mu_0[i] + age_rate[i])) else 0
 n_age_A[2] <- 0
 n_Adead[] <- n_Asym[i] - n_AD[i] - n_AR[i] - n_age_A[i]
 
@@ -200,14 +202,16 @@ n_Adead[] <- n_Asym[i] - n_AD[i] - n_AR[i] - n_age_A[i]
 n_Dis[] <- rbinom(D[i], 1- exp(-p_Dis[i]*dt))
 n_DR[] <- rbinom(n_Dis[i], p_DR[i])
 n_Dd[] <- rbinom((n_Dis[i] - n_DR[i]), p_Dd[i])
-n_age_D[1] <- if (i == 1) rbinom(n_Dis[i] - n_DR[i] - n_Dd[i], age_rate[i]/(mu_0[i] + age_rate[i])) else 0
+n_age_D[1] <- if (i == 1) rbinom(n_Dis[i] - n_DR[i] - n_Dd[i],
+                                 age_rate[i]/(mu_0[i] + age_rate[i])) else 0
 n_age_D[2] <- 0
 n_Ddead[] <- n_Dis[i] - n_DR[i] - n_Dd[i] - n_age_D[i]
 
 # Leaving R
 n_Resist[] <- rbinom(R[i], 1- exp(-p_Rec[i]*dt)) # RS is considered 0 in both age groups
 n_RS[] <- rbinom(n_Resist[i], p_RS[i])
-n_age_R[1] <- if (i == 1) rbinom(n_Resist[i] - n_RS[i], age_rate[i] / (mu_0[i] + age_rate[i])) else 0
+n_age_R[1] <- if (i == 1) rbinom(n_Resist[i] - n_RS[i],
+                                 age_rate[i]/(mu_0[i] + age_rate[i])) else 0
 n_age_R[2] <- 0
 n_Rdead[] <- n_Resist[i] - n_RS[i] - n_age_R[i]
 
