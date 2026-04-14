@@ -11,13 +11,8 @@ ll_nbinom <- function(data, model, kappa, exp_noise) {
 }
 
 case_compare <- function(state, observed, pars = NULL) {
-  exp_noise <- 1e20
+  exp_noise <- 1e10
   n <- ncol(state)
-  
-  # Ignore likelihood during burn-in
-  if (observed$time_start < burnin_days) {
-    return(numeric(n))
-  }
   
   # sir_model$info()$index$n_AD_weekly
   model_55_1 <- state[7, , drop = TRUE]
@@ -47,13 +42,7 @@ case_compare <- function(state, observed, pars = NULL) {
                          exp_noise = exp_noise)
   }
   
-  
   ll <- ll_55_1 + ll_55_2
-  
-  if (any(!is.finite(ll))) {
-    # return -Inf to force rejection
-    ll[!is.finite(ll)] <- 1e-10
-  }
   return(ll)
 }
 

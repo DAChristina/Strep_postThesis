@@ -10,7 +10,7 @@ gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
 source("global/all_function_allAge.R")
 # global/all_function_allAge.R also incorporated:
 # burnin_days
-burnin_days <- 365*30
+burnin_days <- 0
 
 # Create contact_matrix 5 demographic groups:
 # > 5
