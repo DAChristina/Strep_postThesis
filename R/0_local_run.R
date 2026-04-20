@@ -11,6 +11,10 @@ pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
+                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
+                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 200,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 200,
@@ -46,14 +50,6 @@ post_particle_pics(5000)
 age_validation(5000)
 
 
-# pmcmc_run_plus_tuning(n_pars = 10, n_sts = 10000,
-#                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-# 
-# post_pmcmc_pics(10000)
-# model_vs_data(10000)
-# post_particle_pics(10000)
-# age_validation(10000)
-
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 10010,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
 
@@ -69,3 +65,19 @@ post_pmcmc_pics(10020)
 model_vs_data(10020)
 post_particle_pics(10020)
 age_validation(10020)
+
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 20000,
+                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
+
+post_pmcmc_pics(20000)
+model_vs_data(20000)
+post_particle_pics(20000)
+age_validation(20000)
+
+pmcmc_run_plus_tuning(n_pars = 10, n_sts = 30000,
+                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
+
+post_pmcmc_pics(30000)
+model_vs_data(30000)
+post_particle_pics(30000)
+age_validation(30000)

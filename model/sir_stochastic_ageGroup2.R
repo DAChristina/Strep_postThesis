@@ -12,12 +12,12 @@ beta_0 <- user(0, min = 0)
 beta_1 <- user(0, min = 0, max = 1)
 theta <- 0.19 # proportion of vaccinated children in 0-14 age group
 
-# UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
-# UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
+UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
+UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
 
 # stratify log_delta
 log_delta1 <- user(0, min = -10, max = 1)
-rho <- user(0)
+rho <- user(0, min = -1, max = 1)
 # log_delta2 <- user(0, min = -10, max = 1)
 
 hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
@@ -106,8 +106,8 @@ min_A_ini <- log(1/(N_ini[1]+N_ini[2]), 10)
 # directly test log_A_ini as scaled
 log_A_ini <- user()
 phi <- user(0, min = 0, max = 1)
-A_ini[1] <- as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*phi*N_ini[1])
-A_ini[2] <- as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[2])
+A_ini[1] <- as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[1])
+A_ini[2] <- as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*phi*N_ini[2])
 
 # Age-structured states:
 initial(S[]) <- N_ini[i] -(A_ini[i]+0+0) # D_ini = R_ini = 0
@@ -150,8 +150,8 @@ foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
 
 lambda[] <- sum(foi_ij[i, ])
 
-delta[1] <- (10^(log_delta1))#*UK_calibration_kids
-delta[2] <- (10^(log_delta1+rho))#*UK_calibration_adults
+delta[1] <- (10^(log_delta1))*UK_calibration_kids
+delta[2] <- (10^(log_delta1+rho))*UK_calibration_adults
 
 # sigma_1[1] <- hypo_sigma_1 # test no A -> R in kids
 # sigma_1[2] <- psi*hypo_sigma_1
