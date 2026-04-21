@@ -72,12 +72,12 @@ priors <- prepare_priors(pars)
 # proposal_matrix <- diag(0.1, 8) # previously 500 or 0.1; 2.38^2/8
 # Rule: diagonal ≈ (reasonable_range / 4)²
 proposal_matrix <- diag(c(
-  0.01,  # log_A_ini
-  0.01,  # phi
-  0.01,  # time_shift_1
-  1e-4,  # beta_0
+  0.1,  # log_A_ini
+  0.1,  # phi
+  0.1,  # time_shift_1
+  1e-3,  # beta_0
   0.1,  # beta_1
-  0.01,  # log_delta1
+  0.1,  # log_delta1
   0.1,  # rho
   1    # kappa_1
 ))
@@ -187,23 +187,23 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # Including adaptive proposal control
   # https://mrc-ide.github.io/mcstate/reference/adaptive_proposal_control.html
   if(n_sts <= 1000){
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 500,
-                                                                 initial_scaling = 1, #(2.38^2/8), #/2e2,
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
+                                                                 initial_scaling = (2.38^2/8), #/2e2,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.23,
                                                                  forget_rate = 0.01,
                                                                  forget_end = Inf, #n_sts*0.2,
-                                                                 adapt_end = n_sts*0.5,
+                                                                 adapt_end = Inf, #n_sts*0.5,
                                                                  pre_diminish = 1 #n_sts/1500 # 0.5
                                                                  )
   } else {
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 500,
-                                                                 initial_scaling = 1, #(2.38^2/8), #/2e2,
+    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
+                                                                 initial_scaling = (2.38^2/8), #/2e2,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.23,
                                                                  forget_rate = 0.01,
                                                                  forget_end = Inf, #n_sts*0.2,
-                                                                 adapt_end = n_sts*0.5,
+                                                                 adapt_end = Inf, #n_sts*0.5,
                                                                  pre_diminish = 1 #n_sts/1500 # 0.5
     )
   }
@@ -214,7 +214,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            rerun_random = TRUE,
                                            progress = TRUE,
                                            
-                                           n_chains = 4,
+                                           n_chains = 30,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,
@@ -233,7 +233,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            rerun_random = TRUE,
                                            progress = TRUE,
                                            
-                                           n_chains = 4,
+                                           n_chains = 30,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,
@@ -460,7 +460,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
                                            rerun_random = TRUE,
                                            progress = TRUE,
                                            
-                                           n_chains = 4,
+                                           n_chains = 8,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,
@@ -479,7 +479,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
                                            # rerun_random = TRUE,
                                            progress = TRUE,
                                            
-                                           n_chains = 4,
+                                           n_chains = 8,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,

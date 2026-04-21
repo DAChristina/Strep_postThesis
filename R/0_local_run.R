@@ -7,21 +7,13 @@ source("R/5_post_pmcmc_samples_pics.R")
 source("R/6_post_pmcmc_age_validation.R")
 
 # test vcv error
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
-                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
-                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
-                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
-                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 200,
-                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 200,
-                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-pmcmc_run_plus_tuning(n_pars = 10, n_sts = 200,
-                      run1_stochastic = F, run2_stochastic = F, ncpus = 60)
-
+count <- 4
+repeat { 
+  pmcmc_run_plus_tuning(n_pars = 10, n_sts = 100,
+                        run1_stochastic = F, run2_stochastic = F, ncpus = 60)
+  if (count < 5)
+    break
+}
 
 pmcmc_run_plus_tuning(n_pars = 10, n_sts = 600,
                       run1_stochastic = F, run2_stochastic = F, ncpus = 60)
