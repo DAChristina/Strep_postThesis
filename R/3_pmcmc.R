@@ -73,13 +73,13 @@ priors <- prepare_priors(pars)
 # Rule: diagonal ≈ (reasonable_range / 4)²
 proposal_matrix <- diag(c(
   0.1,  # log_A_ini
-  0.1,  # phi
+  0.01,  # phi
   0.1,  # time_shift_1
-  1e-3,  # beta_0
+  0.01,  # beta_0
   0.1,  # beta_1
   0.1,  # log_delta1
   0.1,  # rho
-  1    # kappa_1
+  0.1    # kappa_1
 ))
 # proposal_matrix[3,3] <- 300*10
 # proposal_matrix <- (proposal_matrix + t(proposal_matrix))
@@ -165,15 +165,15 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
   new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
   # vcv positive definite error if matrix/1000
-  # new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1e2#*100000
-  # new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1e2#*100000
-  # new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1e2#*100000
-  # # new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1e1#*100000
-  # new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1e2#*100000
-  # new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1e1#*100000
-  # new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1e2#*100000
-  # new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1e2#*100000
-  # new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
+  new_proposal_matrix[1,1] <- new_proposal_matrix[1,1]*1e4#*100000
+  new_proposal_matrix[2,2] <- new_proposal_matrix[2,2]*1e4#*100000
+  new_proposal_matrix[3,3] <- new_proposal_matrix[3,3]*1e4#*100000
+  # new_proposal_matrix[4,4] <- new_proposal_matrix[4,4]*1e1#*100000
+  new_proposal_matrix[5,5] <- new_proposal_matrix[5,5]*1e4#*100000
+  new_proposal_matrix[6,6] <- new_proposal_matrix[6,6]*1e2#*100000
+  new_proposal_matrix[7,7] <- new_proposal_matrix[7,7]*1e4#*100000
+  new_proposal_matrix[8,8] <- new_proposal_matrix[8,8]*1e4#*100000
+  new_proposal_matrix <- new_proposal_matrix # * 2.38^2/5 # initial_scaling; 5 = parms number (Roberts et al., 1997)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
   rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
   colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "rho", "kappa_1")
@@ -188,7 +188,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # https://mrc-ide.github.io/mcstate/reference/adaptive_proposal_control.html
   if(n_sts <= 1000){
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/8), #/2e2,
+                                                                 initial_scaling = (2.38^2/8)/1e4,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.23,
                                                                  forget_rate = 0.01,
@@ -198,7 +198,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                                                  )
   } else {
     adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 100,
-                                                                 initial_scaling = (2.38^2/8), #/2e2,
+                                                                 initial_scaling = (2.38^2/8)/1e4,
                                                                  # scaling_increment = NULL,
                                                                  acceptance_target = 0.23,
                                                                  forget_rate = 0.01,
@@ -214,7 +214,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            rerun_random = TRUE,
                                            progress = TRUE,
                                            
-                                           n_chains = 30,
+                                           n_chains = 2,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,
@@ -233,7 +233,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            rerun_random = TRUE,
                                            progress = TRUE,
                                            
-                                           n_chains = 30,
+                                           n_chains = 2,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,

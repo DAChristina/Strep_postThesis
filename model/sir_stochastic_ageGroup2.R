@@ -17,7 +17,7 @@ UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
 
 # stratify log_delta
 log_delta1 <- user(0, min = -10, max = 1)
-rho <- user(0, min = -1, max = 1)
+rho <- user(0, min = -1, max = 2)
 # log_delta2 <- user(0, min = -10, max = 1)
 
 hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
