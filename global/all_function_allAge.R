@@ -121,7 +121,7 @@ transform <- parameter_transform(t_norm)
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", 0.8, min = 0, max = 1,
+    list(mcstate::pmcmc_parameter("log_A_ini", 0.2, min = 0, max = 1,
                                   prior = priors$log_A_ini),
          # mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.29, max = 0.85,
          #                          prior = priors$log_A_ini),
@@ -133,7 +133,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                   prior = priors$betas),
          mcstate::pmcmc_parameter("beta_1", 0.4, min = 0, max = 1,
                                   prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta1", (-3), min = (-6), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+         mcstate::pmcmc_parameter("log_delta1", (-4.5), min = (-6), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$log_delta),
          mcstate::pmcmc_parameter("rho", (1), min = (-1), max = 2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                   prior = priors$rho),
@@ -153,11 +153,12 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dbeta(s, 7, 7, log = TRUE)
+    dnorm(s, mean = 0.5, sd = 0.05, log = TRUE)
+    # dbeta(s, 100, 100, log = TRUE)
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$phi <- function(s) {
-    dbeta(s, 3, 3, log = TRUE)
+    dbeta(s, 20, 5, log = TRUE)
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$time_shifts <- function(s) {
