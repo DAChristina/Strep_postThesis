@@ -13,7 +13,8 @@ model_vs_data <- function(n_sts){
   dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
   dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
   # run 4_post_pmcmc_pics.R first
-  results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv")) %>% 
+  results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv"),
+                      row.names = 1) %>% 
     glimpse()
   
   
@@ -48,15 +49,15 @@ model_vs_data <- function(n_sts){
   
   pars <- list(m = t_norm,
                N_ini = contact_2_demographic$demography$population,
-               log_A_ini = results[1,2], # c(results[1,2], results[2,2]),
-               phi = results[2,2],
-               time_shift_1 = results[3,2],
-               beta_0 = results[4,2],
-               beta_1 = results[5,2],
-               log_delta1 = results[6,2],
-               rho = results[7,2],
-               # log_delta2 = results[7,2],
-               sigma_1 = results[8,2]
+               log_A_ini = results["log_A_ini",2], # c(results[1,2], results[2,2]),
+               phi = results["phi",2],
+               time_shift_1 = results["time_shift_1",2],
+               beta_0 = results["beta_0",2],
+               beta_1 = results["beta_1",2],
+               log_delta1 = results["log_delta1",2],
+               rho = results["rho",2],
+               log_delta2 = results["log_delta2",2],
+               sigma_1 = results["sigma_1",2]
   )
   
   n_times <- burnin_days+7500 # 500 for trial

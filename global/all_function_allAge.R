@@ -2,49 +2,84 @@
 
 burnin_days <- 0
 
-ll_nbinom <- function(data, model, kappa, exp_noise) {
-  # if (is.na(data)) {
-  #   return(numeric(length(model)))
-  # }
-  
-  data_clean <- ifelse(is.na(data), 0, data)
-  mu <- model + rexp(length(model), rate = exp_noise)
-  dnbinom(data_clean, kappa, mu = mu, log = TRUE)
-}
+# ll_nbinom <- function(data, model, kappa, exp_noise) {
+#   # if (is.na(data)) {
+#   #   return(numeric(length(model)))
+#   # }
+#   
+#   data_clean <- ifelse(is.na(data), 0, data)
+#   mu <- model + rexp(length(model), rate = exp_noise)
+#   dnbinom(data_clean, kappa, mu = mu, log = TRUE)
+# }
+
+# case_compare <- function(state, observed, pars = NULL) {
+#   exp_noise <- 1e6
+#   n <- ncol(state)
+#   
+#   # sir_model$info()$index$n_AD_weekly
+#   model_1 <- state[7, , drop = TRUE]
+#   model_2 <- state[8, , drop = TRUE]
+#   
+#   if (is.na(observed$count_s1_1)) {
+#     ll_1 <- ll_nbinom(data = 0,
+#                          model = model_1,
+#                          kappa = pars$kappa_1,
+#                          exp_noise = exp_noise)
+#   } else {
+#     ll_1 <- ll_nbinom(data = observed$count_s1_1,
+#                          model = model_1,
+#                          kappa = pars$kappa_1,
+#                          exp_noise = exp_noise)
+#   }
+#   
+#   if (is.na(observed$count_s1_2)) {
+#     ll_2 <- ll_nbinom(data = 0,
+#                          model = model_2,
+#                          kappa = pars$kappa_1,
+#                          exp_noise = exp_noise)
+#   } else {
+#     ll_2 <- ll_nbinom(data = observed$count_s1_2,
+#                          model = model_2,
+#                          kappa = pars$kappa_1,
+#                          exp_noise = exp_noise)
+#   }
+#   
+#   ll <- ll_1 + ll_2
+#   return(ll)
+# }
 
 case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
-  n <- ncol(state)
   
   # sir_model$info()$index$n_AD_weekly
-  model_55_1 <- state[7, , drop = TRUE]
-  model_55_2 <- state[8, , drop = TRUE]
+  model_1 <- state[7, , drop = TRUE]
+  model_2 <- state[8, , drop = TRUE]
   
   if (is.na(observed$count_s1_1)) {
-    ll_55_1 <- ll_nbinom(data = 0,
-                         model = model_55_1,
-                         kappa = pars$kappa_1,
-                         exp_noise = exp_noise)
+    ll_1 <- dpois(x = 0,
+                  lambda = model_1 + rexp(ncol(state), exp_noise),
+                  log = TRUE
+    )
   } else {
-    ll_55_1 <- ll_nbinom(data = observed$count_s1_1,
-                         model = model_55_1,
-                         kappa = pars$kappa_1,
-                         exp_noise = exp_noise)
+    ll_1 <- dpois(x = observed$count_s1_1,
+                  lambda = model_1 + rexp(ncol(state), exp_noise),
+                  log = TRUE
+    )
   }
   
   if (is.na(observed$count_s1_2)) {
-    ll_55_2 <- ll_nbinom(data = 0,
-                         model = model_55_2,
-                         kappa = pars$kappa_1,
-                         exp_noise = exp_noise)
+    ll_2 <- dpois(x = 0,
+                  lambda = model_2 + rexp(ncol(state), exp_noise),
+                  log = TRUE
+    )
   } else {
-    ll_55_2 <- ll_nbinom(data = observed$count_s1_2,
-                         model = model_55_2,
-                         kappa = pars$kappa_1,
-                         exp_noise = exp_noise)
+    ll_2 <- dpois(x = observed$count_s1_2,
+                  lambda = model_2 + rexp(ncol(state), exp_noise),
+                  log = TRUE
+    )
   }
   
-  ll <- ll_55_1 + ll_55_2
+  ll <- ll_1 + ll_2
   return(ll)
 }
 
@@ -91,20 +126,18 @@ parameter_transform <- function(t_norm) {
     rho <- pars[["rho"]]
     # log_delta2 <- pars[["log_delta2"]]
     # sigma_1 <- pars[["sigma_1"]]
-    kappa_1 <- pars[["kappa_1"]]
+    # kappa_1 <- pars[["kappa_1"]]
     
     pars <- list(log_A_ini = log_A_ini,
                  phi = phi,
-                 # log_A_ini1 = log_A_ini1,
-                 # log_A_ini2 = log_A_ini2,
                  time_shift_1 = time_shift_1,
                  beta_0 = beta_0,
                  beta_1 = beta_1,
                  log_delta1 = log_delta1,
-                 rho = rho,
-                 # log_delta2 = log_delta2,
+                 rho = rho
+                 # log_delta2 = log_delta2
                  # sigma_1 = sigma_1,
-                 kappa_1 = kappa_1
+                 # kappa_1 = kappa_1
     )
     
     pars$N_ini <-  contact_2_demographic$demography$population
@@ -121,44 +154,40 @@ transform <- parameter_transform(t_norm)
 prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
-    list(mcstate::pmcmc_parameter("log_A_ini", 0.2, min = 0, max = 1,
-                                  prior = priors$log_A_ini),
-         # mcstate::pmcmc_parameter("log_A_ini2", (0.7), min = 0.29, max = 0.85,
-         #                          prior = priors$log_A_ini),
-         mcstate::pmcmc_parameter("phi", 0.8, min = (0), max = 1,
-                                  prior = priors$phi),
-         mcstate::pmcmc_parameter("time_shift_1", 0.1, min = (0), max = 0.5, # previously (-10, 1)
-                                  prior = priors$time_shifts),
-         mcstate::pmcmc_parameter("beta_0", 0.06, min = 0, max = 0.5, # max based on 1/values; worst case increased to 5x
-                                  prior = priors$betas),
-         mcstate::pmcmc_parameter("beta_1", 0.4, min = 0, max = 1,
-                                  prior = priors$betas),
-         mcstate::pmcmc_parameter("log_delta1", (-4.5), min = (-6), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
-                                  prior = priors$log_delta),
-         mcstate::pmcmc_parameter("rho", (1), min = (-1), max = 2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
-                                  prior = priors$rho),
-         # mcstate::pmcmc_parameter("log_delta2", (-2), min = (-10), max = 1, #0.2700773,
-         #                          prior = priors$log_delta),
-         # mcstate::pmcmc_parameter("sigma_1", 0.0002, min = 0, max = 1,
-         #                          prior = priors$sigma),
-         mcstate::pmcmc_parameter("kappa_1", 10, min = 0,
-                                  prior = priors$kappas)
+    list(
+      mcstate::pmcmc_parameter("log_A_ini", 0.5, min = 0, max = 1,
+                               prior = priors$log_A_ini),
+      mcstate::pmcmc_parameter("phi", 0.8, min = (0), max = 1,
+                               prior = priors$phi),
+      mcstate::pmcmc_parameter("time_shift_1", 0.1, min = (0), max = 0.5, # previously (-10, 1)
+                               prior = priors$time_shifts),
+      mcstate::pmcmc_parameter("beta_0", 0.05, min = 0, max = 0.5, # max based on 1/values; worst case increased to 5x
+                               prior = priors$betas),
+      mcstate::pmcmc_parameter("beta_1", 0.3, min = 0, max = 1,
+                               prior = priors$betas),
+      mcstate::pmcmc_parameter("log_delta1", (-4.5), min = (-5), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+                               prior = priors$log_delta),
+      mcstate::pmcmc_parameter("rho", (0.8), min = (-1), max = 2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+                               prior = priors$rho)
+      # mcstate::pmcmc_parameter("kappa_1", 5, min = 0,
+      #                          prior = priors$kappas)
     ),
     proposal = proposal,
     transform = transform
-    )
+  )
 }
 
 prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    dnorm(s, mean = 0.5, sd = 0.05, log = TRUE)
-    # dbeta(s, 100, 100, log = TRUE)
+    dbeta(s, 8, 4, log = TRUE)
+    # dnorm(s, mean = 0.5, sd = 0.05, log = TRUE)
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$phi <- function(s) {
-    dbeta(s, 20, 5, log = TRUE)
+    # dnorm(s, mean = 0.8, sd = 0.05, log = TRUE) #dbeta(s, 20, 5, log = TRUE)
+    dbeta(s, 2, 2, log = TRUE)
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$time_shifts <- function(s) {
@@ -167,23 +196,24 @@ prepare_priors <- function(pars) {
     # dunif(s, min = 0, max = 0.5, log = TRUE)
   }
   priors$beta_0 <- function(s) {
-    # dbeta(s, 30, 500, log = TRUE) # or dbeta(s, 20, 400, log = TRUE)
-    dgamma(s, shape = 1, scale = 0.02, log = TRUE) # previously 25, 0.01
+    dbeta(s, 30, 500, log = TRUE) # or dbeta(s, 20, 400, log = TRUE)
+    # dgamma(s, shape = 1, scale = 0.02, log = TRUE) # previously 25, 0.01
+    # dunif(s, min = 0, max = 0.5, log = TRUE)
   }
   priors$beta_1 <- function(s) {
-    dbeta(s, 1.5, 1.5, log = TRUE) # more relaxed dbeta(s, 2, 15
+    dbeta(s, 2, 2, log = TRUE) # more relaxed dbeta(s, 2, 15
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$log_delta <- function(s) {
-    dnorm(s, mean = -4, sd = 0.3, log = TRUE)
-    # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 1, delta = -4.5, log = TRUE)
-    # dunif(s, min = -6, max = -2, log = TRUE)
+    # dnorm(s, mean = -3.8, sd = 0.15, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 1, delta = -4.5, log = TRUE)
+    # dunif(s, min = -5, max = -2, log = TRUE)
   }
   priors$rho <- function(s) {
-    dnorm(s, mean = 1, sd = 0.5, log = TRUE)
+    # dnorm(s, mean = 0.8, sd = 0.5, log = TRUE)
     # dgamma(s, shape=4, scale=0.15, log=TRUE) # avoid Cauchy
-    # stabledist::dstable(s, alpha = 1, beta = 0, gamma = 0.8, delta = 0, log = TRUE) # alpha = 1 = Cauchy (?)
-    # dunif(s, min = -0.5, max = 0.5, log = TRUE)
+    stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.5, delta = 3, log = TRUE) # alpha = 1 = Cauchy (?)
+    # dunif(s, min = -1, max = 2, log = TRUE)
   }
   priors$sigma <- function(s) {
     dgamma(s, shape = 1, scale = 0.5, log = TRUE)

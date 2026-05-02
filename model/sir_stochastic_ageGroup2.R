@@ -6,7 +6,7 @@ update(time) <- (step + 1) * dt
 burnin_days <- 0
 
 # 1. PARAMETERS ################################################################
-time_shift_1 <- user(0, min = 0) #user(0, min = -10, max = 1)
+time_shift_1 <- user(0, min = 0)
 # trans_time_shift_1 <- 10^(time_shift_1)
 beta_0 <- user(0, min = 0)
 beta_1 <- user(0, min = 0, max = 1)
@@ -151,6 +151,7 @@ foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
 lambda[] <- sum(foi_ij[i, ])
 
 delta[1] <- (10^(log_delta1))*UK_calibration_kids
+# delta[2] <- (10^(log_delta2))*UK_calibration_adults
 delta[2] <- (10^(log_delta1+rho))*UK_calibration_adults
 
 # sigma_1[1] <- hypo_sigma_1 # test no A -> R in kids
