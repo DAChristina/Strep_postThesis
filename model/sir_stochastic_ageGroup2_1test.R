@@ -40,14 +40,14 @@ t_norm <- transmission/max(transmission)
 
 pars <- list(m = t_norm,
              N_ini = contact_2_demographic$demography$population,
-             log_A_ini = 0.45, # test c(0.65, 0.35),
-             phi = 0.8, # previously 0.3
-             time_shift_1 = 0.2,
-             beta_0 = 0.06,
-             beta_1 = 0.2,
-             log_delta1 = -4.5,
-             rho = 1 # previously 0.7
-             # log_delta2 = -2
+             log_A_ini = 0.51, # test c(0.65, 0.35),
+             phi = 0.3,
+             time_shift_1 = 0.17,
+             beta_0 = 0.0595,
+             beta_1 = 0.22,
+             log_delta1 = -3.7,
+             # rho = 1 # previously 0.7
+             log_delta2 = -3.09
              # sigma_1 = 0.00002
 )
 

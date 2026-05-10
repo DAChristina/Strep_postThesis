@@ -10,15 +10,16 @@ time_shift_1 <- user(0, min = 0)
 # trans_time_shift_1 <- 10^(time_shift_1)
 beta_0 <- user(0, min = 0)
 beta_1 <- user(0, min = 0, max = 1)
-theta <- 0.19 # proportion of vaccinated children in 0-14 age group
+# theta <- 0.19 # proportion of vaccinated children in 0-14 age group
+theta <- (time-(burnin_days+2648))/(14*365)
 
 UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
 UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
 
 # stratify log_delta
 log_delta1 <- user(0, min = -10, max = 1)
-rho <- user(0, min = -1, max = 2)
-# log_delta2 <- user(0, min = -10, max = 1)
+# rho <- user(0, min = 0, max = 5)
+log_delta2 <- user(0, min = -10, max = 1)
 
 hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
 sigma_1 <- 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
@@ -136,7 +137,7 @@ m[, ] <- user() # age-structured contact matrix
 # coverage*efficacy*proportion of kids 2y.o. (from 0-14)
 vacc_m[1, 1] <- 0.9*0.862*theta # child->child
 vacc_m[1, 2] <- 0
-vacc_m[2, 1] <- 0.9*0.862*theta # adult->child
+vacc_m[2, 1] <- 0.9*0.862*theta  # adult->child
 vacc_m[2, 2] <- 0
 
 beta <- (if (time < 0) beta_0 else 
@@ -151,8 +152,8 @@ foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
 lambda[] <- sum(foi_ij[i, ])
 
 delta[1] <- (10^(log_delta1))*UK_calibration_kids
-# delta[2] <- (10^(log_delta2))*UK_calibration_adults
-delta[2] <- (10^(log_delta1+rho))*UK_calibration_adults
+delta[2] <- (10^(log_delta2))*UK_calibration_adults
+# delta[2] <- (10^(log_delta1))*rho #*UK_calibration_adults
 
 # sigma_1[1] <- hypo_sigma_1 # test no A -> R in kids
 # sigma_1[2] <- psi*hypo_sigma_1
