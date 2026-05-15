@@ -106,9 +106,12 @@ min_A_ini <- log(1/(N_ini[1]+N_ini[2]), 10)
 
 # directly test log_A_ini as scaled
 log_A_ini <- user()
-phi <- user(0, min = 0, max = 1)
-A_ini[1] <- as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[1])
-A_ini[2] <- as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*phi*N_ini[2])
+phi <- user(0, min = 0, max = 3)
+A_ini[1] <- (if (N_ini[1] - as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[1]) <= 0) 0 else
+  (as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*N_ini[1])))
+
+A_ini[2] <- (if (N_ini[2] - as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*phi*N_ini[2]) <= 0) 0 else
+  (as.integer(10^(log_A_ini*(max_A_ini-min_A_ini)+min_A_ini)*phi*N_ini[2])))
 
 # Age-structured states:
 initial(S[]) <- N_ini[i] -(A_ini[i]+0+0) # D_ini = R_ini = 0
@@ -136,8 +139,8 @@ m[, ] <- user() # age-structured contact matrix
 
 # coverage*efficacy*proportion of kids 2y.o. (from 0-14)
 vacc_m[1, 1] <- 0.9*0.862*theta # child->child
-vacc_m[1, 2] <- 0
-vacc_m[2, 1] <- 0.9*0.862*theta  # adult->child
+vacc_m[1, 2] <- 0.9*0.862*theta  # adult->child
+vacc_m[2, 1] <- 0
 vacc_m[2, 2] <- 0
 
 beta <- (if (time < 0) beta_0 else 

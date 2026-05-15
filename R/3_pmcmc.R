@@ -210,7 +210,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            progress = TRUE,
                                            
                                            n_chains = 4,
-                                           n_workers = 4,
+                                           # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,
                                            save_trajectories = TRUE)
@@ -229,7 +229,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            progress = TRUE,
                                            
                                            n_chains = 4,
-                                           n_workers = 4,
+                                           # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,
                                            save_trajectories = TRUE
