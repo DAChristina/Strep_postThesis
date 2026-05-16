@@ -156,9 +156,9 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
     list(
-      mcstate::pmcmc_parameter("log_A_ini", 0.6, min = 0, max = 1,
+      mcstate::pmcmc_parameter("log_A_ini", 0.5, min = 0, max = 1,
                                prior = priors$log_A_ini),
-      mcstate::pmcmc_parameter("phi", 1, min = (0), max = 3,
+      mcstate::pmcmc_parameter("phi", 1.1, min = (0), max = 2,
                                prior = priors$phi),
       mcstate::pmcmc_parameter("time_shift_1", 0.2, min = (0), max = 0.5, # previously (-10, 1)
                                prior = priors$time_shifts),
@@ -183,8 +183,8 @@ prepare_priors <- function(pars) {
   
   priors$log_A_ini <- function(s) {
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.4, delta = 6, log = TRUE)
-    dbeta(s, 2, 2, log = TRUE)
-    # dnorm(s, mean = 0.6, sd = 0.06, log = TRUE)
+    # dbeta(s, 2, 2, log = TRUE)
+    dnorm(s, mean = 0.5, sd = 0.1, log = TRUE)
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$phi <- function(s) {
