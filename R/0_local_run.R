@@ -53,6 +53,6 @@ run_chunk <- function(n_sts, attempt = 1) {
 }
 
 
-for (n in c(5000, 10000, 20000, 30000)){ #, 100000)){
+for (n in c(5000, 30000)){ #, 100000)){ 5000, 10000, 20000, 
   run_chunk(n)
 }

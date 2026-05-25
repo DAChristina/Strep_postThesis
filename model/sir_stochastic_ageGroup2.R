@@ -143,8 +143,14 @@ vacc_m[1, 2] <- 0.9*0.862*theta  # adult->child
 vacc_m[2, 1] <- 0
 vacc_m[2, 2] <- 0
 
+# additional time steps for beta_1 (2 years)
+# difractions based on PCV7 era 
+beta_diff <- 1 #user(0, min = 0, max = 1)
+
 beta <- (if (time < 0) beta_0 else 
-  (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))))
+  (if (time >= (burnin_days+(2*365))*freq) # time <= (burnin_days+1461)*freq && 
+  (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))) else
+    (beta_0*((1+beta_1*beta_diff*cos(2*pi*((time_shift_1*(365))+time)/(365)))))))
 
 foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
   beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))

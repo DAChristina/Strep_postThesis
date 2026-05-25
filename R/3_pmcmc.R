@@ -39,6 +39,7 @@ pars <- list(m = t_norm,
              time_shift_1 = 0,
              beta_0 = 0,
              beta_1 = 0,
+             # beta_diff = 0,
              log_delta1 = 0,
              log_delta2 = 0
              # log_delta2 = 0

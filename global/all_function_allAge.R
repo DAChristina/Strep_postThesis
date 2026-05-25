@@ -122,6 +122,7 @@ parameter_transform <- function(t_norm) {
     time_shift_1 <- pars[["time_shift_1"]]
     beta_0 <- pars[["beta_0"]]
     beta_1 <- pars[["beta_1"]]
+    # beta_diff <- pars[["beta_diff"]]
     
     log_delta1 <- pars[["log_delta1"]]
     # rho <- pars[["rho"]]
@@ -134,6 +135,7 @@ parameter_transform <- function(t_norm) {
                  time_shift_1 = time_shift_1,
                  beta_0 = beta_0,
                  beta_1 = beta_1,
+                 # beta_diff = beta_diff,
                  log_delta1 = log_delta1,
                  # rho = rho
                  log_delta2 = log_delta2
@@ -163,9 +165,11 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
       mcstate::pmcmc_parameter("time_shift_1", 0.2, min = (0), max = 0.5, # previously (-10, 1)
                                prior = priors$time_shifts),
       mcstate::pmcmc_parameter("beta_0", 0.06, min = 0, max = 0.5, # max based on 1/values; worst case increased to 5x
+                               prior = priors$beta_0),
+      mcstate::pmcmc_parameter("beta_1", 0.1, min = 0, max = 1,
                                prior = priors$betas),
-      mcstate::pmcmc_parameter("beta_1", 0.5, min = 0, max = 1,
-                               prior = priors$betas),
+      # mcstate::pmcmc_parameter("beta_diff", 0.8, min = 0, max = 1,
+      #                          prior = priors$betas),
       mcstate::pmcmc_parameter("log_delta1", (-4.5), min = (-5), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                prior = priors$log_delta),
       mcstate::pmcmc_parameter("log_delta2", (-4), min = (-5), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
@@ -204,7 +208,7 @@ prepare_priors <- function(pars) {
     # dgamma(s, shape = 1, scale = 0.02, log = TRUE) # previously 25, 0.01
     # dunif(s, min = 0, max = 0.5, log = TRUE)
   }
-  priors$beta_1 <- function(s) {
+  priors$betas <- function(s) {
     dbeta(s, 2, 2, log = TRUE) # more relaxed dbeta(s, 2, 15
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
