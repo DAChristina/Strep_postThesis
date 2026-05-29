@@ -1,88 +1,88 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
 
 burnin_days <- 0
-
-ll_nbinom <- function(data, model, kappa, exp_noise) {
-  # if (is.na(data)) {
-  #   return(numeric(length(model)))
-  # }
-
-  data_clean <- ifelse(is.na(data), 0, data)
-  mu <- model + rexp(length(model), rate = exp_noise)
-  dnbinom(data_clean, kappa, mu = mu, log = TRUE)
-}
+# 
+# ll_nbinom <- function(data, model, kappa, exp_noise) {
+#   # if (is.na(data)) {
+#   #   return(numeric(length(model)))
+#   # }
+# 
+#   data_clean <- ifelse(is.na(data), 0, data)
+#   mu <- model + rexp(length(model), rate = exp_noise)
+#   dnbinom(data_clean, kappa, mu = mu, log = TRUE)
+# }
+# 
+# case_compare <- function(state, observed, pars = NULL) {
+#   exp_noise <- 1e6
+#   n <- ncol(state)
+#   kappa_1 <- 5
+# 
+#   # sir_model$info()$index$n_AD_weekly
+#   model_1 <- state[7, , drop = TRUE]
+#   model_2 <- state[8, , drop = TRUE]
+# 
+#   if (is.na(observed$count_s1_1)) {
+#     ll_1 <- ll_nbinom(data = 0,
+#                          model = model_1,
+#                          kappa = kappa_1,
+#                          exp_noise = exp_noise)
+#   } else {
+#     ll_1 <- ll_nbinom(data = observed$count_s1_1,
+#                          model = model_1,
+#                          kappa = kappa_1,
+#                          exp_noise = exp_noise)
+#   }
+# 
+#   if (is.na(observed$count_s1_2)) {
+#     ll_2 <- ll_nbinom(data = 0,
+#                          model = model_2,
+#                          kappa = kappa_1,
+#                          exp_noise = exp_noise)
+#   } else {
+#     ll_2 <- ll_nbinom(data = observed$count_s1_2,
+#                          model = model_2,
+#                          kappa = kappa_1,
+#                          exp_noise = exp_noise)
+#   }
+# 
+#   ll <- ll_1 + ll_2
+#   return(ll)
+# }
 
 case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
-  n <- ncol(state)
-  kappa_1 <- 5
 
   # sir_model$info()$index$n_AD_weekly
   model_1 <- state[7, , drop = TRUE]
   model_2 <- state[8, , drop = TRUE]
 
   if (is.na(observed$count_s1_1)) {
-    ll_1 <- ll_nbinom(data = 0,
-                         model = model_1,
-                         kappa = kappa_1,
-                         exp_noise = exp_noise)
+    ll_1 <- dpois(x = 0,
+                  lambda = model_1 + rexp(ncol(state), exp_noise),
+                  log = TRUE
+    )
   } else {
-    ll_1 <- ll_nbinom(data = observed$count_s1_1,
-                         model = model_1,
-                         kappa = kappa_1,
-                         exp_noise = exp_noise)
+    ll_1 <- dpois(x = observed$count_s1_1,
+                  lambda = model_1 + rexp(ncol(state), exp_noise),
+                  log = TRUE
+    )
   }
 
   if (is.na(observed$count_s1_2)) {
-    ll_2 <- ll_nbinom(data = 0,
-                         model = model_2,
-                         kappa = kappa_1,
-                         exp_noise = exp_noise)
+    ll_2 <- dpois(x = 0,
+                  lambda = model_2 + rexp(ncol(state), exp_noise),
+                  log = TRUE
+    )
   } else {
-    ll_2 <- ll_nbinom(data = observed$count_s1_2,
-                         model = model_2,
-                         kappa = kappa_1,
-                         exp_noise = exp_noise)
+    ll_2 <- dpois(x = observed$count_s1_2,
+                  lambda = model_2 + rexp(ncol(state), exp_noise),
+                  log = TRUE
+    )
   }
 
   ll <- ll_1 + ll_2
   return(ll)
 }
-
-# case_compare <- function(state, observed, pars = NULL) {
-#   exp_noise <- 1e6
-#   
-#   # sir_model$info()$index$n_AD_weekly
-#   model_1 <- state[7, , drop = TRUE]
-#   model_2 <- state[8, , drop = TRUE]
-#   
-#   if (is.na(observed$count_s1_1)) {
-#     ll_1 <- dpois(x = 0,
-#                   lambda = model_1 + rexp(ncol(state), exp_noise),
-#                   log = TRUE
-#     )
-#   } else {
-#     ll_1 <- dpois(x = observed$count_s1_1,
-#                   lambda = model_1 + rexp(ncol(state), exp_noise),
-#                   log = TRUE
-#     )
-#   }
-#   
-#   if (is.na(observed$count_s1_2)) {
-#     ll_2 <- dpois(x = 0,
-#                   lambda = model_2 + rexp(ncol(state), exp_noise),
-#                   log = TRUE
-#     )
-#   } else {
-#     ll_2 <- dpois(x = observed$count_s1_2,
-#                   lambda = model_2 + rexp(ncol(state), exp_noise),
-#                   log = TRUE
-#     )
-#   }
-#   
-#   ll <- ll_1 + ll_2
-#   return(ll)
-# }
 
 
 # generate index function

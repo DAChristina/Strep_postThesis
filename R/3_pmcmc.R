@@ -415,12 +415,27 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # dir_name <- paste0("outputs/genomics/trial_", ifelse(run_stochastic, "stochastic", "deterministic"), "_", n_sts, "/")
   dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
   dir.create(dir_name, FALSE, TRUE)
+  dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
   
-  # New proposal matrix
-  new_proposal_matrix <- as.matrix(read.csv(paste0(dir_name, "new_proposal_mtx.csv")))
-  new_proposal_matrix <- apply(new_proposal_matrix, 2, as.numeric)
-  new_proposal_matrix <- new_proposal_matrix/10 # * 2.38^2/5 # 6 = parms number (Roberts et al., 1997)
-  # new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))
+  # New proposal matrix is self-designed diagonal matrix
+  # proposal_matrix <- diag(0.1, 7)
+  # diagonal ≈ (reasonable_range/k)^2
+  # (k = 3: extreme jump, 5 or 6 to be more conservative)
+  k <- 5
+  proposal_matrix <- diag(c(
+    (0.1/k)^2, # log_A_ini
+    (0.1/k)^2, # phi
+    (0.1/k)^2, # time_shift_1
+    (0.005/k)^2, # beta_0
+    (0.1/k)^2, # beta_1
+    # (0.1/k)^2, # beta_diff
+    (0.1/k)^2, # log_delta1
+    (0.1/k)^2 # log_delta2
+    # (2/5)^2 # kappa_1
+  ))
+  
+  new_proposal_matrix <- as.matrix(proposal_matrix)
+  new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
   rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2")
   colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2")
   # isSymmetric(new_proposal_matrix)
@@ -432,35 +447,26 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   
   # Including adaptive proposal control
   # https://mrc-ide.github.io/mcstate/reference/adaptive_proposal_control.html
-  if(n_sts <= 1000){
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 0.1, # lower for faster adaptation; don't fully trust prev vcv matrix
-                                                                 initial_scaling = 0.2,
-                                                                 # scaling_increment = NULL,
-                                                                 # log_scaling_update = T,
-                                                                 acceptance_target = 0.234,
-                                                                 forget_rate = 0.2,
-                                                                 forget_end = Inf, # n_sts*0.75,
-                                                                 adapt_end = Inf, # n_sts*0.8,
-                                                                 pre_diminish = 0.5) #n_sts*0.1)
-  } else {
-    # adaptive_proposal_run2 <- FALSE
-    adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1,
-                                                                 # initial_scaling = 1,
-                                                                 scaling_increment = NULL,
-                                                                 acceptance_target = 0.234,
-                                                                 forget_rate = 0.2,
-                                                                 forget_end = Inf, # n_sts*0.75,
-                                                                 adapt_end = Inf, # n_sts*0.8,
-                                                                 pre_diminish = 0.5) #n_sts*0.1)
-  }
+  # note:
+  # use (MCMC1 & turn off adaptive_proposal) OR (just MCMC2 with adaptive_proposal)
+  adaptive_proposal_run2 <- mcstate::adaptive_proposal_control(initial_vcv_weight = 1,
+                                                               initial_scaling = (2.38^2/nrow(new_proposal_matrix)),
+                                                               # scaling_increment = NULL,
+                                                               acceptance_target = 0.234,
+                                                               forget_rate = 0.2,
+                                                               forget_end = Inf,
+                                                               adapt_end = Inf,
+                                                               pre_diminish = 0.5
+  )
+  
   
   if(run2_stochastic){
     tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                           # rerun_every = 50,
+                                           rerun_every = 50,
                                            rerun_random = TRUE,
                                            progress = TRUE,
                                            
-                                           n_chains = 8,
+                                           n_chains = 4,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,
@@ -475,17 +481,17 @@ pmcmc_run2_only <- function(n_pars, n_sts,
     )
   } else {
     tune_control <- mcstate::pmcmc_control(n_steps = n_sts,
-                                           # rerun_every = 100,
-                                           # rerun_random = TRUE,
+                                           rerun_every = 50,
+                                           rerun_random = TRUE,
                                            progress = TRUE,
                                            
-                                           n_chains = 8,
+                                           n_chains = 4,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
                                            save_state = TRUE,
-                                           save_trajectories = TRUE,
+                                           save_trajectories = TRUE
                                            # another option is to construct vcv first then ignore adaptive_proposal settings
-                                           adaptive_proposal = adaptive_proposal_run2
+                                           # adaptive_proposal = adaptive_proposal_run2
     )
     
     filter <- mcstate::particle_deterministic$new(data = sir_data,
@@ -497,9 +503,43 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   
   # The pmcmc
   tune_pmcmc_result <- mcstate::pmcmc(tune_mcmc_pars, filter, control = tune_control)
-  tune_pmcmc_result
-  saveRDS(tune_pmcmc_result, paste0(dir_name, "tune_pmcmc_result.rds"))
+  # saveRDS(tune_pmcmc_result, paste0(dir_name, "tune_pmcmc_result.rds"))
   
+  # final parameters with CI
+  tune_lpost_max <- which.max(tune_pmcmc_result$probabilities[, "log_posterior"])
+  mcmc_lo_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.025))
+  mcmc_hi_CI <- apply(tune_pmcmc_result$pars, 2, function(x) quantile(x, probs = 0.975))
+  
+  binds_tune_initial <- rbind(as.list(tune_pmcmc_result$pars[tune_lpost_max, ]),
+                              mcmc_lo_CI, mcmc_hi_CI)
+  binds_tune_initial2 <- cbind(binds_tune_initial,
+                               log_prior = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                           "log_prior"],
+                               log_likelihood = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                                "log_likelihood"],
+                               log_posterior = tune_pmcmc_result$probabilities[tune_lpost_max,
+                                                                               "log_posterior"])
+  t_tune_initial <- t(binds_tune_initial2)
+  colnames(t_tune_initial) <- c("values", "low_CI", "high_CI")
+  
+  write.csv(t_tune_initial,
+            paste0(dir_name, "tune_initial_with_CI.csv"), row.names = T)
+  
+  # MCMC diagnostics
+  # 1. Gelman-Rubin
+  figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
+  
+  png(paste0(dir_name, "figs/mcmc2_diag_gelmanRubin_%02d.png"),
+      width = 17, height = 17, unit = "cm", res = 600)
+  diag_gelman_rubin(figs_gelman_init)
+  dev.off()
+  
+  # 2. ggpairs
+  png(paste0(dir_name, "figs/mcmc2_diag_ggPairs_%02d.png"),
+      width = 17, height = 17, unit = "cm", res = 600)
+  p <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
+  print(p)
+  dev.off()
   
   new_proposal_mtx <- cov(tune_pmcmc_result$pars)
   write.csv(new_proposal_mtx, paste0(dir_name, "new_proposal_mtx_modified.csv"), row.names = FALSE)
@@ -542,22 +582,6 @@ pmcmc_run2_only <- function(n_pars, n_sts,
     
     saveRDS(pmcmc_samples, paste0(dir_name, "pmcmc_samples.rds"))
   }
-  
-  
-  ##############################################################################
-  # MCMC Diagnostics
-  
-  # 1. Gelman-Rubin Diagnostic
-  # https://cran.r-project.org/web/packages/coda/coda.pdf
-  # figs_gelman_init <- diag_init_gelman_rubin(tune_pmcmc_result)
-  # fig <- diag_cov_mtx(figs_gelman_init)
-  # fig <- diag_gelman_rubin(figs_gelman_init)
-  
-  # 2. Autocorrelation
-  # fig <- diag_aucorr(mcmc2)
-  
-  # 3. ggpairs
-  # fig <- GGally::ggpairs(as.data.frame(tune_pmcmc_result$pars))
   
 }
 
