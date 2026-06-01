@@ -194,7 +194,7 @@ prepare_priors <- function(pars) {
   priors$phi <- function(s) {
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.3, delta = 6, log = TRUE) # previously 0.5
     # dgamma(s, shape=1, scale=0.2, log=TRUE)
-    dnorm(s, mean = 1, sd = 0.3, log = TRUE) #dbeta(s, 20, 5, log = TRUE)
+    dnorm(s, mean = 1, sd = 0.1, log = TRUE) #dbeta(s, 20, 5, log = TRUE)
     # dbeta(s, 2, 2, log = TRUE)
     # dunif(s, min = 0, max = 1, log = TRUE)
   }

@@ -424,7 +424,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   k <- 5
   proposal_matrix <- diag(c(
     (0.1/k)^2, # log_A_ini
-    (0.01/k)^2, # phi
+    (0.1/k)^2, # phi
     (0.1/k)^2, # time_shift_1
     (0.005/k)^2, # beta_0
     (0.1/k)^2, # beta_1
