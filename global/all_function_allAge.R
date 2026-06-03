@@ -1,88 +1,88 @@
 # See https://mrc-ide.github.io/mcstate/articles/nested_sir_models.html
 
 burnin_days <- 0
-# 
-# ll_nbinom <- function(data, model, kappa, exp_noise) {
-#   # if (is.na(data)) {
-#   #   return(numeric(length(model)))
-#   # }
-# 
-#   data_clean <- ifelse(is.na(data), 0, data)
-#   mu <- model + rexp(length(model), rate = exp_noise)
-#   dnbinom(data_clean, kappa, mu = mu, log = TRUE)
-# }
-# 
-# case_compare <- function(state, observed, pars = NULL) {
-#   exp_noise <- 1e6
-#   n <- ncol(state)
-#   kappa_1 <- 5
-# 
-#   # sir_model$info()$index$n_AD_weekly
-#   model_1 <- state[7, , drop = TRUE]
-#   model_2 <- state[8, , drop = TRUE]
-# 
-#   if (is.na(observed$count_s1_1)) {
-#     ll_1 <- ll_nbinom(data = 0,
-#                          model = model_1,
-#                          kappa = kappa_1,
-#                          exp_noise = exp_noise)
-#   } else {
-#     ll_1 <- ll_nbinom(data = observed$count_s1_1,
-#                          model = model_1,
-#                          kappa = kappa_1,
-#                          exp_noise = exp_noise)
-#   }
-# 
-#   if (is.na(observed$count_s1_2)) {
-#     ll_2 <- ll_nbinom(data = 0,
-#                          model = model_2,
-#                          kappa = kappa_1,
-#                          exp_noise = exp_noise)
-#   } else {
-#     ll_2 <- ll_nbinom(data = observed$count_s1_2,
-#                          model = model_2,
-#                          kappa = kappa_1,
-#                          exp_noise = exp_noise)
-#   }
-# 
-#   ll <- ll_1 + ll_2
-#   return(ll)
-# }
+
+ll_nbinom <- function(data, model, kappa, exp_noise) {
+  # if (is.na(data)) {
+  #   return(numeric(length(model)))
+  # }
+
+  data_clean <- ifelse(is.na(data), 0, data)
+  mu <- model + rexp(length(model), rate = exp_noise)
+  dnbinom(data_clean, kappa, mu = mu, log = TRUE)
+}
 
 case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
+  n <- ncol(state)
+  # kappa_1 <- 5
 
   # sir_model$info()$index$n_AD_weekly
   model_1 <- state[7, , drop = TRUE]
   model_2 <- state[8, , drop = TRUE]
 
   if (is.na(observed$count_s1_1)) {
-    ll_1 <- dpois(x = 0,
-                  lambda = model_1 + rexp(ncol(state), exp_noise),
-                  log = TRUE
-    )
+    ll_1 <- ll_nbinom(data = 0,
+                         model = model_1,
+                         kappa = pars$kappa_1,
+                         exp_noise = exp_noise)
   } else {
-    ll_1 <- dpois(x = observed$count_s1_1,
-                  lambda = model_1 + rexp(ncol(state), exp_noise),
-                  log = TRUE
-    )
+    ll_1 <- ll_nbinom(data = observed$count_s1_1,
+                         model = model_1,
+                         kappa = pars$kappa_1,
+                         exp_noise = exp_noise)
   }
 
   if (is.na(observed$count_s1_2)) {
-    ll_2 <- dpois(x = 0,
-                  lambda = model_2 + rexp(ncol(state), exp_noise),
-                  log = TRUE
-    )
+    ll_2 <- ll_nbinom(data = 0,
+                         model = model_2,
+                         kappa = pars$kappa_1,
+                         exp_noise = exp_noise)
   } else {
-    ll_2 <- dpois(x = observed$count_s1_2,
-                  lambda = model_2 + rexp(ncol(state), exp_noise),
-                  log = TRUE
-    )
+    ll_2 <- ll_nbinom(data = observed$count_s1_2,
+                         model = model_2,
+                         kappa = pars$kappa_1,
+                         exp_noise = exp_noise)
   }
 
   ll <- ll_1 + ll_2
   return(ll)
 }
+
+# case_compare <- function(state, observed, pars = NULL) {
+#   exp_noise <- 1e6
+# 
+#   # sir_model$info()$index$n_AD_weekly
+#   model_1 <- state[7, , drop = TRUE]
+#   model_2 <- state[8, , drop = TRUE]
+# 
+#   if (is.na(observed$count_s1_1)) {
+#     ll_1 <- dpois(x = 0,
+#                   lambda = model_1 + rexp(ncol(state), exp_noise),
+#                   log = TRUE
+#     )
+#   } else {
+#     ll_1 <- dpois(x = observed$count_s1_1,
+#                   lambda = model_1 + rexp(ncol(state), exp_noise),
+#                   log = TRUE
+#     )
+#   }
+# 
+#   if (is.na(observed$count_s1_2)) {
+#     ll_2 <- dpois(x = 0,
+#                   lambda = model_2 + rexp(ncol(state), exp_noise),
+#                   log = TRUE
+#     )
+#   } else {
+#     ll_2 <- dpois(x = observed$count_s1_2,
+#                   lambda = model_2 + rexp(ncol(state), exp_noise),
+#                   log = TRUE
+#     )
+#   }
+# 
+#   ll <- ll_1 + ll_2
+#   return(ll)
+# }
 
 
 # generate index function
@@ -122,25 +122,25 @@ parameter_transform <- function(t_norm) {
     time_shift_1 <- pars[["time_shift_1"]]
     beta_0 <- pars[["beta_0"]]
     beta_1 <- pars[["beta_1"]]
-    # beta_diff <- pars[["beta_diff"]]
+    beta_diff <- pars[["beta_diff"]]
     
     log_delta1 <- pars[["log_delta1"]]
     # rho <- pars[["rho"]]
     log_delta2 <- pars[["log_delta2"]]
     # sigma_1 <- pars[["sigma_1"]]
-    # kappa_1 <- pars[["kappa_1"]]
+    kappa_1 <- pars[["kappa_1"]]
     
     pars <- list(log_A_ini = log_A_ini,
                  phi = phi,
                  time_shift_1 = time_shift_1,
                  beta_0 = beta_0,
                  beta_1 = beta_1,
-                 # beta_diff = beta_diff,
+                 beta_diff = beta_diff,
                  log_delta1 = log_delta1,
                  # rho = rho
-                 log_delta2 = log_delta2
+                 log_delta2 = log_delta2,
                  # sigma_1 = sigma_1,
-                 # kappa_1 = kappa_1
+                 kappa_1 = kappa_1
     )
     
     pars$N_ini <-  contact_2_demographic$demography$population
@@ -168,14 +168,14 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                prior = priors$beta_0),
       mcstate::pmcmc_parameter("beta_1", 0.1, min = 0, max = 1,
                                prior = priors$betas),
-      # mcstate::pmcmc_parameter("beta_diff", 0.8, min = 0, max = 1,
-      #                          prior = priors$betas),
+      mcstate::pmcmc_parameter("beta_diff", 0.8, min = 0, max = 1,
+                               prior = priors$betas),
       mcstate::pmcmc_parameter("log_delta1", (-4.5), min = (-5), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                prior = priors$log_delta),
       mcstate::pmcmc_parameter("log_delta2", (-4), min = (-5), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
-                               prior = priors$log_delta)
-      # mcstate::pmcmc_parameter("kappa_1", 5, min = 0,
-      #                          prior = priors$kappas)
+                               prior = priors$log_delta),
+      mcstate::pmcmc_parameter("kappa_1", 5, min = 0,
+                               prior = priors$kappas)
     ),
     proposal = proposal,
     transform = transform

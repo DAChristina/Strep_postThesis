@@ -39,7 +39,7 @@ pars <- list(m = t_norm,
              time_shift_1 = 0,
              beta_0 = 0,
              beta_1 = 0,
-             # beta_diff = 0,
+             beta_diff = 0,
              log_delta1 = 0,
              log_delta2 = 0
              # log_delta2 = 0
@@ -70,7 +70,7 @@ pars <- list(m = t_norm,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(0.1, 7)
+proposal_matrix <- diag(0.1, 9)
 # diagonal ≈ (reasonable_range/k)^2
 # (k = 3: extreme jump, 5 or 6 to be more conservative)
 # k <- 5
@@ -84,8 +84,8 @@ proposal_matrix <- diag(0.1, 7)
 #   (0.1/k)^2 # log_delta2
 #   # (2/5)^2 # kappa_1
 # ))
-rownames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2")
-colnames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2")
+rownames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "beta_diff", "log_delta1", "log_delta2", "kappa_1")
+colnames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "beta_diff", "log_delta1", "log_delta2", "kappa_1")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -180,8 +180,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # vcv positive definite error if matrix/1000
   # new_proposal_matrix <- new_proposal_matrix*1.2
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
-  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "beta_diff", "log_delta1", "log_delta2", "kappa_1")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "beta_diff", "log_delta1", "log_delta2", "kappa_1")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -421,23 +421,23 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # proposal_matrix <- diag(0.1, 7)
   # diagonal ≈ (reasonable_range/k)^2
   # (k = 3: extreme jump, 5 or 6 to be more conservative)
-  k <- 5
+  k <- 3
   proposal_matrix <- diag(c(
     (0.1/k)^2, # log_A_ini
     (0.1/k)^2, # phi
     (0.1/k)^2, # time_shift_1
     (0.005/k)^2, # beta_0
     (0.1/k)^2, # beta_1
-    # (0.1/k)^2, # beta_diff
+    (0.1/k)^2, # beta_diff
     (0.1/k)^2, # log_delta1
-    (0.1/k)^2 # log_delta2
-    # (2/5)^2 # kappa_1
+    (0.1/k)^2, # log_delta2
+    (2/k)^2 # kappa_1
   ))
   
   new_proposal_matrix <- as.matrix(proposal_matrix)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
-  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "beta_diff", "log_delta1", "log_delta2", "kappa_1")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "beta_diff", "log_delta1", "log_delta2", "kappa_1")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,

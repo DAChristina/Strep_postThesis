@@ -145,7 +145,7 @@ vacc_m[2, 2] <- 0
 
 # additional time steps for beta_1 (2 years)
 # difractions based on PCV7 era 
-beta_diff <- 1 #user(0, min = 0, max = 1)
+beta_diff <- user(0, min = 0, max = 1)
 
 beta <- (if (time < 0) beta_0 else 
   (if (time >= (burnin_days+(2*365))*freq) # time <= (burnin_days+1461)*freq && 
