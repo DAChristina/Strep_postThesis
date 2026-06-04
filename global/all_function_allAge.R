@@ -174,7 +174,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                prior = priors$log_delta),
       mcstate::pmcmc_parameter("log_delta2", (-4), min = (-5), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                prior = priors$log_delta),
-      mcstate::pmcmc_parameter("kappa_1", 5, min = 0,
+      mcstate::pmcmc_parameter("kappa_1", 10, min = 0,
                                prior = priors$kappas)
     ),
     proposal = proposal,

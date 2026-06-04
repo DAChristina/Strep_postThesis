@@ -147,8 +147,9 @@ vacc_m[2, 2] <- 0
 # difractions based on PCV7 era 
 beta_diff <- user(0, min = 0, max = 1)
 
+# beta_diff cutoff for pre-15 August 2004 only (592 days)
 beta <- (if (time < 0) beta_0 else 
-  (if (time >= (burnin_days+(2*365))*freq) # time <= (burnin_days+1461)*freq && 
+  (if (time >= (burnin_days+(592))*freq) # time <= (burnin_days+1461)*freq && 
   (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))) else
     (beta_0*((1+beta_1*beta_diff*cos(2*pi*((time_shift_1*(365))+time)/(365)))))))
 
