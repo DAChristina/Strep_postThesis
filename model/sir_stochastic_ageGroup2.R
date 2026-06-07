@@ -145,7 +145,7 @@ vacc_m[2, 2] <- 0
 
 # additional time steps for beta_1 (2 years)
 # difractions based on PCV7 era 
-beta_diff <- user(0, min = 0, max = 1)
+beta_diff <- 0.8 #user(0, min = 0, max = 1)
 
 # beta_diff cutoff for pre-15 August 2004 only (592 days)
 beta <- (if (time < 0) beta_0 else 
