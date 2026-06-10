@@ -138,8 +138,8 @@ N[] <- S[i] + A[i] + D[i] + R[i]
 m[, ] <- user() # age-structured contact matrix
 
 # coverage*efficacy*proportion of kids 2y.o. (from 0-14)
-vacc_m[1, 1] <- 0.9*0.862*theta # child->child
-vacc_m[1, 2] <- 0.9*0.862*theta  # adult->child
+vacc_m[1, 1] <- 0 #0.9*0.862*theta # child->child
+vacc_m[1, 2] <- 0 #0.9*0.862*theta  # adult->child
 vacc_m[2, 1] <- 0
 vacc_m[2, 2] <- 0
 
