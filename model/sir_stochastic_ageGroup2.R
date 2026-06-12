@@ -138,14 +138,17 @@ N[] <- S[i] + A[i] + D[i] + R[i]
 m[, ] <- user() # age-structured contact matrix
 
 # coverage*efficacy*proportion of kids 2y.o. (from 0-14)
-vacc_m[1, 1] <- 0 #0.9*0.862*theta # child->child
-vacc_m[1, 2] <- 0 #0.9*0.862*theta  # adult->child
-vacc_m[2, 1] <- 0
-vacc_m[2, 2] <- 0
+# vacc_m[1, 1] <- 0 #0.9*0.862*theta # child->child
+# vacc_m[1, 2] <- 0 #0.9*0.862*theta  # adult->child
+# vacc_m[2, 1] <- 0
+# vacc_m[2, 2] <- 0
+
+vacc_m[1, ] <- 0 #0.9*0.862*theta # child->child & adult -> child
+vacc_m[2, ] <- 0
 
 # additional time steps for beta_1 (2 years)
 # difractions based on PCV7 era 
-beta_diff <- 0.8 #user(0, min = 0, max = 1)
+beta_diff <- user(0, min = 0, max = 1)
 
 # beta_diff cutoff for pre-15 August 2004 only (592 days)
 beta <- (if (time < 0) beta_0 else 
