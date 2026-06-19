@@ -21,8 +21,10 @@ log_delta1 <- user(0, min = -10, max = 1)
 # rho <- user(0, min = 0, max = 5)
 log_delta2 <- user(0, min = -10, max = 1)
 
-hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
-sigma_1 <- 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
+# hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
+
+# sigma_1 range as rate 0.06349206 (95% CI 0.03175611, 0.1269036)
+sigma_1 <- user(0, min = 0, max = 1) # 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
 # psi <- user(0, min = 0) # Immunity differences between children & adults
 sigma_2 <- 1 # Assumed acute phase, 1 day
 
@@ -40,7 +42,7 @@ mu_0[2] <- 1 / ((80.70 - 14) * 365)
 # mu <- 0
 mu_1 <- 0 # disease-related death, no data available
 pi <- 3.141593 # FIXED
-wane <- 0
+omega <- user(0, min = 0, max = 1)
 
 # Dimensions of arrays #########################################################
 N_age <- 2
@@ -143,16 +145,17 @@ m[, ] <- user() # age-structured contact matrix
 # vacc_m[2, 1] <- 0
 # vacc_m[2, 2] <- 0
 
-vacc_m[1, ] <- 0 #0.9*0.862*theta # child->child & adult -> child
-vacc_m[2, ] <- 0
+# vacc_eff <- user(0, min = 0, max = 1) # previously 0.862
+# vacc_m[1, ] <- 0.9*0.862*theta # child->child & adult -> child
+# vacc_m[2, ] <- 0
 
 # additional time steps for beta_1 (2 years)
 # difractions based on PCV7 era 
-beta_diff <- user(0, min = 0, max = 1)
+beta_diff <- 1 #user(0, min = 0, max = 1)
 
-# beta_diff cutoff for pre-15 August 2004 only (592 days)
+# beta_diff for pre-PCV7 only
 beta <- (if (time < 0) beta_0 else 
-  (if (time >= (burnin_days+(592))*freq) # time <= (burnin_days+1461)*freq && 
+  (if (time >= (burnin_days+(1339))*freq) # time <= (burnin_days+1461)*freq && 
   (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))) else
     (beta_0*((1+beta_1*beta_diff*cos(2*pi*((time_shift_1*(365))+time)/(365)))))))
 
@@ -175,7 +178,7 @@ delta[2] <- (10^(log_delta2))*UK_calibration_adults
 p_Suscep[] <- lambda[i]+mu_0[i]+age_rate[i]
 p_Asym[] <- delta[i]+sigma_1+mu_0[i]+age_rate[i]
 p_Dis[] <- sigma_2+mu_1+mu_0[i]+age_rate[i]
-p_Rec[] <- wane+mu_0[i]+age_rate[i]
+p_Rec[] <- omega+mu_0[i]+age_rate[i]
 
 p_SA[] <- (if (lambda[i]/(lambda[i]+mu_0[i]+age_rate[i]) <= 0) 0 else 
   (lambda[i]/(lambda[i]+mu_0[i]+age_rate[i])))
@@ -190,8 +193,8 @@ p_DR[] <- (if (sigma_2/(sigma_2+mu_1+mu_0[i]+age_rate[i]) <= 0) 0 else
 p_Dd[] <- (if (mu_1/(mu_1+mu_0[i]+age_rate[i]) <= 0) 0 else 
   (mu_1/(mu_1+mu_0[i]+age_rate[i])))
 
-p_RS[] <- (if (wane/(wane+mu_0[i]+age_rate[i]) <= 0) 0 else 
-  (wane/(wane+mu_0[i]+age_rate[i])))
+p_RS[] <- (if (omega/(omega+mu_0[i]+age_rate[i]) <= 0) 0 else 
+  (omega/(omega+mu_0[i]+age_rate[i])))
 
 
 # Draws for numbers changing between compartments
