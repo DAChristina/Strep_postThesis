@@ -151,6 +151,8 @@ m[, ] <- user() # age-structured contact matrix
 # vacc_m[1, ] <- 0.9*0.862*theta # child->child & adult -> child
 # vacc_m[2, ] <- 0
 
+# vacc must be defined as coverage*efficacy*proportion of kids 2y.o.*theta (theta as gradual vaccination)
+# 0.9*efficacy*0.19*theta
 vacc <- user(0, min = 0, max = 1)
 v[1] <- (if (time >= (burnin_days+2648)*freq)
   vacc*theta

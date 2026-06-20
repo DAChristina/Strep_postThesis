@@ -228,7 +228,8 @@ prepare_priors <- function(pars) {
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$vacc <- function(s) {
-    dnorm(s, mean = 1e-4, sd = 3e-5, log = TRUE)
+    # dnorm(s, mean = 1e-4, sd = 3e-5, log = TRUE)
+    dbeta(s, 1, 1.5, log = TRUE)
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$log_delta1 <- function(s) {
