@@ -21,10 +21,10 @@ log_delta1 <- user(0, min = -10, max = 1)
 # rho <- user(0, min = 0, max = 5)
 log_delta2 <- user(0, min = -10, max = 1)
 
-# hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
+hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
 
 # sigma_1 range as rate 0.06349206 (95% CI 0.03175611, 0.1269036)
-sigma_1 <- user(0, min = 0, max = 1) # 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
+sigma_1 <- 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
 # psi <- user(0, min = 0) # Immunity differences between children & adults
 sigma_2 <- 1 # Assumed acute phase, 1 day
 
@@ -60,8 +60,9 @@ dim(R) <- N_age
 
 dim(m) <- c(N_age, N_age)
 dim(foi_ij) <- c(N_age, N_age)
-dim(vacc_m) <- c(N_age, N_age)
+# dim(vacc_m) <- c(N_age, N_age)
 # dim(vacc) <- N_age
+dim(v) <- N_age
 dim(lambda) <- N_age
 dim(delta) <- N_age
 dim(mu_0) <- N_age
@@ -73,6 +74,7 @@ dim(p_Dis) <- N_age
 dim(p_Rec) <- N_age
 
 dim(p_SA) <- N_age
+dim(p_SR) <- N_age
 dim(p_AD) <- N_age
 dim(p_AR) <- N_age
 dim(p_DR) <- N_age
@@ -82,7 +84,7 @@ dim(p_RS) <- N_age
 dim(n_Sborn) <- N_age
 dim(n_Suscep) <- N_age
 dim(n_SA) <- N_age
-# dim(n_SR) <- N_age
+dim(n_SR) <- N_age
 dim(n_Sdead) <- N_age
 dim(n_Asym) <- N_age
 dim(n_AD) <- N_age
@@ -149,6 +151,14 @@ m[, ] <- user() # age-structured contact matrix
 # vacc_m[1, ] <- 0.9*0.862*theta # child->child & adult -> child
 # vacc_m[2, ] <- 0
 
+vacc <- user(0, min = 0, max = 1)
+v[1] <- (if (time >= (burnin_days+2648)*freq)
+  vacc*theta
+  else
+    vacc*0
+  )
+v[2] <- vacc*0
+
 # additional time steps for beta_1 (2 years)
 # difractions based on PCV7 era 
 beta_diff <- 1 #user(0, min = 0, max = 1)
@@ -159,11 +169,13 @@ beta <- (if (time < 0) beta_0 else
   (beta_0*((1+beta_1*cos(2*pi*((time_shift_1*(365))+time)/(365))))) else
     (beta_0*((1+beta_1*beta_diff*cos(2*pi*((time_shift_1*(365))+time)/(365)))))))
 
-foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
-  beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))
-  else
-    beta * m[i, j] * (((A[j] + D[j])/N[j]))
-)
+# foi_ij[, ] <- (if (time >= (burnin_days+2648)*freq)
+#   beta * m[i, j] * (((A[j] + D[j])/N[j]) * (1 - vacc_m[i, j]))
+#   else
+#     beta * m[i, j] * (((A[j] + D[j])/N[j]))
+# )
+
+foi_ij[, ] <- beta * m[i, j] * (((A[j] + D[j])/N[j]))
 
 lambda[] <- sum(foi_ij[i, ])
 
@@ -175,13 +187,15 @@ delta[2] <- (10^(log_delta2))*UK_calibration_adults
 # sigma_1[2] <- psi*hypo_sigma_1
 
 # Cumulative hazard
-p_Suscep[] <- lambda[i]+mu_0[i]+age_rate[i]
+p_Suscep[] <- lambda[i]+mu_0[i]+age_rate[i]+v[i]
 p_Asym[] <- delta[i]+sigma_1+mu_0[i]+age_rate[i]
 p_Dis[] <- sigma_2+mu_1+mu_0[i]+age_rate[i]
 p_Rec[] <- omega+mu_0[i]+age_rate[i]
 
-p_SA[] <- (if (lambda[i]/(lambda[i]+mu_0[i]+age_rate[i]) <= 0) 0 else 
-  (lambda[i]/(lambda[i]+mu_0[i]+age_rate[i])))
+p_SA[] <- (if (lambda[i]/(lambda[i]+mu_0[i]+age_rate[i]+v[i]) <= 0) 0 else 
+  (lambda[i]/(lambda[i]+mu_0[i]+age_rate[i]+v[i])))
+p_SR[] <- (if (v[i]/(mu_0[i]+age_rate[i]+v[i]) <= 0) 0 else 
+  (v[i]/(mu_0[i]+age_rate[i]+v[i])))
 
 p_AD[] <- (if (delta[i]/(delta[i]+sigma_1+mu_0[i]+age_rate[i]) <= 0) 0 else 
   (delta[i]/(delta[i]+sigma_1+mu_0[i]+age_rate[i])))
@@ -201,11 +215,11 @@ p_RS[] <- (if (omega/(omega+mu_0[i]+age_rate[i]) <= 0) 0 else
 # Leaving S
 n_Suscep[] <- rbinom(S[i], 1 - exp(-p_Suscep[i]*dt))
 n_SA[] <- rbinom(n_Suscep[i], p_SA[i])
-# n_SR[] <- rbinom((n_Suscep[i] - n_SA[i]), vacc[i]/(lambda[i]+mu_0[i]))
-n_age_S[1] <- if (i == 1) rbinom((n_Suscep[i] - n_SA[i]),
+n_SR[] <- rbinom((n_Suscep[i] - n_SA[i]), p_SR[i])
+n_age_S[1] <- if (i == 1) rbinom((n_Suscep[i] - n_SA[i] - n_SR[i]),
                                  age_rate[i]/(mu_0[i] + age_rate[i])) else 0
 n_age_S[2] <- 0
-n_Sdead[] <- n_Suscep[i] - n_SA[i] - n_age_S[i]
+n_Sdead[] <- n_Suscep[i] - n_SA[i] - n_SR[i] - n_age_S[i]
 
 # Leaving A
 n_Asym[] <- rbinom(A[i], 1- exp(-p_Asym[i]*dt))
@@ -237,8 +251,8 @@ n_Rdead[] <- n_Resist[i] - n_RS[i] - n_age_R[i]
 n_Sborn[] <- n_Sdead[i] + n_Adead[i] + n_Dd[i] + n_Ddead[i] + n_Rdead[i]
 born <- sum(n_Sborn)
 
-update(S[1]) <- S[1] + (born + n_RS[1]) - (n_SA[1] + n_Sdead[1] + n_age_S[1])
-update(S[2]) <- S[2] + (n_age_S[1] + n_RS[2]) - (n_SA[2] + n_Sdead[2] + n_age_S[2])
+update(S[1]) <- S[1] + (born + n_RS[1]) - (n_SA[1] + n_Sdead[1] + n_age_S[1] + n_SR[1])
+update(S[2]) <- S[2] + (n_age_S[1] + n_RS[2]) - (n_SA[2] + n_Sdead[2] + n_age_S[2] + n_SR[2])
 
 update(A[1]) <- A[1] + n_SA[1] - (n_AD[1] + n_AR[1] + n_Adead[1] + n_age_A[1])
 update(A[2]) <- A[2] + n_SA[2] + n_age_A[1] - (n_AD[2] + n_AR[2] + n_Adead[2])
@@ -246,8 +260,8 @@ update(A[2]) <- A[2] + n_SA[2] + n_age_A[1] - (n_AD[2] + n_AR[2] + n_Adead[2])
 update(D[1]) <- D[1] + n_AD[1] - (n_DR[1] + n_Dd[1] + n_Ddead[1] + n_age_D[1])
 update(D[2]) <- D[2] + n_AD[2] + n_age_D[1] - (n_DR[2] + n_Dd[2] + n_Ddead[2])
 
-update(R[1]) <- R[1] + (n_AR[1] + n_DR[1]) - (n_RS[1] + n_Rdead[1] + n_age_R[1])
-update(R[2]) <- R[2] + n_AR[2] + n_DR[2] + n_age_R[1] - (n_RS[2] + n_Rdead[2])
+update(R[1]) <- R[1] + (n_AR[1] + n_DR[1] + n_SR[1]) - (n_RS[1] + n_Rdead[1] + n_age_R[1])
+update(R[2]) <- R[2] + (n_AR[2] + n_DR[2] + n_age_R[1]+ n_SR[2]) - (n_RS[2] + n_Rdead[2])
 
 # Core equations of the transitions
 update(N_tot) <- sum(N)

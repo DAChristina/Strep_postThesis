@@ -48,7 +48,8 @@ pars <- list(m = t_norm,
              beta_diff = 0.6748,
              log_delta1 = -4.18727,
              # rho = 1 # previously 0.7
-             log_delta2 = -3.42
+             log_delta2 = -3.42,
+             vacc = 0.0001
              # sigma_1 = 0.00002
 )
 
