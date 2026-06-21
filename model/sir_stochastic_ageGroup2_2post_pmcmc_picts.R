@@ -54,10 +54,12 @@ model_vs_data <- function(n_sts){
                time_shift_1 = results["time_shift_1",2],
                beta_0 = results["beta_0",2],
                beta_1 = results["beta_1",2],
+               vacc = results["vacc",2],
                log_delta1 = results["log_delta1",2],
-               rho = results["rho",2],
+               # rho = results["rho",2],
                log_delta2 = results["log_delta2",2],
-               sigma_1 = results["sigma_1",2]
+               # sigma_1 = results["sigma_1",2],
+               omega = results["omega",2]
   )
   
   n_times <- burnin_days+7500 # 500 for trial

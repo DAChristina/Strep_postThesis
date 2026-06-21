@@ -45,11 +45,12 @@ pars <- list(m = t_norm,
              time_shift_1 = 0.1427,
              beta_0 = 0.05959,
              beta_1 = 0.168,
-             beta_diff = 0.6748,
+             # beta_diff = 0.6748,
+             vacc = 0.001,
              log_delta1 = -4.18727,
              # rho = 1 # previously 0.7
              log_delta2 = -3.42,
-             vacc = 0.0001
+             omega = 0.0001
              # sigma_1 = 0.00002
 )
 
