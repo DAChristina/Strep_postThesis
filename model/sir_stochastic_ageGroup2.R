@@ -21,7 +21,7 @@ log_delta1 <- user(0, min = -10, max = 1)
 # rho <- user(0, min = 0, max = 5)
 log_delta2 <- user(0, min = -10, max = 1)
 
-hypo_sigma_1_day <- 15.75 # (95% CI 7.88-31.49) (Chaguza et al., 2021)
+hypo_sigma_1_day <- 28 # 28 days for 12F (Chaguza et al., 2021)
 
 # sigma_1 range as rate 0.06349206 (95% CI 0.03175611, 0.1269036)
 sigma_1 <- 1/hypo_sigma_1_day # test sigma_1 (A -> R) later
@@ -153,9 +153,9 @@ m[, ] <- user() # age-structured contact matrix
 
 # vacc must be defined as coverage*efficacy*proportion of kids 2y.o.*theta (theta as gradual vaccination)
 # 0.9*efficacy*0.19*theta
-vacc <- user(0, min = 0, max = 1)
+vacc <- 0 # user(0, min = 0, max = 1)
 v[1] <- (if (time >= (burnin_days+2648)*freq)
-  vacc*theta
+  vacc*theta*0 # no vaccination for 12F
   else
     vacc*0
   )

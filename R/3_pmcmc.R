@@ -7,7 +7,7 @@ library(GGally)
 library(socialmixr)
 
 source("global/all_function_allAge.R")
-sir_data <- readRDS("raw_data/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
+sir_data <- readRDS("inputs/pmcmc_data_week_ageGroup12F.rds")
 rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the particle filter to use
 
 ## 2a. Model Load ##############################################################
@@ -16,7 +16,7 @@ rmarkdown::paged_table(sir_data) # annotate so that it is suitable for the parti
 # e.g.dt <- user(0) because if dt <- user() generates error during MCMC run
 gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
 
-age.limits = c(0, 15)
+age.limits = c(0, 45)
 N_age <- length(age.limits)
 
 contact_2_demographic <- suppressMessages(
@@ -39,6 +39,7 @@ pars <- list(m = t_norm,
              time_shift_1 = 0,
              beta_0 = 0,
              beta_1 = 0,
+             # vacc = 0,
              # beta_diff = 0,
              log_delta1 = 0,
              log_delta2 = 0,
@@ -70,7 +71,7 @@ pars <- list(m = t_norm,
 # Update n_particles based on calculation in 4 cores with var(x) ~ 3520.937: 281675
 
 priors <- prepare_priors(pars)
-proposal_matrix <- diag(0.1, 9)
+proposal_matrix <- diag(0.1, 8)
 # diagonal ≈ (reasonable_range/k)^2
 # (k = 3: extreme jump, 5 or 6 to be more conservative)
 # k <- 5
@@ -84,8 +85,8 @@ proposal_matrix <- diag(0.1, 9)
 #   (0.1/k)^2 # log_delta2
 #   # (2/5)^2 # kappa_1
 # ))
-rownames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "vacc", "log_delta1", "log_delta2", "omega")
-colnames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "vacc", "log_delta1", "log_delta2", "omega")
+rownames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "omega")
+colnames(proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "omega")
 
 mcmc_pars <- prepare_parameters(initial_pars = pars,
                                 priors = priors,
@@ -180,8 +181,8 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # vcv positive definite error if matrix/1000
   # new_proposal_matrix <- new_proposal_matrix*1.2
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
-  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "vacc", "log_delta1", "log_delta2", "omega")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "vacc", "log_delta1", "log_delta2", "omega")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "omega")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "omega")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,
@@ -378,8 +379,8 @@ pmcmc_run1_only <- function(n_pars, n_sts,
                                     # n_workers = 4,
                                     n_threads_total = ncpus,
                                     save_state = TRUE,
-                                    save_trajectories = TRUE,
-                                    adaptive_proposal = adaptive_proposal_run1
+                                    save_trajectories = TRUE
+                                    # adaptive_proposal = adaptive_proposal_run1
                                     )
   
   # The pmcmc
@@ -429,7 +430,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
     (0.002/k)^2, # beta_0; quite sensitive must be < 0.005
     (0.12/k)^2, # beta_1
     # (0.1/k)^2, # beta_diff
-    (3e-5/k)^2, # vacc
+    # (3e-5/k)^2, # vacc
     (0.08/k)^2, # log_delta1
     (0.08/k)^2, # log_delta2
     # (0.01/k)^2, # sigma_1
@@ -439,8 +440,8 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   
   new_proposal_matrix <- as.matrix(proposal_matrix)
   new_proposal_matrix <- (new_proposal_matrix + t(new_proposal_matrix))/2
-  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "vacc", "log_delta1", "log_delta2", "omega")
-  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "vacc", "log_delta1", "log_delta2", "omega")
+  rownames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "omega")
+  colnames(new_proposal_matrix) <- c("log_A_ini", "phi", "time_shift_1", "beta_0", "beta_1", "log_delta1", "log_delta2", "omega")
   # isSymmetric(new_proposal_matrix)
   
   tune_mcmc_pars <- prepare_parameters(initial_pars = pars,

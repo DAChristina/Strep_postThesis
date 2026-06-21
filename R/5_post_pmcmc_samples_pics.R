@@ -10,7 +10,7 @@ post_particle_pics <- function(n_sts){
   pmcmc_samples <- readRDS(paste0(dir_name, "pmcmc_samples.rds"))
   pmcmc_samples$trajectories$state <- observe(pmcmc_samples)
   
-  data <- readRDS("raw_data/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
+  data <- readRDS("inputs/pmcmc_data_week_ageGroup12F.rds")
   
   if(file.exists(file.path(paste0(dir_name, "initial.csv")))){
     initial_pars <- read.csv(paste0(dir_name, "initial.csv"))

@@ -21,25 +21,25 @@ burnin_days <- 0
 #   model_1 <- state[7, , drop = TRUE]
 #   model_2 <- state[8, , drop = TRUE]
 # 
-#   if (is.na(observed$count_s1_1)) {
+#   if (is.na(observed$count_55_1)) {
 #     ll_1 <- ll_nbinom(data = 0,
 #                          model = model_1,
 #                          kappa = pars$kappa_1,
 #                          exp_noise = exp_noise)
 #   } else {
-#     ll_1 <- ll_nbinom(data = observed$count_s1_1,
+#     ll_1 <- ll_nbinom(data = observed$count_55_1,
 #                          model = model_1,
 #                          kappa = pars$kappa_1,
 #                          exp_noise = exp_noise)
 #   }
 # 
-#   if (is.na(observed$count_s1_2)) {
+#   if (is.na(observed$count_55_2)) {
 #     ll_2 <- ll_nbinom(data = 0,
 #                          model = model_2,
 #                          kappa = pars$kappa_1,
 #                          exp_noise = exp_noise)
 #   } else {
-#     ll_2 <- ll_nbinom(data = observed$count_s1_2,
+#     ll_2 <- ll_nbinom(data = observed$count_55_2,
 #                          model = model_2,
 #                          kappa = pars$kappa_1,
 #                          exp_noise = exp_noise)
@@ -56,25 +56,25 @@ case_compare <- function(state, observed, pars = NULL) {
   model_1 <- state[7, , drop = TRUE]
   model_2 <- state[8, , drop = TRUE]
 
-  if (is.na(observed$count_s1_1)) {
+  if (is.na(observed$count_55_1)) {
     ll_1 <- dpois(x = 0,
                   lambda = model_1 + rexp(ncol(state), exp_noise),
                   log = TRUE
     )
   } else {
-    ll_1 <- dpois(x = observed$count_s1_1,
+    ll_1 <- dpois(x = observed$count_55_1,
                   lambda = model_1 + rexp(ncol(state), exp_noise),
                   log = TRUE
     )
   }
 
-  if (is.na(observed$count_s1_2)) {
+  if (is.na(observed$count_55_2)) {
     ll_2 <- dpois(x = 0,
                   lambda = model_2 + rexp(ncol(state), exp_noise),
                   log = TRUE
     )
   } else {
-    ll_2 <- dpois(x = observed$count_s1_2,
+    ll_2 <- dpois(x = observed$count_55_2,
                   lambda = model_2 + rexp(ncol(state), exp_noise),
                   log = TRUE
     )
@@ -99,7 +99,7 @@ index_fun <- function(info){
 # https://github.com/mrc-ide/mcstate/issues/184
 parameter_transform <- function(t_norm) {
   library(socialmixr)
-  age.limits = c(0, 15)
+  age.limits = c(0, 45)
   N_age <- length(age.limits)
   
   contact_2_demographic <- suppressMessages(
@@ -123,7 +123,7 @@ parameter_transform <- function(t_norm) {
     beta_0 <- pars[["beta_0"]]
     beta_1 <- pars[["beta_1"]]
     # beta_diff <- pars[["beta_diff"]]
-    vacc <- pars[["vacc"]]
+    # vacc <- pars[["vacc"]]
     
     
     log_delta1 <- pars[["log_delta1"]]
@@ -139,7 +139,7 @@ parameter_transform <- function(t_norm) {
                  beta_0 = beta_0,
                  beta_1 = beta_1,
                  # beta_diff = beta_diff,
-                 vacc = vacc,
+                 # vacc = vacc,
                  log_delta1 = log_delta1,
                  # rho = rho
                  log_delta2 = log_delta2,
@@ -163,27 +163,27 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
   
   mcmc_pars <- mcstate::pmcmc_parameters$new(
     list(
-      mcstate::pmcmc_parameter("log_A_ini", 0.55, min = 0, max = 1,
+      mcstate::pmcmc_parameter("log_A_ini", 0.6, min = 0, max = 1,
                                prior = priors$log_A_ini),
-      mcstate::pmcmc_parameter("phi", 0.94, min = (0), max = 2,
+      mcstate::pmcmc_parameter("phi", 0.5, min = (0), max = 2,
                                prior = priors$phi),
       mcstate::pmcmc_parameter("time_shift_1", 0.2, min = (0), max = 0.5, # previously (-10, 1)
                                prior = priors$time_shifts),
-      mcstate::pmcmc_parameter("beta_0", 0.05959, min = 0, max = 0.5, # max based on 1/values; worst case increased to 5x
+      mcstate::pmcmc_parameter("beta_0", 0.0280, min = 0, max = 0.5, # max based on 1/values; worst case increased to 5x
                                prior = priors$beta_0),
-      mcstate::pmcmc_parameter("beta_1", 0.2, min = 0, max = 1,
+      mcstate::pmcmc_parameter("beta_1", 0.3, min = 0, max = 1,
                                prior = priors$betas),
       # mcstate::pmcmc_parameter("beta_diff", 0.8, min = 0, max = 1,
       #                          prior = priors$beta_diff),
-      mcstate::pmcmc_parameter("vacc", 0.0001, min = 0, max = 1,
-                               prior = priors$vacc),
-      mcstate::pmcmc_parameter("log_delta1", (-4), min = (-5), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+      # mcstate::pmcmc_parameter("vacc", 0.0001, min = 0, max = 1,
+      #                          prior = priors$vacc),
+      mcstate::pmcmc_parameter("log_delta1", (-5), min = (-8), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                prior = priors$log_delta1),
-      mcstate::pmcmc_parameter("log_delta2", (-3.5), min = (-5), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
+      mcstate::pmcmc_parameter("log_delta2", (-4.5), min = (-8), max = -2, #(-3.8), min = (-5), max = -2, #-0.03196764, # log10(1/UK_calibration_kids) for delta1 = 1
                                prior = priors$log_delta2),
       # mcstate::pmcmc_parameter("sigma_1", 0.063, min = 0, max = 1,
       #                          prior = priors$sigmas),
-      mcstate::pmcmc_parameter("omega", 2e-4, min = 0, max = 1,
+      mcstate::pmcmc_parameter("omega", 0.001, min = 0, max = 1,
                                prior = priors$omega)
     #   mcstate::pmcmc_parameter("kappa_1", 10, min = 0,
     #                            prior = priors$kappas)
@@ -197,17 +197,17 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
+    # dnorm(s, mean = 0.25, sd = 0.05, log = TRUE)
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.4, delta = 6, log = TRUE)
     # dbeta(s, 2, 2, log = TRUE)
-    dnorm(s, mean = 0.54, sd = 0.05, log = TRUE)
-    # dunif(s, min = 0, max = 1, log = TRUE)
+    dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$phi <- function(s) {
+    # dnorm(s, mean = 0.94, sd = 0.1, log = TRUE) # previously 0.15, 0.05
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.3, delta = 6, log = TRUE) # previously 0.5
     # dgamma(s, shape=1, scale=0.2, log=TRUE)
-    dnorm(s, mean = 0.94, sd = 0.1, log = TRUE) # previously 0.15, 0.05
     # dbeta(s, 2, 2, log = TRUE)
-    # dunif(s, min = 0, max = 1, log = TRUE)
+    dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dgamma(s, shape=2, scale=0.08, log=TRUE)
@@ -215,30 +215,31 @@ prepare_priors <- function(pars) {
     # dunif(s, min = 0, max = 0.5, log = TRUE)
   }
   priors$beta_0 <- function(s) {
-    dbeta(s, 30, 500, log = TRUE) # or dbeta(s, 20, 400, log = TRUE)
+    # dbeta(s, 30, 500, log = TRUE) # or dbeta(s, 20, 400, log = TRUE)
+    dbeta(s, 15, 500, log = TRUE)
     # dgamma(s, shape = 1, scale = 0.02, log = TRUE) # previously 25, 0.01
     # dunif(s, min = 0, max = 0.5, log = TRUE)
   }
   priors$betas <- function(s) {
-    dbeta(s, 3.5, 10, log = TRUE) # more relaxed dbeta(s, 2, 15
-    # dunif(s, min = 0, max = 1, log = TRUE)
+    # dbeta(s, 3.5, 10, log = TRUE) # more relaxed dbeta(s, 2, 15
+    dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$beta_diff <- function(s) {
     dnorm(s, mean = 0.8, sd = 0.1, log = TRUE) # more relaxed dbeta(s, 2, 15
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$vacc <- function(s) {
+    # dbeta(s, 1, 1.5, log = TRUE)
     # dnorm(s, mean = 1e-4, sd = 3e-5, log = TRUE)
-    dbeta(s, 1, 1.5, log = TRUE)
-    # dunif(s, min = 0, max = 1, log = TRUE)
+    dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$log_delta1 <- function(s) {
-    dnorm(s, mean = -4, sd = 0.12, log = TRUE)
+    dnorm(s, mean = -5, sd = 0.12, log = TRUE)
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.2, delta = -4.5, log = TRUE)
     # dunif(s, min = -5, max = -2, log = TRUE)
   }
   priors$log_delta2 <- function(s) {
-    dnorm(s, mean = -3.42, sd = 0.1, log = TRUE)  # mean=-3.5, sd=0.15
+    dnorm(s, mean = -4.5, sd = 0.1, log = TRUE)  # mean=-3.5, sd=0.15
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.2, delta = -4.5, log = TRUE)
     # dunif(s, min = -5, max = -2, log = TRUE)
   }
@@ -252,7 +253,8 @@ prepare_priors <- function(pars) {
     dnorm(s, mean = 0.063, sd = 0.003, log = TRUE)
   }
   priors$omega <- function(s) {
-    dgamma(s, shape = 4, scale = 5e-5, log = TRUE)
+    # dgamma(s, shape = 1, scale = 0.5, log = TRUE)
+    dunif(s, min = 0, max = 0.5, log = TRUE)
   }
   priors$kappas <- function(s) {
     dgamma(s, shape=7,scale=1, log = TRUE)
@@ -402,10 +404,10 @@ plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
   # model state refers to n_AD_weekly (not the D compartment)
   matplot(data$yearWeek, t((state["n_AD1_weekly", , -1]+state["n_AD2_weekly", , -1])),
-          type = "l", lty = 1, col = col, ylim = c(0, 41),
-          xlab = "", ylab = "Serotype 1 cases")
+          type = "l", lty = 1, col = col,
+          xlab = "", ylab = "GPSC55 cases")
   # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
-  points(data$yearWeek, (data$count_s1_1+data$count_s1_2), col = 4, type = "l")
+  points(data$yearWeek, (data$count_55_1+data$count_55_2), col = 4, type = "l")
   
   matplot(data$yearWeek, xlab = "", t(state["S_tot", , -1]),
           type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6.7e7), yaxt = "n")

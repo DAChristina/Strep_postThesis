@@ -30,9 +30,9 @@ model_vs_data <- function(n_sts){
   # age.limits = c(0, 5, 19, 31, 65)
   
   # Create contact_matrix 2 demographic groups:
-  # < 15
-  # 15+
-  age.limits = c(0, 15)
+  # < 45
+  # 45+
+  age.limits = c(0, 45)
   N_age <- length(age.limits)
   
   contact_2_demographic <- suppressMessages(
@@ -54,10 +54,12 @@ model_vs_data <- function(n_sts){
                time_shift_1 = results["time_shift_1",2],
                beta_0 = results["beta_0",2],
                beta_1 = results["beta_1",2],
+               # vacc = results["vacc",2],
                log_delta1 = results["log_delta1",2],
-               rho = results["rho",2],
                log_delta2 = results["log_delta2",2],
-               sigma_1 = results["sigma_1",2]
+               # rho = results["rho",2],
+               # sigma_1 = results["sigma_1",2],
+               omega = results["omega",2]
   )
   
   n_times <- burnin_days+7500 # 500 for trial
@@ -87,7 +89,7 @@ model_vs_data <- function(n_sts){
   # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
-  data <- readRDS("raw_data/pmcmc_data_week_allAge_ser1_test_2agegroups.rds") %>% 
+  data <- readRDS("inputs/pmcmc_data_week_ageGroup12F.rds") %>% 
     glimpse()
   
   sir_data <- dplyr::bind_rows(
@@ -96,8 +98,8 @@ model_vs_data <- function(n_sts){
         replicate = 1,
         # steps = time_start+1,
         weekly = seq_along(replicate),
-        value = count_s1_1,
-        compartment = "data_count_s1_1"
+        value = count_55_1,
+        compartment = "data_count_55_1"
       )
     ,
     data %>% 
@@ -105,8 +107,8 @@ model_vs_data <- function(n_sts){
         replicate = 1,
         # steps = time_start+1,
         weekly = seq_along(replicate),
-        value = count_s1_2,
-        compartment = "data_count_s1_2"
+        value = count_55_2,
+        compartment = "data_count_55_2"
       )
   ) %>%
     tidyr::complete(weekly, compartment,
@@ -164,6 +166,34 @@ model_vs_data <- function(n_sts){
                      .groups = "drop") %>% 
     dplyr::ungroup() %>% 
     dplyr::bind_rows(sir_data) %>%
+    # add 12F data for comparison
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = seq_along(replicate),
+          value = count_12F_1 + count_12F_2,
+          compartment = "data_count_12F_all"
+        )
+    ) %>% 
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = seq_along(replicate),
+          value = count_12F_1,
+          compartment = "data_count_12F_1"
+        )
+    ) %>% 
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = seq_along(replicate),
+          value = count_12F_2,
+          compartment = "data_count_12F_2"
+        )
+    ) %>% 
     tidyr::complete(weekly,
                     fill = list(value = 0)
     ) %>%
@@ -176,14 +206,14 @@ model_vs_data <- function(n_sts){
     glimpse()
   
   write.csv(incidence_modelled,
-            paste0(dir_name, "incidence_modelled_serotype1.csv"),
+            paste0(dir_name, "incidence_modelled_GPSC55.csv"),
             row.names = FALSE)
   
-  png(paste0(dir_name, "figs/model_vs_data_ageGroups1.png"),
+  png(paste0(dir_name, "figs/model_vs_data_ageGroup12F.png"),
       width = 24, height = 34, unit = "cm", res = 600)
   p1 <- ggplot(incidence_modelled %>% 
                  dplyr::filter(
-                   compartment %in% c("model_D1", "data_count_s1_1"),
+                   compartment %in% c("model_D1", "data_count_55_1", "data_count_12F_1"),
                    compartment != "Time",
                  )
                ,
@@ -191,13 +221,10 @@ model_vs_data <- function(n_sts){
                    group = interaction(compartment,replicate),
                    colour = compartment)) +
     geom_line() +
-    geom_vline(aes(xintercept = as.Date("2010-04-01"),
-                   colour = "PCV13 (April 2010)"),
-               linetype = "dashed") +
     scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                  date_breaks = "year",
                  date_labels = "%Y") +
-    ggtitle("Cases (Aggregated by Week) for age 0-14") +
+    ggtitle("Cases (Aggregated by Week) for age 0-44") +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +
@@ -209,7 +236,7 @@ model_vs_data <- function(n_sts){
   
   p2 <- ggplot(incidence_modelled %>% 
                  dplyr::filter(
-                   compartment %in% c("model_D2", "data_count_s1_2"),
+                   compartment %in% c("model_D2", "data_count_55_2", "data_count_12F_2"),
                    compartment != "Time",
                  )
                ,
@@ -220,7 +247,7 @@ model_vs_data <- function(n_sts){
     scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                  date_breaks = "year",
                  date_labels = "%Y") +
-    ggtitle("Cases (Aggregated by Week) for age 15+") +
+    ggtitle("Cases (Aggregated by Week) for age 45-64") +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +
