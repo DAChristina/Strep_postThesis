@@ -247,7 +247,7 @@ model_vs_data <- function(n_sts){
     scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
                  date_breaks = "year",
                  date_labels = "%Y") +
-    ggtitle("Cases (Aggregated by Week) for age 45-64") +
+    ggtitle("Cases (Aggregated by Week) for age 45+") +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +
