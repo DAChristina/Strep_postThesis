@@ -197,51 +197,40 @@ prepare_priors <- function(pars) {
   priors <- list()
   
   priors$log_A_ini <- function(s) {
-    # dnorm(s, mean = 0.25, sd = 0.05, log = TRUE)
-    # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.4, delta = 6, log = TRUE)
-    # dbeta(s, 2, 2, log = TRUE)
-    dunif(s, min = 0, max = 1, log = TRUE)
+    dnorm(s, mean = 0.54, sd = 0.5, log = TRUE)
+    # dnorm(s, mean = 0.54, sd = 0.05, log = TRUE)
   }
   priors$phi <- function(s) {
-    # dnorm(s, mean = 0.94, sd = 0.1, log = TRUE) # previously 0.15, 0.05
+    dnorm(s, mean = 0.94, sd = 0.1, log = TRUE) # previously 0.15, 0.05
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.3, delta = 6, log = TRUE) # previously 0.5
-    # dgamma(s, shape=1, scale=0.2, log=TRUE)
-    # dbeta(s, 2, 2, log = TRUE)
-    dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$time_shifts <- function(s) {
     dgamma(s, shape=2, scale=0.08, log=TRUE)
     # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.5, delta = -5, log = TRUE)
-    # dunif(s, min = 0, max = 0.5, log = TRUE)
   }
   priors$beta_0 <- function(s) {
+    dbeta(s, 3, 100, log = TRUE)
     # dbeta(s, 30, 500, log = TRUE) # or dbeta(s, 20, 400, log = TRUE)
-    dbeta(s, 15, 500, log = TRUE)
-    # dgamma(s, shape = 1, scale = 0.02, log = TRUE) # previously 25, 0.01
-    # dunif(s, min = 0, max = 0.5, log = TRUE)
   }
   priors$betas <- function(s) {
-    # dbeta(s, 3.5, 10, log = TRUE) # more relaxed dbeta(s, 2, 15
-    dunif(s, min = 0, max = 1, log = TRUE)
+    dbeta(s, 3.5, 10, log = TRUE) # more relaxed dbeta(s, 2, 15
+    # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$beta_diff <- function(s) {
     dnorm(s, mean = 0.8, sd = 0.1, log = TRUE) # more relaxed dbeta(s, 2, 15
     # dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$vacc <- function(s) {
-    # dbeta(s, 1, 1.5, log = TRUE)
+    dbeta(s, 1, 1.5, log = TRUE)
     # dnorm(s, mean = 1e-4, sd = 3e-5, log = TRUE)
-    dunif(s, min = 0, max = 1, log = TRUE)
   }
   priors$log_delta1 <- function(s) {
-    dnorm(s, mean = -5, sd = 0.12, log = TRUE)
-    # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.2, delta = -4.5, log = TRUE)
-    # dunif(s, min = -5, max = -2, log = TRUE)
+    dnorm(s, mean = -4, sd = 0.9, log = TRUE)
+    # dnorm(s, mean = -4, sd = 0.12, log = TRUE)
   }
   priors$log_delta2 <- function(s) {
-    dnorm(s, mean = -4.5, sd = 0.1, log = TRUE)  # mean=-3.5, sd=0.15
-    # stabledist::dstable(s, alpha = 2, beta = 0, gamma = 0.2, delta = -4.5, log = TRUE)
-    # dunif(s, min = -5, max = -2, log = TRUE)
+    dnorm(s, mean = -4, sd = 0.9, log = TRUE)
+    # dnorm(s, mean = -3.42, sd = 0.1, log = TRUE)  # mean=-3.5, sd=0.15
   }
   priors$rho <- function(s) {
     # dnorm(s, mean = 0.8, sd = 0.5, log = TRUE)
@@ -253,8 +242,8 @@ prepare_priors <- function(pars) {
     dnorm(s, mean = 0.063, sd = 0.003, log = TRUE)
   }
   priors$omega <- function(s) {
-    # dgamma(s, shape = 1, scale = 0.5, log = TRUE)
     dunif(s, min = 0, max = 0.5, log = TRUE)
+    # dgamma(s, shape = 4, scale = 5e-5, log = TRUE)
   }
   priors$kappas <- function(s) {
     dgamma(s, shape=7,scale=1, log = TRUE)
