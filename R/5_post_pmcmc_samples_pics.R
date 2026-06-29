@@ -12,8 +12,8 @@ post_particle_pics <- function(n_sts){
   
   data <- readRDS("raw_data/pmcmc_data_week_allAge_ser1_test_2agegroups.rds")
   
-  if(file.exists(file.path(paste0(dir_name, "initial.csv")))){
-    initial_pars <- read.csv(paste0(dir_name, "initial.csv"))
+  if(file.exists(file.path(paste0(dir_name, "tune_initial.csv")))){
+    initial_pars <- read.csv(paste0(dir_name, "tune_initial.csv"))
     priors <- prepare_priors(initial_pars)
     
     png(paste0(dir_name, "figs/particles_posteriors_%02d.png"),
