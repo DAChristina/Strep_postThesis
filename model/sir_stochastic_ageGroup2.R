@@ -30,7 +30,7 @@ sigma_2 <- 1 # Assumed acute phase, 1 day
 
 # Ageing
 # group 1 = children, group 2 = adults
-age_rate[1] <- 1 / (14 * 365)
+age_rate[1] <- 1 / (44 * 365)
 age_rate[2] <- 0
 
 # Natural mortality
