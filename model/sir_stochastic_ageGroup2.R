@@ -36,7 +36,7 @@ age_rate[2] <- 0
 # Natural mortality
 # group 1 = children, group 2 = adults
 mu_0[1] <- 0
-mu_0[2] <- 1 / ((80.70 - 14) * 365)
+mu_0[2] <- 1 / ((80.70 - 44) * 365)
 # mu_0[1] <- 0
 # mu_0[2] <- 0
 # mu <- 0
