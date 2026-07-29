@@ -275,7 +275,8 @@ vaccine_simulation <- function(vaccYear){
                   colour = "Cases")
     ) +
     geom_line(aes(y = model_D1_med,
-                  colour = "Median")
+                  colour = "Median"),
+              linewidth = 0.75
     ) +
     scale_y_continuous(
       limits = c(0, 20)
@@ -284,7 +285,7 @@ vaccine_simulation <- function(vaccYear){
                  date_breaks = "year",
                  date_labels = "%Y") +
     scale_colour_manual(
-      values = c("Simulated results" = "grey30",
+      values = c("Simulated results" = "grey40",
                  "Median" = "black",
                  "Cases" = "#FF7F00"
       )
@@ -317,7 +318,8 @@ vaccine_simulation <- function(vaccYear){
                   colour = "Cases")
     ) +
     geom_line(aes(y = model_D2_med,
-                  colour = "Median")
+                  colour = "Median"),
+              linewidth = 0.75
     ) +
     scale_y_continuous(
       limits = c(0, 50)
@@ -326,12 +328,12 @@ vaccine_simulation <- function(vaccYear){
                  date_breaks = "year",
                  date_labels = "%Y") +
     scale_colour_manual(
-      values = c("Simulated results" = "grey30",
+      values = c("Simulated results" = "grey40",
                  "Median" = "black",
                  "Cases" = "#FF7F00"
       )
     ) +
-    ggtitle(paste0("Simulated cases for vaccine introduction in ", vaccYear, " in age group 0-14")) +
+    ggtitle(paste0("Simulated cases for vaccine introduction in ", vaccYear, " in age group 15+")) +
     xlab("Time") +
     ylab("Number of People") +
     theme_bw() +
