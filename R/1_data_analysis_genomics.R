@@ -64,12 +64,13 @@ ne_55 <- read.csv("raw_data/gen_lw/GPSC55_mlesky.csv") %>%
 write.csv(ne_55, "raw_data/GPSC55_mlesky_cleaned.csv", row.names = FALSE)
 
 # use Ne data to predict previous GPSC prevalence ##############################
-new_dates <- seq(from = as.Date(min(ne_55$date)), to = as.Date(max(ne_55$date)), by = "1 week") %>% 
+new_dates <- as.numeric(seq(from = as.Date(min(ne_55$date)), to = as.Date(max(ne_55$date)), by = "1 week")) %>% 
   glimpse()
 
-fn_Ne    <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne, method = "natural")
-fn_Ne_lo <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne_lb, method = "natural")
-fn_Ne_up <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne_ub, method = "natural")
+# I change smooth function from natural (cubic spline) to monoH.FC.
+fn_Ne    <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne, method = "monoH.FC")
+fn_Ne_lo <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne_lb, method = "monoH.FC")
+fn_Ne_up <- splinefun(x = as.Date(ne_55$date), y = ne_55$Ne_ub, method = "monoH.FC")
 
 spline_fit_Ne    <- fn_Ne(new_dates)
 spline_fit_Ne_lo <- fn_Ne_lo(new_dates)
@@ -78,7 +79,7 @@ spline_fit_Ne_up <- fn_Ne_up(new_dates)
 time_diffs_weeks <- as.numeric(diff(new_dates)) / 7
 
 interpolated_df <- tidyr::tibble(
-  date = new_dates[-1],
+  date = as.Date(new_dates[-1]),
   itr_Ne = spline_fit_Ne[-1],
   itr_Ne_lo = spline_fit_Ne_lo[-1],
   itr_Ne_up = spline_fit_Ne_up[-1],
@@ -88,6 +89,50 @@ interpolated_df <- tidyr::tibble(
     iso_week = paste0(year(date), "-W", sprintf("%02d", week(date)), "-1"),
     yearWeek = ISOweek::ISOweek2date(iso_week)
   ) %>%
+  glimpse()
+
+# write.csv(interpolated_df, "raw_data/GPSC55_mlesky_cleaned_interpolated.csv", row.names = FALSE)
+
+################################################################################
+# generate centred Ne
+interpolated_df <- interpolated_df %>% 
+  dplyr::arrange(yearWeek) %>% 
+  dplyr::mutate(
+    change_smooth_Ne = abs(itr_Ne - lag(itr_Ne)) / as.numeric(yearWeek - lag(yearWeek)),
+    rate_itr_Ne = abs(itr_Ne - lag(itr_Ne)) / as.numeric(yearWeek - lag(yearWeek)),
+    # stable_period = rate_itr_Ne < (threshold)
+  )
+threshold1 <- stats::mad(interpolated_df$rate_itr_Ne, na.rm = TRUE)*1
+threshold1
+
+# try threshold before the peak of the epidemic failed, tend to choose 2000 onwards instead
+interpolated_df_preEpi <- interpolated_df #%>% 
+# dplyr::filter(yearWeek >= as.Date("2000-01-01"))
+threshold2 <- stats::mad(interpolated_df_preEpi$rate_itr_Ne, na.rm = TRUE)*0.005
+threshold2
+
+ggplot(interpolated_df, aes(x = yearWeek, y = change_smooth_Ne)) +
+  geom_line() +
+  geom_hline(yintercept = threshold1, linetype = "dashed", color = "purple") + 
+  geom_hline(yintercept = threshold2, linetype = "dashed", color = "red") + # previously 1.130835e-05
+  scale_x_date(breaks = "3 years") +
+  scale_y_log10() +
+  theme_bw()
+
+plateau_yearWeeks <- interpolated_df$yearWeek[interpolated_df$rate_itr_Ne < threshold1]
+plateau_yearWeeks
+
+interpolated_df <- interpolated_df %>%
+  dplyr::mutate(
+    plateau_flag = ifelse(rate_itr_Ne < threshold1, 1, 0),
+    baseline_Ne = ifelse(plateau_flag == 1, itr_Ne, NA)
+  ) %>%
+  tidyr::fill(baseline_Ne, .direction = "down") %>% 
+  dplyr::mutate(
+    baseline_Ne = coalesce(baseline_Ne, min(itr_Ne, na.rm = TRUE)),
+    centred_Ne = pmax(itr_Ne - baseline_Ne, 0),
+    # centred_Ne = ifelse(yearWeek <= as.Date("2010-01-01"), 0, centred_Ne)
+  ) %>% 
   glimpse()
 
 # write.csv(interpolated_df, "raw_data/GPSC55_mlesky_cleaned_interpolated.csv", row.names = FALSE)
@@ -130,7 +175,7 @@ interpolated_df <- interpolated_df %>%
   dplyr::mutate(
     baseline_Ne = coalesce(baseline_Ne, min(itr_Ne, na.rm = TRUE)),
     centred_Ne = pmax(itr_Ne - baseline_Ne, 0),
-    centred_Ne = ifelse(yearWeek <= as.Date("2010-01-01"), 0, centred_Ne)
+    # centred_Ne = ifelse(yearWeek <= as.Date("2010-01-01"), 0, centred_Ne)
   ) %>% 
   glimpse()
 
@@ -376,23 +421,51 @@ dat_model <- ggplot(selected_GPSC55, aes(x = yearWeek)) +
 dat_model
 
 # test new model based on GPSC55/12F proportion
-model_gam_binom_spline <- mgcv::gam(prop_GPSC55 ~ sin_week + cos_week + s(centred_Ne) + as.numeric(weekAll),
+model_gam_binom_spline <- mgcv::gam(prop_GPSC55 ~ # sin_week + cos_week + s(centred_Ne) + as.numeric(weekAll),
+                                      # s(sin_week, bs = "cc", k = 10) +
+                                      # s(cos_week, bs = "cc", k = 10) +
+                                      s(week, bs = "cc", k = 10) +
+                                      s(centred_Ne, bs = "tp", k = 5) +
+                                      s(as.numeric(weekAll), bs = "tp", k = 10)
+                                    ,
                                     data = selected_GPSC55,
                                     family = binomial("logit"),
-                                    weights = count_12F)
-model_gam_binom_tensor <- mgcv::gam(prop_GPSC55 ~ sin_week + cos_week + te(centred_Ne) + as.numeric(weekAll),
+                                    weights = count_12F,
+                                    method  = "REML", # ML provides good result, NCV degrades the seasonality, not stable
+                                    knots = list(week = c(1, 53))
+)
+model_gam_binom_tensor <- mgcv::gam(prop_GPSC55 ~ # sin_week + cos_week + te(centred_Ne) + as.numeric(weekAll),
+                                      # te(sin_week, bs = "cc", k = 10) +
+                                      # te(cos_week, bs = "cc", k = 10) +
+                                      te(week, bs = "cc", k = 10) +
+                                      te(centred_Ne, bs = "tp", k = 5) +
+                                      te(as.numeric(weekAll), bs = "tp", k = 10)
+                                    ,
                                     data = selected_GPSC55,
                                     family = binomial("logit"),
-                                    weights = count_12F)
-model_glm_binom <- stats::glm(prop_GPSC55 ~ sin_week + cos_week + centred_Ne + as.numeric(weekAll),
+                                    weights = count_12F,
+                                    method  = "REML",
+                                    knots = list(week = c(1, 53))
+)
+model_glm_binom <- stats::glm(prop_GPSC55 ~ # sin_week + cos_week + centred_Ne + as.numeric(weekAll),
+                                sin_week +
+                                cos_week +
+                                centred_Ne +
+                                as.numeric(weekAll)
+                              ,
                               data = selected_GPSC55,
                               family = binomial("logit"),
-                              weights = count_12F)
+                              weights = count_12F
+)
 
 AIC(model_gam_binom_spline, model_gam_binom_tensor, model_glm_binom)
 BIC(model_gam_binom_spline, model_gam_binom_tensor, model_glm_binom)
 mgcv::gam.check(model_gam_binom_spline)
 plot(model_gam_binom_spline)
+
+# k-index close to 1: k is sufficient
+# k-index < 0.8: k too small, increase it
+# p-value < 0.05: k too small, increase it
 
 # test plot for the GLM
 par(mfrow = c(2, 2))
@@ -441,7 +514,8 @@ tibble(
 
 
 earlier_ne_df <- interpolated_df %>%
-  dplyr::filter(yearWeek >= as.Date("2010-01-01") & yearWeek <= as.Date("2017-08-01")) %>% # midpoint; they started intensively sequenced GPSC55 ("2017-08-01")
+  dplyr::filter(# yearWeek >= as.Date("2000-01-01") &
+    yearWeek <= as.Date("2017-08-01")) %>% # midpoint; they started intensively sequenced GPSC55 ("2017-08-01")
   dplyr::mutate(week = week(yearWeek),
                 weekAll = as.numeric((as.Date(yearWeek) - as.Date("2001-01-01"))/7),
                 sin_week = sin((2*pi*week + 39*3)/52),
@@ -496,9 +570,18 @@ earlier_ne_df <- earlier_ne_df %>%
     by = "yearWeek"
   ) %>% 
   dplyr::mutate(
-    predicted_count_GPSC55 = predicted_prop_GPSC55_gam_binom_spline*count_12F,
-    predicted_count_GPSC55_lo = predicted_prop_GPSC55_gam_binom_spline_lower*count_12F,
-    predicted_count_GPSC55_up = predicted_prop_GPSC55_gam_binom_spline_upper*count_12F
+    predicted_count_GPSC55 = as.vector(predicted_prop_GPSC55_gam_binom_spline*count_12F),
+    predicted_count_GPSC55_lo = as.vector(predicted_prop_GPSC55_gam_binom_spline_lower*count_12F),
+    predicted_count_GPSC55_up = as.vector(predicted_prop_GPSC55_gam_binom_spline_upper*count_12F),
+    
+    # adjust arrays to vectors
+    predicted_prop_GPSC55_gam_binom_spline = as.vector(predicted_prop_GPSC55_gam_binom_spline),
+    predicted_prop_GPSC55_gam_binom_spline_lower = as.vector(predicted_prop_GPSC55_gam_binom_spline_lower),
+    predicted_prop_GPSC55_gam_binom_spline_upper = as.vector(predicted_prop_GPSC55_gam_binom_spline_upper),
+    
+    predicted_prop_GPSC55_gam_binom_tensor = as.vector(predicted_prop_GPSC55_gam_binom_tensor),
+    predicted_prop_GPSC55_gam_binom_tensor_lower = as.vector(predicted_prop_GPSC55_gam_binom_tensor_lower),
+    predicted_prop_GPSC55_gam_binom_tensor_upper = as.vector(predicted_prop_GPSC55_gam_binom_tensor_upper)
   ) %>%
   glimpse()
 
@@ -538,8 +621,8 @@ combined <- dplyr::bind_rows(
     count = as.data.frame(count)
   ) %>% 
   unnest(cols = count) %>% 
-  dplyr::filter(yearWeek >= as.Date("2000-01-01"),
-                source != "2. Interpolated Ne") %>% # omit Ne
+  dplyr::filter( # yearWeek >= as.Date("2000-01-01"),
+    source != "2. Interpolated Ne") %>% # omit Ne
   glimpse()
 
 dat_fit <- ggplot(combined %>% 
@@ -637,7 +720,7 @@ reselected_GPSC55 <- test %>%
 ggplot(reselected_GPSC55, aes(x = yearWeek)) +
   geom_line(aes(y = count_12F, colour = "12F")) +
   geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
-  geom_line(aes(y = predicted_count_GPSC55, colour = "GAM prediction")) +
+  geom_line(aes(y = round(predicted_count_GPSC55, 0), colour = "GAM prediction")) +
   geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
   scale_colour_manual(values = c("12F" = "steelblue",
                                  "GPSC55" = "maroon",
