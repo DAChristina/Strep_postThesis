@@ -1,27 +1,30 @@
 library(tidyverse)
 library(odin.dust)
+library(socialmixr)
 
 # I update odin.dust by force
 # remotes::install_github("mrc-ide/odin.dust")
 
 # gen_sir <- odin.dust::odin_dust("model/sir_basic_trial.R")
 gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
+age.limits = c(0)
+N_age <- length(age.limits)
+
+contact_demographic <- suppressMessages(
+  socialmixr::contact_matrix(socialmixr::polymod,
+                             countries = "United Kingdom",
+                             age.limits = age.limits,
+                             symmetric = TRUE
+  ))
 
 # Running the SIR model with dust
-pars <- list(N_ini = 6.7e7,
-             log_A_ini = 0.6,
+pars <- list(N_ini = contact_demographic$demography$population, #6.7e7,
+             log_A_ini = 0.5,
              time_shift_1 = 0.0639227346367733, #0.302114578070083, # 0.100043419341372, # 
-             # time_shift_2 = 0.3766235,
              beta_0 = 0.0365789436634438, # 0.0381562615720545, #  # 
              beta_1 = 0.2647984930712, # 0.464821184134391, #  # 
-             # beta_2 = 0.58190970,
-             # scaled_wane = 0.0682579543,
-             # psi = (0.5),
-             hypo_sigma_2 = (1),
-             log_delta = (-4.65219600756188) # (-4.65135010884371) #  # 
-             # alpha = 0.01,
-             # gamma_annual = 0.01,
-             # nu_annual = 0.01
+             log_delta = (-4.75219600756188), # (-4.65135010884371) #  # 
+             omega = 0
 )
 
 # time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
@@ -56,7 +59,7 @@ for (t in seq_len(n_times)) {
 }
 # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
 # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
-data <- readRDS("inputs/pmcmc_data_week_allAge_ser1.rds") %>% 
+data <- readRDS("inputs/pmcmc_data_week_ageGroup12F.rds") %>% 
   glimpse()
 
 sir_data <- data %>% 
@@ -64,8 +67,8 @@ sir_data <- data %>%
     replicate = 1,
     # steps = time_start+1,
     weekly = seq_along(replicate),
-    value = count_serotype,
-    compartment = "data_count_serotype"
+    value = count_55,
+    compartment = "data_count_55"
   ) %>%
   glimpse()
 
@@ -91,15 +94,11 @@ incidence_modelled <-
   # dplyr::filter(index < 5) %>%
   dplyr::mutate(compartment = 
                   dplyr::case_when(index == 1 ~ "Time",
-                                   index == 2 ~ "A",
-                                   index == 3 ~ "D",
-                                   index == 4 ~ "S",
+                                   index == 2 ~ "S",
+                                   index == 3 ~ "A",
+                                   index == 4 ~ "D",
                                    index == 5 ~ "R",
-                                   index == 6 ~ "model_n_AD_weekly",
-                                   index == 7 ~ "Ne",
-                                   index == 8 ~ "cases_55",
-                                   index == 9 ~ "cases_non55",
-                                   index == 10 ~ "cases_12F"
+                                   index == 6 ~ "model_n_AD_weekly"
                   )) %>% 
   dplyr::select(-index) %>%
   dplyr::mutate(weekly = ceiling(steps/7)) %>% 
@@ -121,10 +120,10 @@ incidence_modelled <-
 ggplot(incidence_modelled %>% 
          dplyr::filter(
            # grepl("cases|D|data", compartment),
-           # compartment %in% c("D", "model_n_AD_weekly", "data_count_serotype"), # redesign the model, would rather fit to D
-           # compartment %in% c("model_n_AD_weekly", "data_count_serotype"),
+           # compartment %in% c("D", "model_n_AD_weekly", "data_count_55"), # redesign the model, would rather fit to D
+           # compartment %in% c("model_n_AD_weekly", "data_count_55"),
            # compartment %in% c("D", "n_AD_weekly"),
-           compartment %in% c("D", "data_count_serotype"),
+           compartment %in% c("D", "data_count_55"), #, "model_n_AD_weekly"),
            # compartment %in% c("D"),
            compartment != "Time",
            # compartment %in% c("S")
@@ -151,23 +150,23 @@ ggplot(incidence_modelled %>%
         legend.background = element_rect(fill = "transparent", color = "transparent"))
 
 
-transformations <- data.frame(
-  log_beta_0 = seq(-5, 0, 0.5)
-) %>% 
-  dplyr::mutate(beta_0 = as.numeric(10^log_beta_0),
-                scaled_A_ini = seq(0, 1, 0.1),
-                max_A_ini = 0,
-                min_A_ini = -20,
-                log_A_ini = scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini,
-                A_ini = 10^(log_A_ini)*6.7e7) %>% 
-  glimpse()
-
-# test A_ini
-
-log_A_ini = -3.77295312521097
-# log to scaled
-(log_A_ini-(-10)) / (0-(-10)) # (x - min) / (max - min)
-
+# transformations <- data.frame(
+#   log_beta_0 = seq(-5, 0, 0.5)
+# ) %>% 
+#   dplyr::mutate(beta_0 = as.numeric(10^log_beta_0),
+#                 scaled_A_ini = seq(0, 1, 0.1),
+#                 max_A_ini = 0,
+#                 min_A_ini = -20,
+#                 log_A_ini = scaled_A_ini*(max_A_ini-min_A_ini)+min_A_ini,
+#                 A_ini = 10^(log_A_ini)*6.7e7) %>% 
+#   glimpse()
+# 
+# # test A_ini
+# 
+# log_A_ini = -3.77295312521097
+# # log to scaled
+# (log_A_ini-(-10)) / (0-(-10)) # (x - min) / (max - min)
+# 
 
 
 

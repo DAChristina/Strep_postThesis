@@ -1,5 +1,6 @@
 library(tidyverse)
 library(odin.dust)
+library(socialmixr)
 
 # I update odin.dust by force
 # remotes::install_github("mrc-ide/odin.dust")
@@ -10,30 +11,34 @@ model_vs_data <- function(n_sts){
   dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
   dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
   # run 4_post_pmcmc_pics.R first
-  results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv")) %>% 
+  results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv"),
+                      row.names = 1) %>% 
     glimpse()
   
   
   # gen_sir <- odin.dust::odin_dust("model/sir_basic_trial.R")
   gen_sir <- odin.dust::odin_dust("model/sir_stochastic_allAge.R")
   
+  age.limits = c(0)
+  N_age <- length(age.limits)
+  
+  contact_demographic <- suppressMessages(
+    socialmixr::contact_matrix(socialmixr::polymod,
+                               countries = "United Kingdom",
+                               age.limits = age.limits,
+                               symmetric = TRUE
+    ))
+  
   # Running the SIR model with dust
-  pars <- list(N_ini = 6.7e7,
-               log_A_ini = results[1,2],
-               D_ini = 0,
-               R_ini = 0,
-               time_shift_1 = results[2,2],
-               # time_shift_2 = results[3,2],
-               beta_0 = results[3,2],
-               beta_1 = results[4,2],
-               # beta_2 = results[6,2],
-               # scaled_wane = results[7,2],
-               # psi = (0.5),
-               hypo_sigma_2 = (1),
-               log_delta = results[5,2]
-               # alpha = results[9,2],
-               # gamma_annual = results[10,2],
-               # nu_annual = results[11,2]
+  pars <- list(N_ini = contact_demographic$demography$population, #6.7e7,
+               log_A_ini = results["log_A_ini",2], # c(results[1,2], results[2,2]),
+               # phi = results["phi",2],
+               time_shift_1 = results["time_shift_1",2],
+               beta_0 = results["beta_0",2],
+               beta_1 = results["beta_1",2],
+               # vacc = results["vacc",2],
+               log_delta = results["log_delta",2],
+               omega = results["omega",2]
   )
   
   time_points <- round(seq(0, by = (365/52), length.out = 52*3)) # per-week, 22 years
@@ -69,7 +74,7 @@ model_vs_data <- function(n_sts){
   # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
-  data <- readRDS("inputs/pmcmc_data_week_allAge_ser1.rds") %>% 
+  data <- readRDS("inputs/pmcmc_data_week_ageGroup12F.rds") %>% 
     glimpse()
   
   sir_data <- data %>% 
@@ -77,8 +82,8 @@ model_vs_data <- function(n_sts){
       replicate = 1,
       # steps = time_start+1,
       weekly = seq_along(replicate),
-      value = count_serotype,
-      compartment = "data_count_serotype"
+      value = count_55,
+      compartment = "data_count_55"
     ) %>%
     glimpse()
   
@@ -104,15 +109,11 @@ model_vs_data <- function(n_sts){
     # dplyr::filter(index < 5) %>%
     dplyr::mutate(compartment = 
                     dplyr::case_when(index == 1 ~ "Time",
-                                     index == 2 ~ "A",
-                                     index == 3 ~ "model_D",
-                                     index == 4 ~ "S",
+                                     index == 2 ~ "S",
+                                     index == 3 ~ "A",
+                                     index == 4 ~ "model_D",
                                      index == 5 ~ "R",
-                                     index == 6 ~ "model_n_AD_weekly",
-                                     index == 7 ~ "Ne",
-                                     index == 8 ~ "cases_55",
-                                     index == 9 ~ "cases_non55",
-                                     index == 10 ~ "cases_12F"
+                                     index == 6 ~ "model_n_AD_weekly"
                     )) %>% 
     dplyr::select(-index) %>%
     dplyr::mutate(weekly = ceiling(steps/7)) %>% 
@@ -140,7 +141,7 @@ model_vs_data <- function(n_sts){
       width = 24, height = 17, unit = "cm", res = 600)
   p <- ggplot(incidence_modelled %>% 
                 dplyr::filter(
-                  compartment %in% c("model_D", "data_count_serotype"),
+                  compartment %in% c("model_D", "data_count_55"),
                   compartment != "Time"
                   )
               ,
@@ -148,9 +149,9 @@ model_vs_data <- function(n_sts){
                   group = interaction(compartment,replicate),
                   colour = compartment)) +
     geom_line() +
-    geom_vline(aes(xintercept = as.Date("2010-04-01"),
-                   colour = "PCV13 (April 2010)"),
-               linetype = "dashed") +
+    # geom_vline(aes(xintercept = as.Date("2010-04-01"),
+    #                colour = "PCV13 (April 2010)"),
+    #            linetype = "dashed") +
     # scale_y_continuous(trans = "log1p") +
     # scale_y_continuous(limits = c(0, 50)) +
     # scale_x_continuous(limits = c(0, 700)) +
