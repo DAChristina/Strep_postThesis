@@ -165,7 +165,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
     list(
       mcstate::pmcmc_parameter("log_A_ini", 0.6, min = 0, max = 1,
                                prior = priors$log_A_ini),
-      mcstate::pmcmc_parameter("phi", 0.5, min = (0), max = 2,
+      mcstate::pmcmc_parameter("phi", 1, min = (0), max = 2,
                                prior = priors$phi),
       mcstate::pmcmc_parameter("time_shift_1", 0.2, min = (0), max = 0.5, # previously (-10, 1)
                                prior = priors$time_shifts),
@@ -183,7 +183,7 @@ prepare_parameters <- function(initial_pars, priors, proposal, transform) {
                                prior = priors$log_delta2),
       # mcstate::pmcmc_parameter("sigma_1", 0.063, min = 0, max = 1,
       #                          prior = priors$sigmas),
-      mcstate::pmcmc_parameter("omega", 0.001, min = 0, max = 1,
+      mcstate::pmcmc_parameter("omega", 0.00001, min = 0, max = 1,
                                prior = priors$omega)
     #   mcstate::pmcmc_parameter("kappa_1", 10, min = 0,
     #                            prior = priors$kappas)

@@ -44,71 +44,23 @@ interpolated_ne <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated.csv") %
   glimpse()
 
 # non-heterogeneity (allAges), weekly
-ageGroup12F_weekly <- dat_c %>% 
-  dplyr::mutate(week_date = as.Date(week_date),
-                iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
-                yearWeek =ISOweek::ISOweek2date(iso_week)
-  ) %>% 
-  dplyr::group_by(yearWeek, ageGroup12F) %>% 
-  dplyr::summarise(count_12F = sum(counts)) %>% 
-  dplyr::ungroup() %>% 
-  tidyr::pivot_wider(
-    .,
-    names_from = contains("ageGroup"),
-    names_prefix = "count_",
-    values_from = "count_12F"
-  ) %>% 
-  dplyr::rename(
-    count_12F_1 = "count_0-44",
-    count_12F_2 = "count_45+"
-  ) %>% 
-  dplyr::mutate(yearWeek = as.Date(yearWeek)
-  ) %>% 
-  dplyr::full_join(
-    dplyr::bind_rows(
-      gen %>% 
-        dplyr::filter(strain == "GPSC55") %>% 
-        dplyr::mutate(week_date = as.Date(week_date),
-                      iso_week = paste0(year(week_date), "-W", sprintf("%02d", week(week_date)), "-1"),
-                      yearWeek =ISOweek::ISOweek2date(iso_week)
-        ) %>% 
-        dplyr::group_by(yearWeek, ageGroup12F) %>% 
-        dplyr::summarise(count_WGS_GPSC55 = n()) %>% 
-        dplyr::ungroup() %>% 
-        tidyr::pivot_wider(
-          .,
-          names_from = contains("ageGroup"),
-          names_prefix = "count_",
-          values_from = "count_WGS_GPSC55"
-        ) %>% 
-        dplyr::rename(
-          count_55_1 = "count_0-44",
-          count_55_2 = "count_45+"
-        ) %>% 
-        dplyr::mutate(yearWeek = as.Date(yearWeek))
-      ,
-      dplyr::full_join(
-        earlier_ne_df_1 %>% 
-          dplyr::transmute(
-            yearWeek = as.Date(yearWeek),
-            count_55_1 = predicted_count_55_1
-          ) %>% 
-          dplyr::filter(yearWeek <= as.Date("2017-08-01"))
-        ,
-        earlier_ne_df_2 %>% 
-          dplyr::transmute(
-            yearWeek = as.Date(yearWeek),
-            count_55_2 = predicted_count_55_2
-          ) %>% 
-          dplyr::filter(yearWeek <= as.Date("2017-08-01"))
-        ,
-        by = "yearWeek"
-        ,
-        relationship = "many-to-many"
-      )
-    ) # %>% 
-    # distinct(yearWeek, .keep_all = T)
-    , by = "yearWeek"
+ageGroup12F_weekly <- dplyr::full_join(
+  earlier_ne_df_1 %>% 
+    dplyr::transmute(
+      yearWeek = as.Date(yearWeek),
+      count_12F_1 = count_12F,
+      count_55_1 = predicted_count_55
+    )
+  ,
+  earlier_ne_df_2 %>% 
+    dplyr::transmute(
+      yearWeek = as.Date(yearWeek),
+      count_12F_2 = count_12F,
+      count_55_2 = predicted_count_55
+    )
+  ,
+  by = "yearWeek",
+  relationship = "many-to-many"
   ) %>% 
   dplyr::full_join(
     interpolated_ne
@@ -148,11 +100,18 @@ saveRDS(ageGroup12F_weekly, "inputs/pmcmc_data_week_ageGroup12F.rds")
 
 # test viz combined GPSC55
 ageGroup12F_weekly_long <- ageGroup12F_weekly %>% 
+  dplyr::mutate(
+    count_12F_1 = coalesce(count_12F_1, 0),
+    count_12F_2 = coalesce(count_12F_2, 0),
+    count_55_1 = coalesce(count_55_1, 0),
+    count_55_2 = coalesce(count_55_2, 0),
+  ) %>% 
   tidyr::pivot_longer(cols = c(count_12F_1,
-                               count_12F_2,
+                               # count_12F_2,
                                count_55_1,
-                               count_55_2,
-                               Ne),
+                               # count_55_2
+                               # Ne
+                               ),
                       names_to = "group",
                       values_to = "count") %>% 
   glimpse()
@@ -170,11 +129,11 @@ ggplot(ageGroup12F_weekly_long
   scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2022-06-01")), 
                date_breaks = "1 year",
                date_labels = "%Y") +
-  scale_y_log10() +
+  # scale_y_log10() +
   theme_bw() +
   labs(
     title = "GPSC55 Counts Prediction + Real Data",
-    y = "GPSC55 counts (in log10-scaled)"
+    y = "GPSC55 counts"
   ) +
   theme(legend.position = c(0.15, 0.85),
         legend.title = element_blank(),

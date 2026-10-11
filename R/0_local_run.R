@@ -60,12 +60,12 @@ for (n in c(5000, 10000)){ #, 100000)){ 5000, 10000, 20000,
 
 
 # pmcmc2 run only ##############################################################
-pmcmc_run2_only(n_pars = 10, n_sts = 600,
+pmcmc_run2_only(n_pars = 10, n_sts = 1000,
                 run2_stochastic = F, ncpus = 60)
-post_pmcmc_pics(600)
-model_vs_data(600)
-post_particle_pics(600)
-age_validation(600)
+post_pmcmc_pics(1000)
+model_vs_data(1000)
+post_particle_pics(1000)
+age_validation(1000)
 
 # vcv chunk error retry
 max_retries <- 5
