@@ -581,6 +581,28 @@ reselected_1 <- ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
         legend.background = element_rect(fill = "transparent", color = "transparent"))
 reselected_1
 
+initial_reselected_1 <- ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
+  geom_line(aes(y = count_12F, colour = "12F")) +
+  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
+  # geom_line(aes(y = predicted_count_55, colour = "GAM prediction")) +
+  geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
+  scale_colour_manual(values = c("12F" = "steelblue",
+                                 "GPSC55" = "maroon",
+                                 "GAM prediction" = "violet",
+                                 "Ne" = "gold2",
+                                 "Ne (centred)" = "orange")) +
+  theme_bw() +
+  # scale_y_log10() +
+  scale_x_date(date_breaks = "1 year",
+               date_labels = "%Y") +
+  labs(title = "Data for Model Inference (age 0-44)") +
+  theme(legend.position = c(0.1, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+initial_reselected_1
+
 reselected_GPSC55_2 <- test_long %>% 
   dplyr::arrange(yearWeek) %>% 
   dplyr::filter(
@@ -623,6 +645,28 @@ reselected_2 <- ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
 reselected_2
+
+initial_reselected_2 <- ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
+  geom_line(aes(y = count_12F, colour = "12F")) +
+  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
+  # geom_line(aes(y = predicted_count_55, colour = "GAM prediction")) +
+  geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
+  scale_colour_manual(values = c("12F" = "steelblue",
+                                 "GPSC55" = "maroon",
+                                 "GAM prediction" = "violet",
+                                 "Ne" = "gold2",
+                                 "Ne (centred)" = "orange")) +
+  theme_bw() +
+  # scale_y_log10() +
+  scale_x_date(date_breaks = "1 year",
+               date_labels = "%Y") +
+  labs(title = "Data for Model Inference (age 45+)") +
+  theme(legend.position = c(0.1, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+initial_reselected_2
 
 # combined count
 reselected_GPSC55_allAge <- test_long %>% 
@@ -707,4 +751,104 @@ reselected_all <- ggplot(reselected_GPSC55_allAge, aes(x = yearWeek)) +
 reselected_all
 
 
+################################################################################
+# recollect all picts
+for (i in 1:2) {
+  
+  save_plot <- cowplot::plot_grid(get(paste0("initial_reselected_", i)),
+                                  get(paste0("dat_fit", i)),
+                                  ncol = 1,
+                                  labels = c("A", "B")
+  )
+  
+  ribbon_picts <- cowplot::plot_grid(get(paste0("pred_ribbon", i)),
+                                     get(paste0("reselected_", i)),
+                                     ncol = 1,
+                                     labels = c("C", "D")
+  )
+  
+  combined_plot <- cowplot::plot_grid(save_plot, ribbon_picts,
+                                      ncol = 2,
+                                      labels = c("", "")
+  )
+  
+  png(filename = paste0("report/picts_proportion_centredNe_allWGS_combined_",
+                        i, ".png"),
+      width = 40, height = 20, units = "cm", res = 300)
+  
+  print(combined_plot)
+  dev.off()
+  
+  # additional pics for model adjustment
+  
+  # par(mfrow = c(2, 2))
+  # mgcv::gam.check(get(paste0("model_age",i)))
+  # par(mfrow = c(1, 1))
+  sim <- DHARMa::simulateResiduals(get(paste0("model_age",i)),
+                                   n = 1000)
+  
+  png(filename = paste0("report/picts_proportion_centredNe_allWGS_combined_1gam.check_",
+                        i, ".png"),
+      width = 20, height = 20, units = "cm", res = 300)
+  par(mfrow = c(2, 2))
+  
+  DHARMa::plotQQunif(sim)
+  DHARMa::plotResiduals(sim)
+  disp <- DHARMa::testDispersion(sim)
+  zero <- DHARMa::testZeroInflation(sim)  # draws zero-inflation histogram
+  
+  dev.off()
+  
+  png(filename = paste0("report/picts_proportion_centredNe_allWGS_combined_2plot_",
+                        i, ".png"),
+      width = 20, height = 20, units = "cm", res = 300)
+  par(mfrow = c(2, 2))
+  plot(get(paste0("model_age",i)))
+  par(mfrow = c(1, 1))
+  dev.off()
+  
+  # save model result
+  check_output <- capture.output(
+    mgcv::gam.check(get(paste0("model_age",i)))
+  )
+  
+  writeLines(check_output,
+             paste0("report/report_gam_check_",
+                    i, ".txt"
+                    )
+  )
+}
+
+
+################################################################################
+# test gratia to compare age groups
+# model_by <- mgcv::gam(cbind(count_GPSC55, count_12F - count_GPSC55) ~
+#                         ageGroup12F +
+#                         s(week, bs = "cc", by = ageGroup12F, k = 15) +
+#                         s(centred_Ne, bs = "tp", by = ageGroup12F, k = 5) +
+#                         s(weekAll, bs = "tp", by = ageGroup12F, k = 15)
+#                       ,
+#                       data = test_long %>% 
+#                         dplyr::filter(
+#                           yearWeek >= as.Date("2017-09-01") | yearWeek <= as.Date("2010-01-01"), # using proportions, I set up range when the first time 12F data were recorded ("2001-01-01") instead of GPSC data were intensively collected ("2017-08-01")
+#                           # prop_GPSC55 >= 0 & prop_GPSC55 <= 1 # minor correction for missing 12F data (or GPSC counts > 12F counts)
+#                           prop_GPSC55 <= 1,
+#                           count_12F > 0
+#                         ) %>% 
+#                         dplyr::mutate(
+#                           weekAll = as.numeric((as.Date(yearWeek) - as.Date("2001-01-01"))/7),
+#                           ageGroup12F = factor(ageGroup12F,
+#                                                levels = c("0-44", "45+"))
+#                           )
+#                       ,
+#                       family = binomial("logit"),
+#                       # weights = count_12F,
+#                       method  = "REML", # ML provides good result, NCV degrades the seasonality, not stable
+#                       knots = list(week = c(0.5, 52.5))
+# )
+# gratia::difference_smooths(model_by, smooth = "s(weekAll)")
+# gratia::draw(model_by)
+# 
+# gam.check(model_by)
+# mgcv::concurvity(model_by, full = TRUE)
 

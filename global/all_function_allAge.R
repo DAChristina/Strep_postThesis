@@ -391,9 +391,11 @@ observe <- function(pmcmc_samples) {
 
 plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
+  y_max <- max(data$count_55_1, na.rm = TRUE)+max(data$count_55_2, na.rm = TRUE)
   # model state refers to n_AD_weekly (not the D compartment)
   matplot(data$yearWeek, t((state["n_AD1_weekly", , -1]+state["n_AD2_weekly", , -1])),
           type = "l", lty = 1, col = col,
+          ylim = c(0, y_max),
           xlab = "", ylab = "GPSC55 cases")
   # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
   points(data$yearWeek, (data$count_55_1+data$count_55_2), col = 4, type = "l")
