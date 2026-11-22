@@ -53,8 +53,8 @@ case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
 
   # sir_model$info()$index$n_AD_weekly
-  model_1 <- state[7, , drop = TRUE]
-  model_2 <- state[8, , drop = TRUE]
+  model_1 <- state["n_AD1_monthly", , drop = TRUE] # n_AD1_monthly
+  model_2 <- state["n_AD2_weekly", , drop = TRUE]
 
   if (is.na(observed$count_55_1)) {
     ll_1 <- dpois(x = 0,
@@ -242,7 +242,8 @@ prepare_priors <- function(pars) {
     dnorm(s, mean = 0.063, sd = 0.003, log = TRUE)
   }
   priors$omega <- function(s) {
-    dunif(s, min = 0, max = 0.5, log = TRUE)
+    # dunif(s, min = 0, max = 0.5, log = TRUE)
+    dgamma(s, shape=2, scale=0.08, log=TRUE)
     # dgamma(s, shape = 4, scale = 5e-5, log = TRUE)
   }
   priors$kappas <- function(s) {
@@ -380,11 +381,20 @@ observe <- function(pmcmc_samples) {
   time <- pmcmc_samples$trajectories$time
   
   ## extract model outputs
-  model_all <- (state[7, , , drop = TRUE]+state[8, , , drop = TRUE])
-  model_child <- state[7, , , drop = TRUE]
+  model_all <- (state["n_AD1_weekly", , , drop = TRUE]+state["n_AD2_weekly", , , drop = TRUE]) # weekly
+  
+  model_age1_weekly <- state["n_AD1_weekly", , , drop = TRUE]
+  model_age1_monthly <- state["n_AD1_monthly", , , drop = TRUE]
+  
+  model_age2_weekly <- state["n_AD2_weekly", , , drop = TRUE]
+  model_age2_monthly <- state["n_AD2_monthly", , , drop = TRUE]
   
   observed <- list()
-  observed$cases_child <- observe_pois(model_child)
+  observed$cases_age1_weekly <- observe_pois(model_age1_weekly)
+  observed$cases_age1_monthly <- observe_pois(model_age1_monthly)
+  
+  observed$cases_age2_weekly <- observe_pois(model_age2_weekly)
+  observed$cases_age2_monthly <- observe_pois(model_age2_monthly)
   
   abind::abind(c(list(state), observed), along = 1)
 }
@@ -393,23 +403,82 @@ plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
   y_max <- max(data$count_55_1, na.rm = TRUE)+max(data$count_55_2, na.rm = TRUE)
   # model state refers to n_AD_weekly (not the D compartment)
-  matplot(data$yearWeek, t((state["n_AD1_weekly", , -1]+state["n_AD2_weekly", , -1])),
+  matplot(data$yearWeek, t((state["n_AD1_monthly", , -1])),
           type = "l", lty = 1, col = col,
           ylim = c(0, y_max),
-          xlab = "", ylab = "GPSC55 cases")
+          xlab = "", ylab = "GPSC55 cases (monthly)")
   # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
-  points(data$yearWeek, (data$count_55_1+data$count_55_2), col = 4, type = "l")
+  points(data$yearWeek, (data$count_55_1), col = 4, type = "l")
   
-  matplot(data$yearWeek, xlab = "", t(state["S_tot", , -1]),
-          type = "l", lty = 1, col = 2, ylab = "%", ylim = c(0, 6.7e7), yaxt = "n")
-  axis(side = 2, at = seq(0, 6e7, length.out = 5),
-       labels = seq(0, 100, length.out = 5))
-  
-  matlines(data$yearWeek, t(state["A_tot", , -1]), lty = 1, col = 1)
-  matlines(data$yearWeek, t(state["D_tot", , -1]), lty = 1, col = 4)
-  matlines(data$yearWeek, t(state["R_tot", , -1]), lty = 1, col = 5)
-  legend("right", bty = "n", fill = 2:4, legend = c("S_tot", "A_tot", "D_tot", "R_tot"))
+  matplot(data$yearWeek, t((state["n_AD2_weekly", , -1])),
+          type = "l", lty = 1, col = col,
+          ylim = c(0, y_max),
+          xlab = "", ylab = "GPSC55 cases (monthly)")
+  # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
+  points(data$yearWeek, (data$count_55_2), col = 4, type = "l")
   # 
   # matplot(data$yearWeek, xlab = "", t(state["I_tot", , -1]),
   #         type = "l", lty = 1, col = 3, ylab = "carriers")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+observe <- function(pmcmc_samples) {
+  
+  state <- pmcmc_samples$trajectories$state
+  pars <- apply(pmcmc_samples$pars, MARGIN = 1, pmcmc_samples$predict$transform)
+  time <- pmcmc_samples$trajectories$time
+  
+  ## extract model outputs
+  model_age1 <- state["n_AD1_monthly", , , drop = TRUE]
+  model_age2 <- state["n_AD2_weekly", , , drop = TRUE]
+  
+  observed <- list()
+  observed$cases_age1 <- observe_pois(model_age1)
+  observed$cases_age2 <- observe_pois(model_age2)
+  
+  abind::abind(c(list(state), observed), along = 1)
+}
+
+plot_states <- function(state, data) {
+  col <- grey(0.3, 0.1)
+  # y_max <- max(data$count_55_all_weekly, na.rm = TRUE)
+  # model state refers to n_AD_weekly (not the D compartment); separated into 2 age groups
+  
+  # age group 1
+  matplot(data$yearWeek, t(state["n_AD1_weekly", , -1]),
+          type = "l", lty = 1, col = col,
+          ylim = c(0, max(data$count_55_1, na.rm = TRUE)),
+          xlab = "", ylab = "GPSC55 cases")
+  # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
+  points(data$yearMonth, (data$count_55_1), col = 4, type = "l")
+
+  # age group 2
+  matplot(data$yearWeek, t(state["n_AD2_weekly", , -1]),
+          type = "l", lty = 1, col = col,
+          ylim = c(0, max(data$count_55_2, na.rm = TRUE)),
+          xlab = "", ylab = "GPSC55 cases")
+  # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
+  points(data$yearWeek, (data$count_55_2), col = 4, type = "l")
 }

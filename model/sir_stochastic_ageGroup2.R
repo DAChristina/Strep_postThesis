@@ -13,8 +13,8 @@ beta_1 <- user(0, min = 0, max = 1)
 # theta <- 0.19 # proportion of vaccinated children in 0-14 age group
 theta <- (time-(burnin_days+2648))/(14*365)
 
-UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
-UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
+# UK_calibration_kids <- 1.07638532472038 # FIXED (Lochen et al., 2022)
+# UK_calibration_adults <- 0.536936186788821 # FIXED (Lochen et al., 2022)
 
 # stratify log_delta
 log_delta1 <- user(0, min = -10, max = 1)
@@ -134,6 +134,9 @@ initial(R_tot) <- 0
 initial(n_AD1_weekly) <- 0
 initial(n_AD2_weekly) <- 0
 
+initial(n_AD1_monthly) <- 0
+initial(n_AD2_monthly) <- 0
+
 # 3. UPDATES ###################################################################
 # age-structured contact matrix featured in lambda:
 # https://mrc-ide.github.io/odin.dust/articles/sir_models.html
@@ -181,8 +184,8 @@ foi_ij[, ] <- beta * m[i, j] * (((A[j] + D[j])/N[j]))
 
 lambda[] <- sum(foi_ij[i, ])
 
-delta[1] <- (10^(log_delta1))*UK_calibration_kids
-delta[2] <- (10^(log_delta2))*UK_calibration_adults
+delta[1] <- (10^(log_delta1)) #*UK_calibration_kids
+delta[2] <- (10^(log_delta2)) #*UK_calibration_adults
 # delta[2] <- (10^(log_delta1))*rho #*UK_calibration_adults
 
 # sigma_1[1] <- hypo_sigma_1 # test no A -> R in kids
@@ -277,4 +280,7 @@ update(R_tot) <- sum(R)
 # based on tutorial: https://mrc-ide.github.io/odin-dust-tutorial/mcstate.html#/the-model
 update(n_AD1_weekly) <- if (step %% (7*freq) == 0) n_AD[1] else n_AD1_weekly + n_AD[1]
 update(n_AD2_weekly) <- if (step %% (7*freq) == 0) n_AD[2] else n_AD2_weekly + n_AD[2]
+
+update(n_AD1_monthly) <- if (step %% (28*freq) == 0) n_AD[1] else n_AD1_monthly + n_AD[1]
+update(n_AD2_monthly) <- if (step %% (28*freq) == 0) n_AD[2] else n_AD2_monthly + n_AD[2]
 

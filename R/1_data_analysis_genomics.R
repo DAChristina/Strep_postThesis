@@ -345,19 +345,6 @@ fit_age_gam <- function(df_age){
 }
 
 
-
-# report function
-# compile_all_df <- function(df1, df2, df3){
-#   
-#   
-# }
-# 
-# produce_picts <- function(df1, df2, df3){
-#   
-#   
-# }
-
-
 ################################################################################
 dat_age1 <- test_long %>% 
   dplyr::filter(ageGroup12F == "0-44") %>% 
@@ -414,20 +401,42 @@ pred_total <- dplyr::bind_rows(pred_age1, pred_age2) %>%
     .groups = "drop") %>% 
   glimpse()
 
-# save report
-write.csv(pred_age1,
-          "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_1.csv",
-          row.names = FALSE)
-write.csv(pred_age2,
-          "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_2.csv",
-          row.names = FALSE)
-write.csv(pred_total,
-          "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom.csv",
-          row.names = FALSE)
+# adjust monthly data for age group 0-44
+pred_age1_monthly <- pred_age1 %>%
+  # # test monthly
+  # dplyr::mutate(
+  #   yearMonth = lubridate::floor_date(as.Date(yearWeek), "month")
+  # ) %>%
+  # dplyr::group_by(yearMonth) %>%
+  # dplyr::summarise(
+  #   count_12F = sum(count_12F, na.rm = TRUE),
+  #   predicted_count_55 = sum(predicted_count_55, na.rm = TRUE),
+  #   predicted_count_55_lo = sum(predicted_count_55_lo, na.rm = TRUE),
+  #   predicted_count_55_hi = sum(predicted_count_55_hi, na.rm = TRUE),
+  #   .groups = "drop"
+  # ) %>% 
+  
+  # per 28 days
+  dplyr::mutate(
+    period = (weekAll - 1) %/% 4 + 1
+  ) %>%
+  dplyr::group_by(period) %>%
+  dplyr::summarise(
+    count_12F = sum(count_12F, na.rm = TRUE),
+    predicted_count_55 = sum(predicted_count_55, na.rm = TRUE),
+    predicted_count_55_lo = sum(predicted_count_55_lo, na.rm = TRUE),
+    predicted_count_55_hi = sum(predicted_count_55_hi, na.rm = TRUE),
+    yearWeek = max(yearWeek, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% 
+  dplyr::mutate(
+    yearMonth = lubridate::floor_date(as.Date(yearWeek), "month")
+  ) %>% 
+  glimpse()
 
 
 # produce picts
-# 1. proportion
+# proportion
 dat_fit1 <- ggplot(pred_age1
                    , aes(x = yearWeek, y = p_hat, color = p_hat)) +
   geom_line(size = 1) +
@@ -485,31 +494,31 @@ dat_fit2 <- ggplot(pred_age2
 dat_fit2
 
 # case count prediction
-pred_ribbon1 <- ggplot(pred_age1
-                       , aes(x = yearWeek, y = predicted_count_55)) +
-  geom_line(size = 0.5) +
-  geom_ribbon(data = pred_age1,
-              aes(x = yearWeek,
-                  ymin = predicted_count_55_lo,
-                  ymax = predicted_count_55_hi),
-              inherit.aes = FALSE,
-              fill = "blue", alpha = 0.2
-  ) +
-  # geom_point(size = 0.5, alpha = 0.6) +
-  scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2017-11-01")), 
-               date_breaks = "1 year",
-               date_labels = "%Y") +
-  theme_bw() +
-  labs(
-    title = "GPSC55 Counts Prediction Result (age 0-44)",
-    y = "GPSC55 counts prediction"
-  ) +
-  theme(legend.position = c(0.15, 0.85),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.8, "lines"),
-        legend.text = element_text(size = 10),
-        legend.background = element_rect(fill = "transparent", colour = "transparent"))
-pred_ribbon1
+# pred_ribbon1 <- ggplot(pred_age1
+#                        , aes(x = yearWeek, y = predicted_count_55)) +
+#   geom_line(size = 0.5) +
+#   geom_ribbon(data = pred_age1,
+#               aes(x = yearWeek,
+#                   ymin = predicted_count_55_lo,
+#                   ymax = predicted_count_55_hi),
+#               inherit.aes = FALSE,
+#               fill = "blue", alpha = 0.2
+#   ) +
+#   # geom_point(size = 0.5, alpha = 0.6) +
+#   scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2017-11-01")), 
+#                date_breaks = "1 year",
+#                date_labels = "%Y") +
+#   theme_bw() +
+#   labs(
+#     title = "GPSC55 Counts Prediction Result (age 0-44)",
+#     y = "GPSC55 counts prediction"
+#   ) +
+#   theme(legend.position = c(0.15, 0.85),
+#         legend.title = element_blank(),
+#         legend.key.size = unit(0.8, "lines"),
+#         legend.text = element_text(size = 10),
+#         legend.background = element_rect(fill = "transparent", colour = "transparent"))
+# pred_ribbon1
 
 pred_ribbon2 <- ggplot(pred_age2
                        , aes(x = yearWeek, y = predicted_count_55)) +
@@ -537,6 +546,33 @@ pred_ribbon2 <- ggplot(pred_age2
         legend.background = element_rect(fill = "transparent", colour = "transparent"))
 pred_ribbon2
 
+# test monthly data for 0-44 age group
+pred_ribbon1 <- ggplot(pred_age1_monthly
+                               , aes(x = yearMonth, y = predicted_count_55)) +
+  geom_line(size = 0.5) +
+  geom_ribbon(data = pred_age1_monthly,
+              aes(x = yearMonth,
+                  ymin = predicted_count_55_lo,
+                  ymax = predicted_count_55_hi),
+              inherit.aes = FALSE,
+              fill = "blue", alpha = 0.2
+  ) +
+  # geom_point(size = 0.5, alpha = 0.6) +
+  scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2017-11-01")), 
+               date_breaks = "1 year",
+               date_labels = "%Y") +
+  theme_bw() +
+  labs(
+    title = "GPSC55 Counts Prediction Result (age 0-44)",
+    y = "GPSC55 counts prediction"
+  ) +
+  theme(legend.position = c(0.15, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", colour = "transparent"))
+pred_ribbon1
+
 # test combine all model viz
 reselected_GPSC55_1 <- test_long %>% 
   dplyr::arrange(yearWeek) %>% 
@@ -559,49 +595,49 @@ reselected_GPSC55_1 <- test_long %>%
   dplyr::distinct(yearWeek, .keep_all = TRUE) %>% 
   glimpse()
 
-reselected_1 <- ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
-  geom_line(aes(y = count_12F, colour = "12F")) +
-  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
-  geom_line(aes(y = predicted_count_55, colour = "GAM prediction")) +
-  geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
-  scale_colour_manual(values = c("12F" = "steelblue",
-                                 "GPSC55" = "maroon",
-                                 "GAM prediction" = "violet",
-                                 "Ne" = "gold2",
-                                 "Ne (centred)" = "orange")) +
-  theme_bw() +
-  # scale_y_log10() +
-  scale_x_date(date_breaks = "1 year",
-               date_labels = "%Y") +
-  labs(title = "Data for Model Inference (age 0-44)") +
-  theme(legend.position = c(0.1, 0.85),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.8, "lines"),
-        legend.text = element_text(size = 10),
-        legend.background = element_rect(fill = "transparent", color = "transparent"))
-reselected_1
-
-initial_reselected_1 <- ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
-  geom_line(aes(y = count_12F, colour = "12F")) +
-  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
-  # geom_line(aes(y = predicted_count_55, colour = "GAM prediction")) +
-  geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
-  scale_colour_manual(values = c("12F" = "steelblue",
-                                 "GPSC55" = "maroon",
-                                 "GAM prediction" = "violet",
-                                 "Ne" = "gold2",
-                                 "Ne (centred)" = "orange")) +
-  theme_bw() +
-  # scale_y_log10() +
-  scale_x_date(date_breaks = "1 year",
-               date_labels = "%Y") +
-  labs(title = "Data for Model Inference (age 0-44)") +
-  theme(legend.position = c(0.1, 0.85),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.8, "lines"),
-        legend.text = element_text(size = 10),
-        legend.background = element_rect(fill = "transparent", color = "transparent"))
-initial_reselected_1
+# reselected_1 <- ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
+#   geom_line(aes(y = count_12F, colour = "12F")) +
+#   geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
+#   geom_line(aes(y = predicted_count_55, colour = "GAM prediction")) +
+#   geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
+#   scale_colour_manual(values = c("12F" = "steelblue",
+#                                  "GPSC55" = "maroon",
+#                                  "GAM prediction" = "violet",
+#                                  "Ne" = "gold2",
+#                                  "Ne (centred)" = "orange")) +
+#   theme_bw() +
+#   # scale_y_log10() +
+#   scale_x_date(date_breaks = "1 year",
+#                date_labels = "%Y") +
+#   labs(title = "Data for Model Inference (age 0-44)") +
+#   theme(legend.position = c(0.1, 0.85),
+#         legend.title = element_blank(),
+#         legend.key.size = unit(0.8, "lines"),
+#         legend.text = element_text(size = 10),
+#         legend.background = element_rect(fill = "transparent", color = "transparent"))
+# reselected_1
+# 
+# initial_reselected_1 <- ggplot(reselected_GPSC55_1, aes(x = yearWeek)) +
+#   geom_line(aes(y = count_12F, colour = "12F")) +
+#   geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
+#   # geom_line(aes(y = predicted_count_55, colour = "GAM prediction")) +
+#   geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
+#   scale_colour_manual(values = c("12F" = "steelblue",
+#                                  "GPSC55" = "maroon",
+#                                  "GAM prediction" = "violet",
+#                                  "Ne" = "gold2",
+#                                  "Ne (centred)" = "orange")) +
+#   theme_bw() +
+#   # scale_y_log10() +
+#   scale_x_date(date_breaks = "1 year",
+#                date_labels = "%Y") +
+#   labs(title = "Data for Model Inference (age 0-44)") +
+#   theme(legend.position = c(0.1, 0.85),
+#         legend.title = element_blank(),
+#         legend.key.size = unit(0.8, "lines"),
+#         legend.text = element_text(size = 10),
+#         legend.background = element_rect(fill = "transparent", color = "transparent"))
+# initial_reselected_1
 
 reselected_GPSC55_2 <- test_long %>% 
   dplyr::arrange(yearWeek) %>% 
@@ -667,6 +703,94 @@ initial_reselected_2 <- ggplot(reselected_GPSC55_2, aes(x = yearWeek)) +
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
 initial_reselected_2
+
+
+# adjust for monthly case counts in 0-44 age group
+reselected_GPSC55_1_monthly <- test_long %>%
+  dplyr::filter(
+    ageGroup12F == "0-44",
+    yearWeek >= as.Date("2010-01-01")
+  ) %>%
+  dplyr::mutate(
+    yearWeek = as.Date(yearWeek),
+    weekAll = as.numeric(
+      (yearWeek - as.Date("2001-01-01")) / 7
+    ),
+    period = (weekAll - 1) %/% 4 + 1
+  ) %>%
+  dplyr::group_by(period) %>%
+  dplyr::summarise(
+    count_12F = sum(count_12F, na.rm = TRUE),
+    count_GPSC55 = sum(count_GPSC55, na.rm = TRUE),
+    yearWeek = max(yearWeek, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::left_join(
+    pred_age1_monthly %>%
+      dplyr::select(
+        period,
+        yearMonth,
+        predicted_count_55
+      )
+    ,
+    by = "period",
+    # by = "yearMonth",
+    relationship = "one-to-one"
+  ) %>%
+  dplyr::mutate(
+    count_GPSC55 = dplyr::if_else(yearMonth <= lubridate::floor_date(
+      as.Date(min(gen$collection_date, na.rm = TRUE)),
+      "month"
+    ),
+    NA_real_,
+    as.numeric(count_GPSC55))
+  ) %>% 
+  glimpse()
+
+
+reselected_1 <- ggplot(reselected_GPSC55_1_monthly, aes(x = yearMonth)) +
+  geom_line(aes(y = count_12F, colour = "12F")) +
+  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
+  geom_line(aes(y = predicted_count_55, colour = "GAM prediction")) +
+  geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
+  scale_colour_manual(values = c("12F" = "steelblue",
+                                 "GPSC55" = "maroon",
+                                 "GAM prediction" = "violet",
+                                 "Ne" = "gold2",
+                                 "Ne (centred)" = "orange")) +
+  theme_bw() +
+  # scale_y_log10() +
+  scale_x_date(date_breaks = "1 year",
+               date_labels = "%Y") +
+  labs(title = "Data for Model Inference (age 0-44)") +
+  theme(legend.position = c(0.1, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+reselected_1
+
+initial_reselected_1 <- ggplot(reselected_GPSC55_1_monthly, aes(x = yearMonth)) +
+  geom_line(aes(y = count_12F, colour = "12F")) +
+  geom_line(aes(y = count_GPSC55, colour = "GPSC55"), size = 1) +
+  # geom_line(aes(y = predicted_count_55, colour = "GAM prediction")) +
+  geom_vline(xintercept = as.Date("2017-09-01"), color = "steelblue", linetype = "dashed") +
+  scale_colour_manual(values = c("12F" = "steelblue",
+                                 "GPSC55" = "maroon",
+                                 "GAM prediction" = "violet",
+                                 "Ne" = "gold2",
+                                 "Ne (centred)" = "orange")) +
+  theme_bw() +
+  # scale_y_log10() +
+  scale_x_date(date_breaks = "1 year",
+               date_labels = "%Y") +
+  labs(title = "Data for Model Inference (age 0-44)") +
+  theme(legend.position = c(0.1, 0.85),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.8, "lines"),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = "transparent", color = "transparent"))
+initial_reselected_1
 
 # combined count
 reselected_GPSC55_allAge <- test_long %>% 
@@ -749,6 +873,48 @@ reselected_all <- ggplot(reselected_GPSC55_allAge, aes(x = yearWeek)) +
         legend.text = element_text(size = 10),
         legend.background = element_rect(fill = "transparent", color = "transparent"))
 reselected_all
+
+# save report
+write.csv(reselected_GPSC55_1 %>% 
+            dplyr::mutate(
+              count_GPSC55 = ifelse(yearWeek <= as.Date("2017-09-01"),
+                                    predicted_count_55,
+                                    count_GPSC55
+                                    ),
+            )
+          ,
+          "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_1.csv",
+          row.names = FALSE)
+write.csv(reselected_GPSC55_1_monthly %>% 
+            dplyr::mutate(
+              count_GPSC55 = ifelse(yearWeek <= as.Date("2017-09-01"),
+                                    predicted_count_55,
+                                    count_GPSC55
+              ),
+            )
+          ,
+          "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_1_monthly.csv",
+          row.names = FALSE)
+write.csv(reselected_GPSC55_2 %>% 
+            dplyr::mutate(
+              count_GPSC55 = ifelse(yearWeek <= as.Date("2017-09-01"),
+                                    predicted_count_55,
+                                    count_GPSC55
+              ),
+            )
+          ,
+          "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_2.csv",
+          row.names = FALSE)
+write.csv(reselected_GPSC55_allAge %>% 
+            dplyr::mutate(
+              count_GPSC55 = ifelse(yearWeek <= as.Date("2017-09-01"),
+                                    predicted_count_55,
+                                    count_GPSC55
+              ),
+            )
+          ,
+          "raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom.csv",
+          row.names = FALSE)
 
 
 ################################################################################

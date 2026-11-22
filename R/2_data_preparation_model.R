@@ -31,6 +31,9 @@ gen <- read.csv("raw_data/genomic_data_cleaned.csv") %>%
 earlier_ne_df_1 <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_1.csv") %>% 
   glimpse()
 
+earlier_ne_df_1_monthly <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_1_monthly.csv") %>% 
+  glimpse()
+
 earlier_ne_df_2 <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated_predictedModel_binom_2.csv") %>% 
   glimpse()
 
@@ -43,62 +46,58 @@ interpolated_ne <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated.csv") %
   dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
   glimpse()
 
-# non-heterogeneity (allAges), weekly
-ageGroup12F_weekly <- dplyr::full_join(
-  earlier_ne_df_1 %>% 
-    dplyr::transmute(
-      yearWeek = as.Date(yearWeek),
-      count_12F_1 = count_12F,
-      count_55_1 = predicted_count_55
-    )
-  ,
-  earlier_ne_df_2 %>% 
-    dplyr::transmute(
-      yearWeek = as.Date(yearWeek),
-      count_12F_2 = count_12F,
-      count_55_2 = predicted_count_55
-    )
-  ,
-  by = "yearWeek",
-  relationship = "many-to-many"
-  ) %>% 
-  dplyr::full_join(
-    interpolated_ne
-    ,
-    by = "yearWeek"
-    ,
-    relationship = "many-to-many"
+# non-heterogeneity (allAges), weekly (monthly for 0-44 age group)
+ageGroup12F_1 <- earlier_ne_df_1_monthly %>%
+  dplyr::transmute(
+    yearMonth = as.Date(yearMonth),
+    count_12F_1 = as.numeric(count_12F),
+    count_55_1 = as.numeric(round(count_GPSC55))
   ) %>%
+  dplyr::arrange(yearMonth) %>%
+  dplyr::filter(yearMonth >= as.Date("2010-01-01")) %>%
+  dplyr::distinct(yearMonth, .keep_all = TRUE) %>%
   dplyr::mutate(
-    count_12F_1 = as.numeric(count_12F_1),
-    count_12F_2 = as.numeric(count_12F_2),
-    count_55_1 = as.numeric(round(count_55_1), 0),
-    count_55_2 = as.numeric(round(count_55_2), 0),
-    count_55_all = as.numeric(count_55_1 + count_55_2),
-    count_12F_all = as.numeric(count_12F_1 + count_12F_2),
-    Ne = as.numeric(Ne)
-  ) %>% 
-  dplyr::arrange(yearWeek) %>% 
-  dplyr::filter(
-    yearWeek >= as.Date("2010-01-01") # & yearWeek <= as.Date("2020-01-01") # filter out data not based on initial Ne but the first time GPSC55 was predicted 
+    day = as.numeric(yearMonth - as.Date("2010-01-04"))
   ) %>%
-  distinct(yearWeek, .keep_all = T) %>% 
-  dplyr::mutate(
+  dplyr::filter(day > 0) %>%
+  glimpse()
+
+ageGroup12F_2 <- earlier_ne_df_2 %>%
+  dplyr::transmute(
     yearWeek = as.Date(yearWeek),
-    day = as.numeric(round((yearWeek - as.Date("2010-01-04")))),
-    # day = seq_len(n())
+    weekAll = as.numeric(
+      (as.Date(yearWeek) - as.Date("2001-01-01")) / 7
+    ),
+    count_12F_2 = as.numeric(count_12F),
+    count_55_2 = as.numeric(round(count_GPSC55))
   ) %>%
-  dplyr::filter(day > 0) %>% 
-  mcstate::particle_filter_data(.,
-                                time = "day", # I use steps instead of day
-                                rate = 1, # I change the model to weekly, therefore weekly rate is required
-                                initial_time = 0
+  dplyr::arrange(yearWeek) %>%
+  dplyr::filter(yearWeek >= as.Date("2010-01-01")) %>%
+  dplyr::distinct(yearWeek, .keep_all = TRUE) %>%
+  dplyr::mutate(
+    day = as.numeric(yearWeek - as.Date("2010-01-04"))
+  ) %>%
+  dplyr::filter(day > 0) %>%
+  glimpse()
+
+ageGroup12F_combined <- dplyr::full_join(
+  ageGroup12F_1,
+  ageGroup12F_2,
+  by = "day"
+) %>%
+  dplyr::arrange(day) %>%
+  mcstate::particle_filter_data(
+    time = "day",
+    rate = 1,
+    initial_time = 0
   ) %>%
   glimpse()
 
-saveRDS(ageGroup12F_weekly, "inputs/pmcmc_data_week_ageGroup12F.rds")
+saveRDS(ageGroup12F_combined, "inputs/pmcmc_data_week_ageGroup12F.rds")
 
 # test viz combined GPSC55
+ageGroup12F_weekly <- ageGroup12F_combined
+
 ageGroup12F_weekly_long <- ageGroup12F_weekly %>% 
   dplyr::mutate(
     count_12F_1 = coalesce(count_12F_1, 0),
@@ -111,14 +110,14 @@ ageGroup12F_weekly_long <- ageGroup12F_weekly %>%
                                count_55_1,
                                # count_55_2
                                # Ne
-                               ),
-                      names_to = "group",
-                      values_to = "count") %>% 
+  ),
+  names_to = "group",
+  values_to = "count") %>% 
   glimpse()
 
 # plot with Ne
 ggplot(ageGroup12F_weekly_long
-       , aes(x = yearWeek, y = count, colour = group)) +
+       , aes(x = yearMonth, y = count, colour = group)) +
   geom_line(size = 1) +
   scale_color_manual(values = c("count_12F_1" = "lightcoral",
                                 "count_12F_2" = "maroon",

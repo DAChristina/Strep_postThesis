@@ -90,29 +90,32 @@ model_vs_data <- function(n_sts){
   # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
   
   data <- readRDS("inputs/pmcmc_data_week_ageGroup12F.rds") %>% 
+    dplyr::mutate(weekly = dplyr::row_number()) %>% 
     glimpse()
   
   sir_data <- dplyr::bind_rows(
     data %>% 
+      dplyr::filter(!is.na(yearMonth)) %>% 
       dplyr::transmute(
         replicate = 1,
         # steps = time_start+1,
-        weekly = seq_along(replicate),
+        weekly = weekly, # seq_along(replicate),
         value = count_55_1,
         compartment = "data_count_55_1"
       )
     ,
     data %>% 
+      dplyr::filter(!is.na(yearWeek)) %>% 
       dplyr::transmute(
         replicate = 1,
         # steps = time_start+1,
-        weekly = seq_along(replicate),
+        weekly = weekly, # seq_along(replicate),
         value = count_55_2,
         compartment = "data_count_55_2"
       )
   ) %>%
-    tidyr::complete(weekly, compartment,
-                    fill = list(value = 0)) %>% 
+    # tidyr::complete(weekly, compartment,
+    #                 fill = list(value = 0)) %>% 
     glimpse()
   
   
@@ -122,9 +125,15 @@ model_vs_data <- function(n_sts){
   #   ) %>%
   #   glimpse()
   all_dates <- data %>%
-    dplyr::select(yearWeek) %>% 
-    dplyr::mutate(
-      weekly = seq_along(yearWeek)
+    dplyr::transmute(
+      weekly,
+      yearWeek,
+      yearMonth,
+      
+      window = ifelse(!is.na(yearMonth), "monthly", "weekly"),
+      date = dplyr::coalesce(as.Date(yearWeek), as.Date(yearMonth)),
+      day_start,
+      day_end
     ) %>%
     glimpse()
   
@@ -146,63 +155,76 @@ model_vs_data <- function(n_sts){
                                      index == 4 ~ "total A",
                                      index == 5 ~ "total D",
                                      index == 6 ~ "total R",
+                                     
                                      index == 7 ~ "n_AD1_weekly",
                                      index == 8 ~ "n_AD2_weekly",
                                      
-                                     index == 9 ~ "S <15",
-                                     index == 10 ~ "S 15+",
-                                     index == 11 ~ "A <15",
-                                     index == 12 ~ "A 15+",
-                                     index == 13 ~ "model_D1",
-                                     index == 14 ~ "model_D2",
-                                     index == 15 ~ "R <15",
-                                     index == 16 ~ "R 15+"
+                                     index == 9 ~ "n_AD1_monthly",
+                                     index == 10 ~ "n_AD2_monthly",
+                                     
+                                     index == 11 ~ "S <15",
+                                     index == 12 ~ "S 15+",
+                                     index == 13 ~ "A <15",
+                                     index == 14 ~ "A 15+",
+                                     index == 15 ~ "model_D1",
+                                     index == 16 ~ "model_D2",
+                                     index == 17 ~ "R <15",
+                                     index == 18 ~ "R 15+"
                     )) %>% 
     dplyr::select(-index) %>%
-    dplyr::mutate(weekly = ceiling((steps-1)/7)) %>% 
+    # dplyr::mutate(weekly = ceiling((steps-1)/7)) %>% 
+    dplyr::mutate(
+      day = steps - 1,
+      window = ifelse(compartment %in% c("n_AD1_monthly",
+                                         "model_D1"), "monthly",
+                      "weekly")
+    ) %>% 
+    dplyr::inner_join(
+      all_dates %>%
+        dplyr::select(weekly, window, day_start, day_end)
+      ,
+      by = dplyr::join_by(window,
+                          day > day_start,
+                          day <= day_end)
+    ) %>% 
     dplyr::group_by(replicate, weekly, compartment) %>% 
     dplyr::summarise(value = sum(value, na.rm = T),
+                     # value = value[which.max(day)],
                      # date = max(date),
                      .groups = "drop") %>% 
     dplyr::ungroup() %>% 
     dplyr::bind_rows(sir_data) %>%
+    
     # add 12F data for comparison
     dplyr::bind_rows(
       data %>% 
+        dplyr::filter(!is.na(yearMonth)) %>% 
         dplyr::transmute(
           replicate = 1,
-          weekly = seq_along(replicate),
-          value = count_12F_1 + count_12F_2,
-          compartment = "data_count_12F_all"
-        )
-    ) %>% 
-    dplyr::bind_rows(
-      data %>% 
-        dplyr::transmute(
-          replicate = 1,
-          weekly = seq_along(replicate),
+          weekly = weekly, # seq_along(replicate),
           value = count_12F_1,
           compartment = "data_count_12F_1"
         )
     ) %>% 
     dplyr::bind_rows(
       data %>% 
+        dplyr::filter(!is.na(yearWeek)) %>% 
         dplyr::transmute(
           replicate = 1,
-          weekly = seq_along(replicate),
+          weekly = weekly, # seq_along(replicate),
           value = count_12F_2,
           compartment = "data_count_12F_2"
         )
     ) %>% 
-    tidyr::complete(weekly,
-                    fill = list(value = 0)
-    ) %>%
-    dplyr::full_join(
+    # tidyr::complete(weekly,
+    #                 fill = list(value = 0)
+    # ) %>%
+    dplyr::left_join(
       all_dates
       ,
       by = "weekly"
     ) %>%
-    dplyr::filter(!is.na(yearWeek)) %>%
+    dplyr::filter(!is.na(date)) %>%
     glimpse()
   
   write.csv(incidence_modelled,
@@ -212,16 +234,17 @@ model_vs_data <- function(n_sts){
   png(paste0(dir_name, "figs/model_vs_data_ageGroup12F.png"),
       width = 24, height = 34, unit = "cm", res = 600)
   p1 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(window == "monthly") %>% 
                  dplyr::filter(
                    compartment %in% c("model_D1", "data_count_55_1", "data_count_12F_1"),
                    compartment != "Time",
                  )
                ,
-               aes(x = yearWeek, y = value,
+               aes(x = date, y = value,
                    group = interaction(compartment,replicate),
                    colour = compartment)) +
     geom_line() +
-    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek, na.rm = TRUE)), as.Date(max(all_dates$yearWeek, na.rm = TRUE))),
                  date_breaks = "year",
                  date_labels = "%Y") +
     ggtitle("Cases (Aggregated by Week) for age 0-44") +
@@ -235,12 +258,13 @@ model_vs_data <- function(n_sts){
           legend.background = element_rect(fill = "transparent", color = "transparent"))
   
   p2 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(window == "weekly") %>% 
                  dplyr::filter(
                    compartment %in% c("model_D2", "data_count_55_2", "data_count_12F_2"),
                    compartment != "Time",
                  )
                ,
-               aes(x = yearWeek, y = value,
+               aes(x = date, y = value,
                    group = interaction(compartment,replicate),
                    colour = compartment)) +
     geom_line() +

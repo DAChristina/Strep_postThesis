@@ -1,0 +1,299 @@
+library(tidyverse)
+library(odin.dust)
+library(socialmixr)
+
+# I update odin.dust by force
+# remotes::install_github("mrc-ide/odin.dust")
+source("global/all_function_allAge.R")
+# global/all_function_allAge.R also incorporated:
+# burnin_days
+
+
+model_vs_data <- function(n_sts){
+  dir_name <- paste0("outputs/genomics/trial_", n_sts, "/")
+  dir.create(paste0(dir_name, "/figs"), FALSE, TRUE)
+  # run 4_post_pmcmc_pics.R first
+  results <- read.csv(paste0(dir_name, "tune_initial_with_CI.csv"),
+                      row.names = 1) %>% 
+    glimpse()
+  
+  
+  # gen_sir <- odin.dust::odin_dust("model/sir_basic_trial.R")
+  gen_sir <- odin.dust::odin_dust("model/sir_stochastic_ageGroup2.R")
+  
+  # Create contact_matrix 5 demographic groups:
+  # > 5
+  # 5-18
+  # 19-30
+  # 31-64
+  # 65+
+  # age.limits = c(0, 5, 19, 31, 65)
+  
+  # Create contact_matrix 2 demographic groups:
+  # < 45
+  # 45+
+  age.limits = c(0, 45)
+  N_age <- length(age.limits)
+  
+  contact_2_demographic <- suppressMessages(
+    socialmixr::contact_matrix(polymod,
+                               countries = "United Kingdom",
+                               age.limits = age.limits,
+                               symmetric = TRUE
+    ))
+  
+  transmission <- contact_2_demographic$matrix /
+    rep(contact_2_demographic$demography$population,
+        each = ncol(contact_2_demographic$matrix))
+  t_norm <- transmission/max(transmission)
+  
+  pars <- list(m = t_norm,
+               N_ini = contact_2_demographic$demography$population,
+               log_A_ini = results["log_A_ini",2], # c(results[1,2], results[2,2]),
+               phi = results["phi",2],
+               time_shift_1 = results["time_shift_1",2],
+               beta_0 = results["beta_0",2],
+               beta_1 = results["beta_1",2],
+               # vacc = results["vacc",2],
+               log_delta1 = results["log_delta1",2],
+               log_delta2 = results["log_delta2",2],
+               # rho = results["rho",2],
+               # sigma_1 = results["sigma_1",2],
+               omega = results["omega",2]
+  )
+  
+  n_times <- burnin_days+7500 # 500 for trial
+  n_pars <- 10L
+  sir_model <- gen_sir$new(pars = pars,
+                           time = 1,
+                           n_particles = n_pars,
+                           n_threads = 4L,
+                           seed = 1L)
+  
+  # compartment position check
+  # sir_model$info()
+  # sir_model$info()$index$n_AD_weekly
+  # update_state is required "every single time" to run & produce matrix output (don't know why)
+  # sir_model$update_state(pars = pars,
+  #                        time = 0) # make sure time is 0
+  
+  # all_date <- incidence$day
+  # all_date <- data.frame(col = integer(4745))
+  # incidence <- read.csv("inputs/incidence_week_12F_allAge.csv") %>% 
+  #   dplyr::mutate(day = week*7) 
+  model <- array(NA, dim = c(sir_model$info()$len, n_pars, n_times))
+  
+  for (t in seq_len(n_times)) {
+    model[ , , t] <- sir_model$run(t)
+  }
+  # time <- x[1, 1, ] # because in the position of [1, 1, ] is time
+  # x <- x[-1, , ] # compile all matrix into 1 huge df, delete time (position [-1, , ])
+  
+  data <- readRDS("inputs/pmcmc_data_week_ageGroup12F.rds") %>% 
+    dplyr::mutate(weekly = dplyr::row_number()) %>% 
+    glimpse()
+  
+  sir_data <- dplyr::bind_rows(
+    data %>% 
+      dplyr::filter(!is.na(yearMonth)) %>% 
+      dplyr::transmute(
+        replicate = 1,
+        # steps = time_start+1,
+        weekly = weekly, # seq_along(replicate),
+        value = count_55_1,
+        compartment = "data_count_55_1"
+      )
+    ,
+    data %>% 
+      dplyr::filter(!is.na(yearWeek)) %>% 
+      dplyr::transmute(
+        replicate = 1,
+        # steps = time_start+1,
+        weekly = weekly, # seq_along(replicate),
+        value = count_55_2,
+        compartment = "data_count_55_2"
+      )
+  ) %>%
+    # tidyr::complete(weekly, compartment,
+    #                 fill = list(value = 0)) %>% 
+    glimpse()
+  
+  
+  # all_dates <- data.frame(date = seq(min(data$yearWeek), max(data$yearWeek), by = "day")) %>%
+  #   dplyr::mutate(
+  #     steps = seq_along(date)
+  #   ) %>%
+  #   glimpse()
+  all_dates <- data %>%
+    dplyr::transmute(
+      weekly,
+      yearWeek,
+      yearMonth,
+      
+      window = ifelse(!is.na(yearMonth), "monthly", "weekly"),
+      date = dplyr::coalesce(as.Date(yearWeek), as.Date(yearMonth)),
+      day_start,
+      day_end
+    ) %>%
+    glimpse()
+  
+  # focused on n_AD_weekly (already in weeks)
+  incidence_modelled <- 
+    reshape2::melt(model) %>% 
+    dplyr::rename(index = Var1,     # Var1 = dimension that stored SADR values
+                  replicate = Var2, # Var2 = particles
+                  steps = Var3       # Var3 = steps are in days, but n_AD_weekly is aggregated in weeks
+    ) %>% 
+    # adjust burn in
+    dplyr::filter(steps > burnin_days) %>% 
+    dplyr::mutate(steps = steps-burnin_days) %>% 
+    # dplyr::filter(index < 5) %>%
+    dplyr::mutate(compartment = 
+                    dplyr::case_when(index == 1 ~ "Time",
+                                     index == 2 ~ "total N",
+                                     index == 3 ~ "total S",
+                                     index == 4 ~ "total A",
+                                     index == 5 ~ "total D",
+                                     index == 6 ~ "total R",
+                                     
+                                     index == 7 ~ "n_AD1_weekly",
+                                     index == 8 ~ "n_AD2_weekly",
+                                     
+                                     index == 9 ~ "n_AD1_monthly",
+                                     index == 10 ~ "n_AD2_monthly",
+                                     
+                                     index == 11 ~ "S <15",
+                                     index == 12 ~ "S 15+",
+                                     index == 13 ~ "A <15",
+                                     index == 14 ~ "A 15+",
+                                     index == 15 ~ "model_D1",
+                                     index == 16 ~ "model_D2",
+                                     index == 17 ~ "R <15",
+                                     index == 18 ~ "R 15+"
+                    )) %>% 
+    dplyr::select(-index) %>%
+    # dplyr::mutate(weekly = ceiling((steps-1)/7)) %>% 
+    dplyr::mutate(
+      day = steps - 1,
+      window = ifelse(compartment %in% c("n_AD1_monthly",
+                                         "model_D1"), "monthly",
+                      "weekly")
+    ) %>% 
+    dplyr::inner_join(
+      all_dates %>%
+        dplyr::select(weekly, window, day_start, day_end)
+      ,
+      by = dplyr::join_by(window,
+                          day > day_start,
+                          day <= day_end)
+    ) %>% 
+    dplyr::group_by(replicate, weekly, compartment) %>% 
+    dplyr::summarise(value = sum(value, na.rm = T),
+                     # value = value[which.max(day)],
+                     # date = max(date),
+                     .groups = "drop") %>% 
+    dplyr::ungroup() %>% 
+    dplyr::bind_rows(sir_data) %>%
+    
+    # add 12F data for comparison
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::filter(!is.na(yearMonth)) %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = weekly, # seq_along(replicate),
+          value = count_12F_1,
+          compartment = "data_count_12F_1"
+        )
+    ) %>% 
+    dplyr::bind_rows(
+      data %>% 
+        dplyr::filter(!is.na(yearWeek)) %>% 
+        dplyr::transmute(
+          replicate = 1,
+          weekly = weekly, # seq_along(replicate),
+          value = count_12F_2,
+          compartment = "data_count_12F_2"
+        )
+    ) %>% 
+    # tidyr::complete(weekly,
+    #                 fill = list(value = 0)
+    # ) %>%
+    dplyr::left_join(
+      all_dates
+      ,
+      by = "weekly"
+    ) %>%
+    dplyr::filter(!is.na(date)) %>%
+    glimpse()
+  
+  write.csv(incidence_modelled,
+            paste0(dir_name, "incidence_modelled_GPSC55.csv"),
+            row.names = FALSE)
+  
+  png(paste0(dir_name, "figs/model_vs_data_ageGroup12F.png"),
+      width = 24, height = 34, unit = "cm", res = 600)
+  p1 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(window == "monthly") %>% 
+                 dplyr::filter(
+                   compartment %in% c("model_D1", "data_count_55_1", "data_count_12F_1"),
+                   compartment != "Time",
+                 )
+               ,
+               aes(x = date, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
+    geom_line() +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek, na.rm = TRUE)), as.Date(max(all_dates$yearWeek, na.rm = TRUE))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    ggtitle("Cases (Aggregated by Week) for age 0-44") +
+    xlab("Time") +
+    ylab("Number of People") +
+    theme_bw() +
+    theme(legend.position = c(0.15, 0.85),
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  p2 <- ggplot(incidence_modelled %>% 
+                 dplyr::filter(window == "weekly") %>% 
+                 dplyr::filter(
+                   compartment %in% c("model_D2", "data_count_55_2", "data_count_12F_2"),
+                   compartment != "Time",
+                 )
+               ,
+               aes(x = date, y = value,
+                   group = interaction(compartment,replicate),
+                   colour = compartment)) +
+    geom_line() +
+    scale_x_date(limits = c(as.Date(min(all_dates$yearWeek)), as.Date(max(all_dates$yearWeek))),
+                 date_breaks = "year",
+                 date_labels = "%Y") +
+    ggtitle("Cases (Aggregated by Week) for age 45+") +
+    xlab("Time") +
+    ylab("Number of People") +
+    theme_bw() +
+    theme(legend.position = c(0.15, 0.85),
+          legend.title = element_blank(),
+          legend.key.size = unit(0.8, "lines"),
+          legend.text = element_text(size = 10),
+          legend.background = element_rect(fill = "transparent", color = "transparent"))
+  
+  p_combined <- cowplot::plot_grid(p1, p2,
+                                   nrow =2,
+                                   labels = c("A", "B"))
+  
+  
+  print(p_combined)
+  dev.off()
+  
+}
+
+# a slight modification for college's HPC
+args <- commandArgs(trailingOnly = T)
+n_sts <- as.numeric(args[which(args == "--n_steps") + 1])
+
+model_vs_data(n_sts)
+
