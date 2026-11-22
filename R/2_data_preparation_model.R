@@ -46,28 +46,13 @@ interpolated_ne <- read.csv("raw_data/GPSC55_mlesky_cleaned_interpolated.csv") %
   dplyr::mutate(yearWeek = as.Date(yearWeek)) %>% 
   glimpse()
 
-# non-heterogeneity (allAges), weekly (monthly for 0-44 age group)
-ageGroup12F_1 <- earlier_ne_df_1_monthly %>%
-  dplyr::transmute(
-    yearMonth = as.Date(yearMonth),
-    count_12F_1 = as.numeric(count_12F),
-    count_55_1 = as.numeric(round(count_GPSC55))
-  ) %>%
-  dplyr::arrange(yearMonth) %>%
-  dplyr::filter(yearMonth >= as.Date("2010-01-01")) %>%
-  dplyr::distinct(yearMonth, .keep_all = TRUE) %>%
-  dplyr::mutate(
-    day = as.numeric(yearMonth - as.Date("2010-01-04"))
-  ) %>%
-  dplyr::filter(day > 0) %>%
-  glimpse()
-
+# non-heterogeneity (allAges), weekly for 45+, 4-weekly (monthly) for 0-44
+# 1. Age Group 2: weekly (every 7 days from 2010-01-04)
+# Missing weeks represent zero counts in surveillance data
 ageGroup12F_2 <- earlier_ne_df_2 %>%
   dplyr::transmute(
     yearWeek = as.Date(yearWeek),
-    weekAll = as.numeric(
-      (as.Date(yearWeek) - as.Date("2001-01-01")) / 7
-    ),
+    weekAll = as.numeric((as.Date(yearWeek) - as.Date("2001-01-01")) / 7),
     count_12F_2 = as.numeric(count_12F),
     count_55_2 = as.numeric(round(count_GPSC55))
   ) %>%
@@ -77,14 +62,79 @@ ageGroup12F_2 <- earlier_ne_df_2 %>%
   dplyr::mutate(
     day = as.numeric(yearWeek - as.Date("2010-01-04"))
   ) %>%
-  dplyr::filter(day > 0) %>%
-  glimpse()
+  dplyr::filter(day > 0)
 
-ageGroup12F_combined <- dplyr::full_join(
-  ageGroup12F_1,
-  ageGroup12F_2,
-  by = "day"
+# Build a complete regular weekly timeline (7-day steps) starting from day = 7
+weekly_timeline <- data.frame(
+  day = seq(from = 7, to = max(ageGroup12F_2$day), by = 7)
 ) %>%
+  dplyr::mutate(
+    week_idx = dplyr::row_number(),
+    # 4-week period index (28 days per period)
+    period = (week_idx - 1) %/% 4 + 1
+  )
+
+# Merge Age Group 2 onto weekly timeline; missing weeks in weekly surveillance are true zeroes
+ageGroup12F_2_complete <- weekly_timeline %>%
+  dplyr::left_join(ageGroup12F_2, by = "day") %>%
+  dplyr::mutate(
+    yearWeek = as.Date("2010-01-04") + day,
+    count_12F_2 = dplyr::coalesce(count_12F_2, 0),
+    count_55_2 = dplyr::coalesce(count_55_2, 0)
+  )
+
+# 2. Age Group 1: 4-weekly / monthly accumulation
+# Prepare Age Group 1 counts:
+# If weekly counts earlier_ne_df_1 exist, aggregate them into 4-week blocks (treating missing weeks as 0)
+# Otherwise, align earlier_ne_df_1_monthly sequentially to the 4-week boundary (day %% 28 == 0)
+if (exists("earlier_ne_df_1") && "yearWeek" %in% names(earlier_ne_df_1)) {
+  ageGroup12F_1_weekly <- earlier_ne_df_1 %>%
+    dplyr::transmute(
+      yearWeek = as.Date(yearWeek),
+      count_12F_1 = as.numeric(count_12F),
+      count_55_1 = as.numeric(round(count_GPSC55))
+    ) %>%
+    dplyr::filter(yearWeek >= as.Date("2010-01-01")) %>%
+    dplyr::mutate(day = as.numeric(yearWeek - as.Date("2010-01-04"))) %>%
+    dplyr::filter(day > 0)
+
+  ageGroup12F_1_4weekly <- weekly_timeline %>%
+    dplyr::left_join(ageGroup12F_1_weekly, by = "day") %>%
+    dplyr::mutate(
+      count_12F_1 = dplyr::coalesce(count_12F_1, 0),
+      count_55_1 = dplyr::coalesce(count_55_1, 0)
+    ) %>%
+    dplyr::group_by(period) %>%
+    dplyr::summarise(
+      day = max(day), # 4-week boundary (e.g. day 28, 56, 84...)
+      count_12F_1 = sum(count_12F_1),
+      count_55_1 = sum(count_55_1),
+      .groups = "drop"
+    )
+} else {
+  # Align earlier_ne_df_1_monthly rows sequentially to 4-week boundaries (day 28, 56, 84...)
+  ageGroup12F_1_prep <- earlier_ne_df_1_monthly %>%
+    dplyr::transmute(
+      count_12F_1 = as.numeric(count_12F),
+      count_55_1 = as.numeric(round(count_GPSC55))
+    )
+  n_periods <- min(nrow(ageGroup12F_1_prep), max(weekly_timeline$period))
+  ageGroup12F_1_4weekly <- data.frame(
+    period = seq_len(n_periods),
+    day = seq(from = 28, by = 28, length.out = n_periods),
+    count_12F_1 = ageGroup12F_1_prep$count_12F_1[seq_len(n_periods)],
+    count_55_1 = ageGroup12F_1_prep$count_55_1[seq_len(n_periods)]
+  )
+}
+
+# 3. Combine both age groups onto the unified weekly timeline
+# Age Group 2 is evaluated every week (missing weeks = 0).
+# Age Group 1 is evaluated at 4-week boundaries (day %% 28 == 0), and NA on intermediate weeks.
+ageGroup12F_combined <- ageGroup12F_2_complete %>%
+  dplyr::left_join(
+    ageGroup12F_1_4weekly %>% dplyr::select(day, count_12F_1, count_55_1),
+    by = "day"
+  ) %>%
   dplyr::arrange(day) %>%
   mcstate::particle_filter_data(
     time = "day",
@@ -117,7 +167,7 @@ ageGroup12F_weekly_long <- ageGroup12F_weekly %>%
 
 # plot with Ne
 ggplot(ageGroup12F_weekly_long
-       , aes(x = yearMonth, y = count, colour = group)) +
+       , aes(x = yearWeek, y = count, colour = group)) +
   geom_line(size = 1) +
   scale_color_manual(values = c("count_12F_1" = "lightcoral",
                                 "count_12F_2" = "maroon",

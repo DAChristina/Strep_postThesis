@@ -145,7 +145,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                     n_chains = 1,
                                     # n_workers = 4,
                                     n_threads_total = ncpus,
-                                    save_state = TRUE,
+                                    save_state = FALSE,
                                     save_trajectories = TRUE
                                     # adaptive_proposal = adaptive_proposal_run1
                                     )
@@ -214,7 +214,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            n_chains = 4,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
-                                           save_state = TRUE,
+                                           save_state = FALSE,
                                            save_trajectories = TRUE)
     
     
@@ -233,7 +233,7 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
                                            n_chains = 4,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
-                                           save_state = TRUE,
+                                           save_state = FALSE,
                                            save_trajectories = TRUE
                                            # another option is to construct vcv first then ignore adaptive_proposal settings
                                            # adaptive_proposal = adaptive_proposal_run2
@@ -312,21 +312,13 @@ pmcmc_run_plus_tuning <- function(n_pars, n_sts,
   # fig <- pmcmc_trace(mcmc2)
   # fig <- pmcmc_trace(mcmc2_burnedin)
   
-  # save pmcmc samples
-  if(run2_stochastic){
-    pmcmc_samples <- mcstate::pmcmc_sample(tune_pmcmc_result,
-                                           n_sample = 1000,
-                                           burnin = 500)
-    
-    saveRDS(pmcmc_samples, paste0(dir_name, "pmcmc_samples.rds"))
-  } else {
-    # message("Not required for a deterministic model")
-    pmcmc_samples <- mcstate::pmcmc_sample(tune_pmcmc_result,
-                                           n_sample = 1000,
-                                           burnin = 500)
-    
-    saveRDS(pmcmc_samples, paste0(dir_name, "pmcmc_samples.rds"))
-  }
+  # save pmcmc samples (use reasonable sample size to prevent memory exhaustion)
+  sample_size <- min(200, n_sts)
+  burnin_steps <- min(500, floor(n_sts / 2))
+  pmcmc_samples <- mcstate::pmcmc_sample(tune_pmcmc_result,
+                                         n_sample = sample_size,
+                                         burnin = burnin_steps)
+  saveRDS(pmcmc_samples, paste0(dir_name, "pmcmc_samples.rds"))
   
   
   ##############################################################################
@@ -378,7 +370,7 @@ pmcmc_run1_only <- function(n_pars, n_sts,
                                     n_chains = 1,
                                     # n_workers = 4,
                                     n_threads_total = ncpus,
-                                    save_state = TRUE,
+                                    save_state = FALSE,
                                     save_trajectories = TRUE
                                     # adaptive_proposal = adaptive_proposal_run1
                                     )
@@ -473,7 +465,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
                                            n_chains = 4,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
-                                           save_state = TRUE,
+                                           save_state = FALSE,
                                            save_trajectories = TRUE)
     
     
@@ -492,7 +484,7 @@ pmcmc_run2_only <- function(n_pars, n_sts,
                                            n_chains = 4,
                                            # n_workers = 4,
                                            n_threads_total = ncpus,
-                                           save_state = TRUE,
+                                           save_state = FALSE,
                                            save_trajectories = TRUE,
                                            # another option is to construct vcv first then ignore adaptive_proposal settings
                                            adaptive_proposal = adaptive_proposal_run2
@@ -571,21 +563,13 @@ pmcmc_run2_only <- function(n_pars, n_sts,
   # fig <- pmcmc_trace(mcmc2)
   # fig <- pmcmc_trace(mcmc2_burnedin)
   
-  # save pmcmc samples
-  if(run2_stochastic){
-    pmcmc_samples <- mcstate::pmcmc_sample(tune_pmcmc_result,
-                                           n_sample = 1000,
-                                           burnin = 500)
-    
-    saveRDS(pmcmc_samples, paste0(dir_name, "pmcmc_samples.rds"))
-  } else {
-    # message("Not required for a deterministic model")
-    pmcmc_samples <- mcstate::pmcmc_sample(tune_pmcmc_result,
-                                           n_sample = 1000,
-                                           burnin = 500)
-    
-    saveRDS(pmcmc_samples, paste0(dir_name, "pmcmc_samples.rds"))
-  }
+  # save pmcmc samples (use reasonable sample size to prevent memory exhaustion)
+  sample_size <- min(200, n_sts)
+  burnin_steps <- min(500, floor(n_sts / 2))
+  pmcmc_samples <- mcstate::pmcmc_sample(tune_pmcmc_result,
+                                         n_sample = sample_size,
+                                         burnin = burnin_steps)
+  saveRDS(pmcmc_samples, paste0(dir_name, "pmcmc_samples.rds"))
   
 }
 
