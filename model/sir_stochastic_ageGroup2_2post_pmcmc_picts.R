@@ -95,7 +95,7 @@ model_vs_data <- function(n_sts){
   
   sir_data <- dplyr::bind_rows(
     data %>% 
-      dplyr::filter(!is.na(yearMonth)) %>% 
+      dplyr::filter(!is.na(count_55_1)) %>% 
       dplyr::transmute(
         replicate = 1,
         # steps = time_start+1,
@@ -105,7 +105,7 @@ model_vs_data <- function(n_sts){
       )
     ,
     data %>% 
-      dplyr::filter(!is.na(yearWeek)) %>% 
+      dplyr::filter(!is.na(count_55_2)) %>% 
       dplyr::transmute(
         replicate = 1,
         # steps = time_start+1,
@@ -114,8 +114,6 @@ model_vs_data <- function(n_sts){
         compartment = "data_count_55_2"
       )
   ) %>%
-    # tidyr::complete(weekly, compartment,
-    #                 fill = list(value = 0)) %>% 
     glimpse()
   
   
@@ -198,7 +196,7 @@ model_vs_data <- function(n_sts){
     # add 12F data for comparison
     dplyr::bind_rows(
       data %>% 
-        dplyr::filter(!is.na(yearMonth)) %>% 
+        dplyr::filter(!is.na(count_12F_1)) %>% 
         dplyr::transmute(
           replicate = 1,
           weekly = weekly, # seq_along(replicate),
@@ -208,7 +206,7 @@ model_vs_data <- function(n_sts){
     ) %>% 
     dplyr::bind_rows(
       data %>% 
-        dplyr::filter(!is.na(yearWeek)) %>% 
+        dplyr::filter(!is.na(count_12F_2)) %>% 
         dplyr::transmute(
           replicate = 1,
           weekly = weekly, # seq_along(replicate),

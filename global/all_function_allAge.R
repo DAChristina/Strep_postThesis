@@ -51,31 +51,31 @@ burnin_days <- 0
 
 case_compare <- function(state, observed, pars = NULL) {
   exp_noise <- 1e6
+  n <- if (is.matrix(state)) ncol(state) else 1L
 
   # sir_model$info()$index$n_AD_weekly
   model_1 <- state["n_AD1_monthly", , drop = TRUE] # n_AD1_monthly
   model_2 <- state["n_AD2_weekly", , drop = TRUE]
 
+  # Age group 1: monthly accumulation
+  # Non-reporting weeks (NA) contribute 0 to the log-likelihood (neutral),
+  # because intermediate weeks are already accumulated into the monthly total.
   if (is.na(observed$count_55_1)) {
-    ll_1 <- dpois(x = 0,
-                  lambda = model_1 + rexp(ncol(state), exp_noise),
-                  log = TRUE
-    )
+    ll_1 <- numeric(n)
   } else {
     ll_1 <- dpois(x = observed$count_55_1,
-                  lambda = model_1 + rexp(ncol(state), exp_noise),
+                  lambda = model_1 + rexp(n, exp_noise),
                   log = TRUE
     )
   }
 
+  # Age group 2: weekly count
+  # Evaluated weekly. Missing weeks in surveillance represent true zero counts.
   if (is.na(observed$count_55_2)) {
-    ll_2 <- dpois(x = 0,
-                  lambda = model_2 + rexp(ncol(state), exp_noise),
-                  log = TRUE
-    )
+    ll_2 <- numeric(n)
   } else {
     ll_2 <- dpois(x = observed$count_55_2,
-                  lambda = model_2 + rexp(ncol(state), exp_noise),
+                  lambda = model_2 + rexp(n, exp_noise),
                   log = TRUE
     )
   }
@@ -375,77 +375,6 @@ observe_pois <- function(lambda) {
 }
 
 observe <- function(pmcmc_samples) {
-  
-  state <- pmcmc_samples$trajectories$state
-  pars <- apply(pmcmc_samples$pars, MARGIN = 1, pmcmc_samples$predict$transform)
-  time <- pmcmc_samples$trajectories$time
-  
-  ## extract model outputs
-  model_all <- (state["n_AD1_weekly", , , drop = TRUE]+state["n_AD2_weekly", , , drop = TRUE]) # weekly
-  
-  model_age1_weekly <- state["n_AD1_weekly", , , drop = TRUE]
-  model_age1_monthly <- state["n_AD1_monthly", , , drop = TRUE]
-  
-  model_age2_weekly <- state["n_AD2_weekly", , , drop = TRUE]
-  model_age2_monthly <- state["n_AD2_monthly", , , drop = TRUE]
-  
-  observed <- list()
-  observed$cases_age1_weekly <- observe_pois(model_age1_weekly)
-  observed$cases_age1_monthly <- observe_pois(model_age1_monthly)
-  
-  observed$cases_age2_weekly <- observe_pois(model_age2_weekly)
-  observed$cases_age2_monthly <- observe_pois(model_age2_monthly)
-  
-  abind::abind(c(list(state), observed), along = 1)
-}
-
-plot_states <- function(state, data) {
-  col <- grey(0.3, 0.1)
-  y_max <- max(data$count_55_1, na.rm = TRUE)+max(data$count_55_2, na.rm = TRUE)
-  # model state refers to n_AD_weekly (not the D compartment)
-  matplot(data$yearWeek, t((state["n_AD1_monthly", , -1])),
-          type = "l", lty = 1, col = col,
-          ylim = c(0, y_max),
-          xlab = "", ylab = "GPSC55 cases (monthly)")
-  # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
-  points(data$yearWeek, (data$count_55_1), col = 4, type = "l")
-  
-  matplot(data$yearWeek, t((state["n_AD2_weekly", , -1])),
-          type = "l", lty = 1, col = col,
-          ylim = c(0, y_max),
-          xlab = "", ylab = "GPSC55 cases (monthly)")
-  # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
-  points(data$yearWeek, (data$count_55_2), col = 4, type = "l")
-  # 
-  # matplot(data$yearWeek, xlab = "", t(state["I_tot", , -1]),
-  #         type = "l", lty = 1, col = 3, ylab = "carriers")
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-observe <- function(pmcmc_samples) {
-  
   state <- pmcmc_samples$trajectories$state
   pars <- apply(pmcmc_samples$pars, MARGIN = 1, pmcmc_samples$predict$transform)
   time <- pmcmc_samples$trajectories$time
@@ -463,22 +392,48 @@ observe <- function(pmcmc_samples) {
 
 plot_states <- function(state, data) {
   col <- grey(0.3, 0.1)
-  # y_max <- max(data$count_55_all_weekly, na.rm = TRUE)
-  # model state refers to n_AD_weekly (not the D compartment); separated into 2 age groups
   
-  # age group 1
-  matplot(data$yearWeek, t(state["n_AD1_weekly", , -1]),
+  # age group 1 (monthly counts plotted against monthly accumulation)
+  idx_m <- which(!is.na(data$count_55_1))
+  y_max1 <- max(c(data$count_55_1[idx_m], state["n_AD1_monthly", , -1]), na.rm = TRUE)
+  matplot(data$yearWeek, t(state["n_AD1_monthly", , -1]),
           type = "l", lty = 1, col = col,
-          ylim = c(0, max(data$count_55_1, na.rm = TRUE)),
-          xlab = "", ylab = "GPSC55 cases")
-  # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
-  points(data$yearMonth, (data$count_55_1), col = 4, type = "l")
+          ylim = c(0, y_max1),
+          xlab = "", ylab = "GPSC55 cases (0-44, monthly)")
+  if (length(idx_m) > 0) {
+    points(data$yearWeek[idx_m], data$count_55_1[idx_m], col = 4, type = "b", pch = 16)
+  }
 
-  # age group 2
+  # age group 2 (weekly counts plotted against weekly model)
+  y_max2 <- max(c(data$count_55_2, state["n_AD2_weekly", , -1]), na.rm = TRUE)
   matplot(data$yearWeek, t(state["n_AD2_weekly", , -1]),
           type = "l", lty = 1, col = col,
-          ylim = c(0, max(data$count_55_2, na.rm = TRUE)),
-          xlab = "", ylab = "GPSC55 cases")
-  # points(data$yearWeek, data$count_serotype, col = 3, pch = 20)
-  points(data$yearWeek, (data$count_55_2), col = 4, type = "l")
+          ylim = c(0, y_max2),
+          xlab = "", ylab = "GPSC55 cases (45+, weekly)")
+  points(data$yearWeek, data$count_55_2, col = 4, type = "l")
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
